@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>El Pizarrón del DT</title>
+    <style>
+      :root {
+        --bg: #07131f;
+        --panel: #0f2336;
+        --accent: #2dd4bf;
+        --text: #f5f7fb;
+        --muted: #86a1b6;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, var(--bg), #15364f);
+        color: var(--text);
+      }
+      .app {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .panel {
+        background: rgba(15, 35, 54, 0.95);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.24);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 16px;
+      }
+      .players, .team {
+        display: grid;
+        gap: 10px;
+      }
+      .player-card, .team-player {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+      }
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: var(--accent);
+        color: #05222d;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      button.secondary { background: #4b5d76; color: white; }
+      .muted { color: var(--muted); }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.08);
+        color: white;
+        margin-bottom: 10px;
+      }
+      .summary {
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(45, 212, 191, 0.15);
+      }
+      @media (max-width: 800px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div>
+          <h1>El Pizarrón del DT</h1>
+          <p class="muted">Construye tu equipo y desafía a rivales aleatorios.</p>
+        </div>
+        <button id="playMatchBtn" class="secondary">Jugar partido</button>
+      </header>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Catálogo de jugadores</h2>
+          <input id="searchInput" type="text" placeholder="Buscar por nombre o posición" />
+          <div id="playersList" class="players"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Tu equipo</h2>
+          <div id="teamList" class="team"></div>
+          <div id="teamSummary" class="summary"></div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const players = [
+        { id: 1, name: 'Lionel Messi', position: 'Delantero', nationality: 'Argentina', rating: 95 },
+        { id: 2, name: 'Cristiano Ronaldo', position: 'Delantero', nationality: 'Portugal', rating: 92 },
+        { id: 3, name: 'Kevin De Bruyne', position: 'Centrocampista', nationality: 'Bélgica', rating: 91 },
+        { id: 4, name: 'Virgil van Dijk', position: 'Defensa', nationality: 'Países Bajos', rating: 90 },
+        { id: 5, name: 'Jan Oblak', position: 'Portero', nationality: 'Eslovenia', rating: 91 },
+        { id: 6, name: 'Kylian Mbappé', position: 'Delantero', nationality: 'Francia', rating: 93 },
+        { id: 7, name: 'Neymar Jr.', position: 'Delantero', nationality: 'Brasil', rating: 89 },
+        { id: 8, name: 'Luka Modrić', position: 'Centrocampista', nationality: 'Croacia', rating: 88 }
+      ];
+
+      const state = {
+        team: [],
+        lastResult: null
+      };
+
+      const playersList = document.getElementById('playersList');
+      const teamList = document.getElementById('teamList');
+      const teamSummary = document.getElementById('teamSummary');
+      const searchInput = document.getElementById('searchInput');
+      const playMatchBtn = document.getElementById('playMatchBtn');
+
+      function getFilteredPlayers() {
+        const term = searchInput.value.toLowerCase();
+        return players.filter((player) => {
+          return player.name.toLowerCase().includes(term) || player.position.toLowerCase().includes(term);
+        });
+      }
+
+      function renderPlayers() {
+        const filtered = getFilteredPlayers();
+        playersList.innerHTML = filtered.map((player) => {
+          const alreadyAdded = state.team.some((teamPlayer) => teamPlayer.id === player.id);
+          return `
+            <div class="player-card">
+              <div>
+                <strong>${player.name}</strong><br />
+                <span class="muted">${player.position} · ${player.nationality}</span>
+              </div>
+              <div style="text-align:right">
+                <div>${player.rating}</div>
+                <button ${alreadyAdded ? 'disabled' : ''} data-add="${player.id}">Agregar</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderTeam() {
+        if (state.team.length === 0) {
+          teamList.innerHTML = '<p class="muted">Tu plantilla está vacía. Agrega jugadores para comenzar.</p>';
+        } else {
+          teamList.innerHTML = state.team.map((player) => `
+            <div class="team-player">
+              <div>
+                <strong>${player.name}</strong><br />
+                <span class="muted">${player.position}</span>
+              </div>
+              <button class="secondary" data-remove="${player.id}">Quitar</button>
+            </div>
+          `).join('');
+        }
+        updateSummary();
+      }
+
+      function updateSummary() {
+        const totalRating = state.team.reduce((sum, player) => sum + player.rating, 0);
+        const ready = state.team.length >= 5;
+        teamSummary.innerHTML = `
+          <strong>Plantilla actual:</strong> ${state.team.length} jugadores<br />
+          <strong>Rating total:</strong> ${totalRating}<br />
+          <span class="muted">${ready ? 'Tu equipo está listo para competir.' : 'Agrega más jugadores para completar la plantilla.'}</span>
+        `;
+      }
+
+      function addPlayer(id) {
+        if (state.team.length >= 5) {
+          teamSummary.innerHTML = '<strong>Máximo de 5 jugadores alcanzado.</strong>';
+          return;
+        }
+        const player = players.find((item) => item.id === Number(id));
+        if (!player || state.team.some((item) => item.id === player.id)) return;
+        state.team.push(player);
+        renderPlayers();
+        renderTeam();
+      }
+
+      function removePlayer(id) {
+        state.team = state.team.filter((player) => player.id !== Number(id));
+        renderPlayers();
+        renderTeam();
+      }
+
+      function playMatch() {
+        if (state.team.length < 5) {
+          teamSummary.innerHTML = '<strong>Necesitas al menos 5 jugadores para disputar un partido.</strong>';
+          return;
+        }
+
+        const opponent = state.team
+          .slice()
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5)
+          .map((player) => ({ ...player, rating: Math.max(70, player.rating + Math.floor(Math.random() * 8) - 4) }));
+
+        const userRating = state.team.reduce((sum, player) => sum + player.rating, 0);
+        const opponentRating = opponent.reduce((sum, player) => sum + player.rating, 0);
+        const diff = userRating - opponentRating;
+        let result;
+        if (diff > 0) result = 'Victoria';
+        else if (diff < 0) result = 'Derrota';
+        else result = 'Empate';
+
+        state.lastResult = { result, userRating, opponentRating, opponent };
+        teamSummary.innerHTML = `
+          <strong>Último partido:</strong> ${result}<br />
+          <strong>Tu equipo:</strong> ${userRating}<br />
+          <strong>Rival:</strong> ${opponentRating}
+        `;
+      }
+
+      document.addEventListener('click', (event) => {
+        const addButton = event.target.closest('[data-add]');
+        const removeButton = event.target.closest('[data-remove]');
+        if (addButton) addPlayer(addButton.getAttribute('data-add'));
+        if (removeButton) removePlayer(removeButton.getAttribute('data-remove'));
+      });
+
+      searchInput.addEventListener('input', renderPlayers);
+      playMatchBtn.addEventListener('click', playMatch);
+
+      renderPlayers();
+      renderTeam();
+    </script>
+  </body>
+</html>
