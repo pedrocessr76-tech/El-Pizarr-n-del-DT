@@ -5,8 +5,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "npm run start --workspace=server",
+    "dev": "concurrently \"cd apps/server && npm run start\" \"npm run dev --workspace=client\"",
+    "dev:server": "cd apps/server && npm run start",
     "dev:client": "npm run dev --workspace=client",
     "build": "npm run build --workspace=server && npm run build --workspace=client"
   },

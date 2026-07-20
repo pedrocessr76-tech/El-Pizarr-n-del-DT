@@ -1,15 +1,15 @@
-## ADDED Requirements
+## REQUISITOS AGREGADOS
 
-### Requirement: Match summary view
-The system SHALL present a clear summary of the last played match.
+### Requisito: Vista de resumen del partido
+El sistema DEBE presentar un resumen claro del último partido jugado.
 
-#### Scenario: Display match outcome
-- **WHEN** a match challenge is completed
-- **THEN** the system SHALL show the result summary, the ratings of both teams, and the winner
+#### Escenario: Mostrar resultado del partido
+- **CUANDO** se completa un desafío de partido
+- **ENTONCES** el sistema DEBE mostrar el resumen del resultado, las calificaciones de ambos equipos y el ganador
 
-### Requirement: Team status feedback
-The system SHALL inform the user whether the current team is ready for a match.
+### Requisito: Retroalimentación del estado del equipo
+El sistema DEBE informar al usuario si el equipo actual está listo para un partido.
 
-#### Scenario: Team readiness feedback
-- **WHEN** the user roster is incomplete or complete
-- **THEN** the system SHALL show an appropriate readiness message
+#### Escenario: Retroalimentación de preparación del equipo
+- **CUANDO** la alineación del usuario está incompleta o completa
+- **ENTONCES** el sistema DEBE mostrar un mensaje de preparación apropiado

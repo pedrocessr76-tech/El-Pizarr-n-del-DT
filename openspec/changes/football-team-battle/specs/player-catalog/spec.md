@@ -1,47 +1,47 @@
-## ADDED Requirements
+## REQUISITOS AGREGADOS
 
-### Requirement: Player catalog browsing
-The system SHALL provide a catalog of football players with basic information such as name, position, nationality, and overall rating.
+### Requisito: Exploración del catálogo de jugadores
+El sistema DEBE proporcionar un catálogo de jugadores de fútbol con información básica como nombre, posición, nacionalidad y calificación general.
 
-#### Scenario: Browse catalog
-- **WHEN** a user opens the player catalog
-- **THEN** the system SHALL display the list of available players with their main attributes
+#### Escenario: Explorar catálogo
+- **CUANDO** un usuario abre el catálogo de jugadores
+- **ENTONCES** el sistema DEBE mostrar la lista de jugadores disponibles con sus atributos principales
 
-### Requirement: Player search by attribute
-The system SHALL allow users to search for players by name or position.
+### Requisito: Búsqueda de jugadores por atributo
+El sistema DEBE permitir a los usuarios buscar jugadores por nombre o posición.
 
-#### Scenario: Filter players
-- **WHEN** a user enters a search term
-- **THEN** the system SHALL show only the players matching the search criteria
+#### Escenario: Filtrar jugadores
+- **CUANDO** un usuario ingresa un término de búsqueda
+- **ENTONCES** el sistema DEBE mostrar solo los jugadores que coincidan con el criterio de búsqueda
 
-## ADDED Requirements
+## REQUISITOS AGREGADOS
 
-### Requirement: Team building
-The system SHALL allow users to create a team by selecting players from the catalog.
+### Requisito: Construcción del equipo
+El sistema DEBE permitir a los usuarios crear un equipo seleccionando jugadores del catálogo.
 
-#### Scenario: Select players for team
-- **WHEN** a user chooses a player from the catalog
-- **THEN** the system SHALL add that player to the current team roster
+#### Escenario: Seleccionar jugadores para el equipo
+- **CUANDO** un usuario elige un jugador del catálogo
+- **ENTONCES** el sistema DEBE agregar ese jugador a la alineación actual del equipo
 
-### Requirement: Team roster validation
-The system SHALL prevent adding more players than the configured team size.
+### Requisito: Validación de la alineación del equipo
+El sistema DEBE evitar agregar más jugadores de los permitidos por el tamaño de equipo configurado.
 
-#### Scenario: Limit team size
-- **WHEN** a user tries to add a player after the team roster is full
-- **THEN** the system SHALL block the addition and show a clear message
+#### Escenario: Limitar el tamaño del equipo
+- **CUANDO** un usuario intenta agregar un jugador después de que la alineación está llena
+- **ENTONCES** el sistema DEBE bloquear la adición y mostrar un mensaje claro
 
-## ADDED Requirements
+## REQUISITOS AGREGADOS
 
-### Requirement: Match generation
-The system SHALL generate a random opponent team for each match challenge.
+### Requisito: Generación de partido
+El sistema DEBE generar un equipo oponente aleatorio para cada desafío de partido.
 
-#### Scenario: Create random opponent
-- **WHEN** a user starts a match challenge
-- **THEN** the system SHALL generate an opponent team using available players
+#### Escenario: Crear oponente aleatorio
+- **CUANDO** un usuario inicia un desafío de partido
+- **ENTONCES** el sistema DEBE generar un equipo oponente usando jugadores disponibles
 
-### Requirement: Match result display
-The system SHALL show a simple match result summary after a match is played.
+### Requisito: Mostrar resultado del partido
+El sistema DEBE mostrar un resumen simple del resultado del partido una vez que se juegue.
 
-#### Scenario: Show match outcome
-- **WHEN** a match challenge finishes
-- **THEN** the system SHALL display the result summary and the team performance
+#### Escenario: Mostrar resultado del partido
+- **CUANDO** un desafío de partido finaliza
+- **ENTONCES** el sistema DEBE mostrar el resumen del resultado y el desempeño del equipo

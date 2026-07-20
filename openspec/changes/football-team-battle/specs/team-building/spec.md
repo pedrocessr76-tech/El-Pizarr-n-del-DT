@@ -1,15 +1,15 @@
-## ADDED Requirements
+## REQUISITOS AGREGADOS
 
-### Requirement: Team composition
-The system SHALL allow users to compose a roster by selecting players from the catalog.
+### Requisito: Composición del equipo
+El sistema DEBE permitir a los usuarios componer una alineación seleccionando jugadores del catálogo.
 
-#### Scenario: Add player to roster
-- **WHEN** a user selects a player from the catalog
-- **THEN** the system SHALL include that player in the current team roster
+#### Escenario: Agregar jugador a la alineación
+- **CUANDO** un usuario selecciona un jugador del catálogo
+- **ENTONCES** el sistema DEBE incluir a ese jugador en la alineación del equipo actual
 
-### Requirement: Remove player from roster
-The system SHALL allow users to remove players from the selected team before a match.
+### Requisito: Eliminar jugador de la alineación
+El sistema DEBE permitir a los usuarios eliminar jugadores del equipo seleccionado antes de un partido.
 
-#### Scenario: Remove player from roster
-- **WHEN** a user removes a player from the team roster
-- **THEN** the system SHALL update the displayed roster immediately
+#### Escenario: Eliminar jugador de la alineación
+- **CUANDO** un usuario elimina un jugador de la alineación del equipo
+- **ENTONCES** el sistema DEBE actualizar la alineación mostrada de inmediato
