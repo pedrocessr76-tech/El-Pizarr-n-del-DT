@@ -8,11 +8,12 @@ El proyecto parte de una idea de producto sencilla y visual: una web donde el us
 - Definir una arquitectura inicial para una aplicación web enfocada en la construcción de equipos y simulación de partidos.
 - Organizar la información de jugadores, equipos y resultados de forma clara.
 - Crear una base para que el producto pueda evolucionar con persistencia, ranking y más modos de juego.
+- Implementar un sistema de autenticación de usuarios para persistir el nombre y el historial de partidas.
 
 **Non-Goals:**
 - No se implementará una liga completa ni manejo avanzado de estadísticas deportivas.
 - No se integrarán APIs externas reales de fútbol en la primera versión.
-- No se incluirán sistemas de autenticación de usuarios ni pagos.
+- No se incluirán sistemas de pagos.
 
 ## Decisions
 
