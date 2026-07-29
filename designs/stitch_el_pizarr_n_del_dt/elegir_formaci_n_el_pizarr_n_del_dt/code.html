@@ -1,0 +1,340 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<style>
+        @layer base {
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                overscroll-behavior: none;
+            }
+            main > :first-child {
+                margin-top: 0 !important;
+            }
+            main > :last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#93000a",
+                        "surface-dim": "#111316",
+                        "outline-variant": "#3c4b35",
+                        "secondary-fixed-dim": "#00daf3",
+                        "secondary-fixed": "#9cf0ff",
+                        "surface-container-highest": "#333538",
+                        "surface-tint": "#2ae500",
+                        "surface-container-high": "#282a2d",
+                        "primary-container": "#39ff14",
+                        "secondary-container": "#00e3fd",
+                        "surface-variant": "#333538",
+                        "outline": "#85967c",
+                        "on-primary-fixed": "#022100",
+                        "on-tertiary-container": "#736000",
+                        "inverse-surface": "#e2e2e6",
+                        "inverse-on-surface": "#2f3034",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#fff9f0",
+                        "primary-fixed-dim": "#2ae500",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "on-background": "#e2e2e6",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "surface-bright": "#37393d",
+                        "on-error": "#690005",
+                        "tertiary-container": "#ffdb40",
+                        "secondary": "#bdf4ff",
+                        "inverse-primary": "#106e00",
+                        "on-secondary": "#00363d",
+                        "tertiary-fixed": "#ffe16d",
+                        "on-primary": "#053900",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#1a1c1f",
+                        "on-tertiary": "#3a3000",
+                        "on-tertiary-fixed": "#221b00",
+                        "background": "#111316",
+                        "primary-fixed": "#79ff5b",
+                        "surface-container-lowest": "#0c0e11",
+                        "surface-container": "#1e2023",
+                        "on-surface-variant": "#baccb0",
+                        "surface": "#111316",
+                        "primary": "#efffe3",
+                        "on-surface": "#e2e2e6",
+                        "on-secondary-container": "#00616d",
+                        "on-secondary-fixed": "#001f24",
+                        "on-primary-fixed-variant": "#095300",
+                        "on-primary-container": "#107100"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xl": "64px",
+                        "md": "24px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "margin": "32px",
+                        "lg": "40px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter", "sans-serif"],
+                        "headline-xl": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+<main class="relative bg-surface min-h-screen">
+<div class="flex flex-col w-full">
+<!-- Interactive Formation Selector -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter px-margin py-xl">
+<!-- Left Panel: Tactical Options -->
+<div class="lg:col-span-4 flex flex-col gap-lg">
+<div class="flex flex-col gap-xs">
+<div class="flex items-center gap-sm mb-md">
+<a class="flex items-center gap-xs text-primary-container hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Volver al Hub</span>
+</a>
+</div>
+<span class="font-label-md text-label-md text-primary-container uppercase tracking-widest">Configuración Táctica</span>
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Elegir Alineación</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">
+                        Selecciona la estructura base para tu próximo encuentro. Esta decisión afectará la transición defensa-ataque y la densidad en el mediocampo.
+                    </p>
+</div>
+<!-- Formation Cards Grid -->
+<div class="grid grid-cols-1 gap-md" id="formation-options">
+<!-- 4-3-3 Option -->
+<button class="formation-card group relative flex items-center justify-between p-md bg-surface-container hover:bg-surface-container-high transition-all duration-300 rounded-xl overflow-hidden border-l-4 border-transparent active:scale-[0.98]" onclick="selectFormation('4-3-3')">
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-container transition-colors">4-3-3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ofensiva Estándar</span>
+</div>
+<div class="flex gap-1">
+<span class="w-1.5 h-6 bg-primary-container/20 rounded-full group-[.active]:bg-primary-container transition-colors"></span>
+<span class="w-1.5 h-6 bg-primary-container/20 rounded-full group-[.active]:bg-primary-container transition-colors"></span>
+<span class="w-1.5 h-6 bg-primary-container/20 rounded-full group-[.active]:bg-primary-container transition-colors"></span>
+</div>
+</button>
+<!-- 4-4-2 Option -->
+<button class="formation-card group relative flex items-center justify-between p-md bg-surface-container hover:bg-surface-container-high transition-all duration-300 rounded-xl overflow-hidden border-l-4 border-transparent active:scale-[0.98]" onclick="selectFormation('4-4-2')">
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-container transition-colors">4-4-2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Equilibrio Clásico</span>
+</div>
+<div class="flex gap-1">
+<span class="w-1.5 h-6 bg-secondary-container/20 rounded-full group-[.active]:bg-secondary-container transition-colors"></span>
+<span class="w-1.5 h-6 bg-secondary-container/20 rounded-full group-[.active]:bg-secondary-container transition-colors"></span>
+</div>
+</button>
+<!-- 3-5-2 Option -->
+<button class="formation-card group relative flex items-center justify-between p-md bg-surface-container hover:bg-surface-container-high transition-all duration-300 rounded-xl overflow-hidden border-l-4 border-transparent active:scale-[0.98]" onclick="selectFormation('3-5-2')">
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-container transition-colors">3-5-2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Control Total</span>
+</div>
+<div class="flex gap-1">
+<span class="w-1.5 h-6 bg-tertiary-container/20 rounded-full group-[.active]:bg-tertiary-container transition-colors"></span>
+</div>
+</button>
+<!-- 5-4-1 Option -->
+<button class="formation-card group relative flex items-center justify-between p-md bg-surface-container hover:bg-surface-container-high transition-all duration-300 rounded-xl overflow-hidden border-l-4 border-transparent active:scale-[0.98]" onclick="selectFormation('5-4-1')">
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-container transition-colors">5-4-1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Fortaleza Defensiva</span>
+</div>
+<div class="flex gap-1">
+<span class="w-1.5 h-6 bg-error/20 rounded-full group-[.active]:bg-error transition-colors"></span>
+</div>
+</button>
+</div>
+<div class="mt-auto pt-lg">
+<button class="w-full py-md px-lg bg-surface-container-highest text-on-surface/30 font-label-md text-label-md rounded-lg transition-all duration-300 flex items-center justify-center gap-sm cursor-not-allowed group" disabled="" id="confirm-btn">
+                        CONFIRMAR FORMACIÓN
+                        <span class="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Panel: Visual Pitch -->
+<div class="lg:col-span-8 relative">
+<div class="sticky top-md aspect-[4/5] md:aspect-[16/10] bg-surface-container-low rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+<!-- Pitch Markings SVG -->
+<div class="absolute inset-0 opacity-20 pointer-events-none text-outline">
+<svg fill="none" height="100%" viewBox="0 0 800 600" width="100%" xmlns="http://www.w3.org/2000/svg">
+<rect height="520" stroke="currentColor" stroke-width="2" width="720" x="40" y="40"></rect>
+<path d="M400 40V560" stroke="currentColor" stroke-width="2"></path>
+<circle cx="400" cy="300" r="60" stroke="currentColor" stroke-width="2"></circle>
+<path d="M40 180H120V420H40" stroke="currentColor" stroke-width="2"></path>
+<path d="M760 180H680V420H760" stroke="currentColor" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Dynamic Players Layer -->
+<div class="absolute inset-0 p-lg" id="pitch-container">
+<!-- Default Empty State Message -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center p-xl" id="pitch-empty-state">
+<div class="w-24 h-24 rounded-full bg-primary-container/5 flex items-center justify-center mb-md animate-pulse">
+<span class="material-symbols-outlined text-primary-container text-[48px]">sports_soccer</span>
+</div>
+<p class="font-headline-md text-headline-md text-on-surface-variant">Selecciona un esquema táctico</p>
+<p class="font-body-md text-body-md text-on-surface-variant/60">El tablero se actualizará dinámicamente</p>
+</div>
+<!-- Players Grid (Rendered via JS) -->
+<div class="relative w-full h-full" id="player-positions"></div>
+</div>
+<!-- Ambient Decoration -->
+<div class="absolute -bottom-24 -right-24 w-64 h-64 bg-primary-container/10 blur-[120px] rounded-full"></div>
+<div class="absolute -top-24 -left-24 w-64 h-64 bg-secondary-container/10 blur-[120px] rounded-full"></div>
+</div>
+<!-- Metadata Overlay -->
+<div class="absolute bottom-8 left-8 right-8 flex justify-between items-end pointer-events-none">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant/50 uppercase">Visualizador Táctico v3.0</span>
+<span class="font-headline-xl text-headline-xl text-on-surface/10 transition-all duration-700" id="formation-display">----</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant/50 uppercase">Análisis de Espacios</span>
+<div class="flex gap-2 mt-1">
+<div class="w-2 h-2 rounded-full bg-primary-container/40"></div>
+<div class="w-2 h-2 rounded-full bg-primary-container/20"></div>
+<div class="w-2 h-2 rounded-full bg-primary-container/10"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+    const formations = {
+        '4-3-3': {
+            label: '4-3-3',
+            positions: [
+                { x: 5, y: 50, role: 'GK' },
+                { x: 25, y: 20, role: 'LD' }, { x: 25, y: 40, role: 'CD' }, { x: 25, y: 60, role: 'CD' }, { x: 25, y: 80, role: 'LI' },
+                { x: 55, y: 30, role: 'MC' }, { x: 50, y: 50, role: 'MCD' }, { x: 55, y: 70, role: 'MC' },
+                { x: 85, y: 20, role: 'ED' }, { x: 85, y: 50, role: 'DC' }, { x: 85, y: 80, role: 'EI' }
+            ]
+        },
+        '4-4-2': {
+            label: '4-4-2',
+            positions: [
+                { x: 5, y: 50, role: 'GK' },
+                { x: 25, y: 20, role: 'LD' }, { x: 25, y: 40, role: 'CD' }, { x: 25, y: 60, role: 'CD' }, { x: 25, y: 80, role: 'LI' },
+                { x: 55, y: 15, role: 'MD' }, { x: 55, y: 38, role: 'MC' }, { x: 55, y: 62, role: 'MC' }, { x: 55, y: 85, role: 'MI' },
+                { x: 85, y: 35, role: 'DC' }, { x: 85, y: 65, role: 'DC' }
+            ]
+        },
+        '3-5-2': {
+            label: '3-5-2',
+            positions: [
+                { x: 5, y: 50, role: 'GK' },
+                { x: 25, y: 30, role: 'CD' }, { x: 25, y: 50, role: 'CD' }, { x: 25, y: 70, role: 'CD' },
+                { x: 50, y: 10, role: 'CAD' }, { x: 55, y: 35, role: 'MC' }, { x: 50, y: 50, role: 'MCD' }, { x: 55, y: 65, role: 'MC' }, { x: 50, y: 90, role: 'CAI' },
+                { x: 85, y: 35, role: 'DC' }, { x: 85, y: 65, role: 'DC' }
+            ]
+        },
+        '5-4-1': {
+            label: '5-4-1',
+            positions: [
+                { x: 5, y: 50, role: 'GK' },
+                { x: 20, y: 15, role: 'LD' }, { x: 25, y: 33, role: 'CD' }, { x: 25, y: 50, role: 'CD' }, { x: 25, y: 67, role: 'CD' }, { x: 20, y: 85, role: 'LI' },
+                { x: 55, y: 20, role: 'MD' }, { x: 55, y: 40, role: 'MC' }, { x: 55, y: 60, role: 'MC' }, { x: 55, y: 80, role: 'MI' },
+                { x: 88, y: 50, role: 'DC' }
+            ]
+        }
+    };
+
+    function selectFormation(key) {
+        const cards = document.querySelectorAll('.formation-card');
+        cards.forEach(card => {
+            card.classList.remove('active', 'bg-primary-container/10', 'border-primary-container');
+            if (card.innerText.includes(key)) {
+                card.classList.add('active', 'bg-primary-container/10', 'border-primary-container');
+            }
+        });
+
+        const pitchContainer = document.getElementById('player-positions');
+        const emptyState = document.getElementById('pitch-empty-state');
+        const displayLabel = document.getElementById('formation-display');
+        const confirmBtn = document.getElementById('confirm-btn');
+
+        emptyState.style.display = 'none';
+        pitchContainer.innerHTML = '';
+        displayLabel.innerText = key;
+        displayLabel.classList.remove('text-on-surface/10');
+        displayLabel.classList.add('text-on-surface/30');
+
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('bg-surface-container-highest', 'text-on-surface/30', 'cursor-not-allowed');
+        confirmBtn.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_20px_-5px_rgba(57,255,20,0.5)]');
+
+        const config = formations[key];
+        config.positions.forEach((pos, index) => {
+            const player = document.createElement('div');
+            player.className = 'absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 transition-all duration-700 ease-out scale-0 opacity-0';
+            player.style.left = `${pos.x}%`;
+            player.style.top = `${pos.y}%`;
+            
+            setTimeout(() => {
+                player.classList.remove('scale-0', 'opacity-0');
+                player.classList.add('scale-100', 'opacity-100');
+            }, index * 40);
+
+            player.innerHTML = `
+                <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-surface-container-highest border-2 border-primary-container/50 flex items-center justify-center shadow-lg group hover:border-primary-container transition-colors cursor-crosshair">
+                    <span class="text-[10px] font-bold text-primary-container">${pos.role}</span>
+                </div>
+                <div class="w-1 h-1 rounded-full bg-primary-container/30 group-hover:bg-primary-container"></div>
+            `;
+            pitchContainer.appendChild(player);
+        });
+    }
+</script>
+<style>
+    @keyframes pulse-soft {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.8; }
+    }
+    .animate-pulse-soft {
+        animation: pulse-soft 3s infinite ease-in-out;
+    }
+</style>
+</body></html>

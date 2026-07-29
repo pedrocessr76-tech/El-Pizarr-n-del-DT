@@ -14,6 +14,7 @@ build/
 # Entornos y secretos
 .env
 .env.local
+.cursor/mcp.json
 
 # Sistema operativo
 .DS_Store

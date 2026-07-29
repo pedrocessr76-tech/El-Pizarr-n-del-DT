@@ -48,23 +48,27 @@ export function PackOpener() {
   };
 
   return (
-    <section className="space-y-4 rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-2xl shadow-black/20">
+    <section className="space-y-4 rounded-3xl border border-white/10 bg-stadium-panel/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Abrir sobre</h2>
-          <p className="text-sm text-slate-400">Haz clic para recibir 5 jugadores y escoger uno.</p>
+          <h2 className="font-display text-3xl tracking-wide text-white">Abrir sobre</h2>
+          <p className="text-sm text-slate-400">Recibe 5 jugadores y elige uno para tu plantilla.</p>
         </div>
         <button
           type="button"
           onClick={openPack}
           disabled={loading}
-          className="rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? 'Abriendo...' : 'Abrir sobre'}
         </button>
       </div>
 
-      <p className="text-sm text-slate-300">{message}</p>
+      {message && (
+        <p className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-sm text-cyan-300">
+          {message}
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence>

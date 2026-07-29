@@ -1,0 +1,101 @@
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Hub Principal - El Pizarrón del DT</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #111316; font-family: 'Inter', sans-serif; color: #e2e2e6; overflow: hidden; }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:#111316; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+<main style="position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; background-color:#111316; display:flex; align-items:center; justify-content:center; z-index:9999; padding:24px;">
+
+  <!-- Ambient Background Glows -->
+  <div style="position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;">
+    <div style="position:absolute; top:-10%; left:-10%; width:40%; height:40%; border-radius:9999px; background-color:rgba(57,255,20,0.1); filter:blur(120px);"></div>
+    <div style="position:absolute; bottom:-10%; right:-10%; width:50%; height:50%; border-radius:9999px; background-color:rgba(0,227,253,0.05); filter:blur(150px);"></div>
+  </div>
+
+  <!-- Vertical Side Decorative Text -->
+  <div style="position:fixed; left:32px; top:50%; transform:translateY(-50%); pointer-events:none; z-index:10;">
+    <span style="writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.8em; font-size:10px; color:rgba(255,255,255,0.2); font-weight:900; text-transform:uppercase;">
+      MASTER THE PITCH
+    </span>
+  </div>
+  <div style="position:fixed; right:32px; top:50%; transform:translateY(-50%); pointer-events:none; z-index:10;">
+    <span style="writing-mode:vertical-rl; letter-spacing:0.8em; font-size:10px; color:rgba(255,255,255,0.2); font-weight:900; text-transform:uppercase;">
+      TACTICS • PERFORMANCE • STRATEGY
+    </span>
+  </div>
+
+  <!-- Centered Content Hub matching exact user requested proportions -->
+  <div style="position:relative; z-index:10; width:440px; max-width:92vw; margin:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    
+    <!-- Compact Logo Section (Smaller & Proportional) -->
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:20px;">
+      <div style="position:relative; width:96px; height:96px; margin-bottom:10px; background-color:rgba(30,32,35,0.8); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <div style="position:absolute; inset:0; background-color:rgba(57,255,20,0.15); filter:blur(12px); border-radius:9999px;"></div>
+        <img alt="El Pizarrón del DT Logo" src="https://lh3.googleusercontent.com/aida/AP1WRLt2arhaseVvop9MHRP9DiFnCDYGYTiQ-8mLBYDI4pwK1b6gEaz0N-CPHKoYou-NC-yeoW_0ld2aMbsvkUv2OF_6U33QA-1O5a67efWmV6XOg7d4Z2N5I_558aOteJR9l8SnLQWnkuOCoIj5C_uxHaP2K4zJJha3l7nC3nYCv21GFRcCAI1r95EviZLXEf0XfzZ687dzeH_dnCxtVuTV12RxMAfwuWe1KFTar6ZFKSvbiZm4G4D7XV9xCm4" style="position:relative; width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0 8px rgba(57,255,20,0.35));">
+      </div>
+      <span style="color:#39ff14; font-size:10px; text-transform:uppercase; letter-spacing:0.25em; font-weight:800; display:block;">TACTICAL SUITE V2.0</span>
+      <span style="color:#ffffff; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; font-weight:800; margin-top:2px; display:block;">EL PIZARRÓN DEL DT</span>
+    </div>
+
+    <!-- Action Cards Container -->
+    <div style="width:100%; display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- Primary Action: Solid Neon Green JUGAR DRAFT Card with Premium Rounded Borders -->
+      <button onclick="window.location.href='#'" style="width:100%; background-color:#39ff14; border-radius:16px; padding:20px 24px; border:1px solid rgba(57,255,20,0.8); box-shadow:0 0 30px rgba(57,255,20,0.4); cursor:pointer; display:flex; align-items:center; justify-content:space-between; box-sizing:border-box; transition:all 0.2s ease;">
+        <div style="display:flex; flex-direction:column; align-items:flex-start; text-align:left;">
+          <span style="color:#053900; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; margin-bottom:2px;">MODO COMPETITIVO</span>
+          <span style="color:#053900; font-size:20px; font-weight:900; text-transform:uppercase; letter-spacing:-0.01em;">JUGAR DRAFT</span>
+        </div>
+        <div style="width:40px; height:40px; border-radius:50%; background-color:#053900; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          <span class="material-symbols-outlined" style="color:#39ff14; font-size:24px;">sports_soccer</span>
+        </div>
+      </button>
+
+      <!-- Secondary Actions: Enlarged, Separated Cards -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%;">
+        <!-- Card 1: VER CARTAS DE JUGADORES -->
+        <button onclick="window.location.href='#'" style="background-color:#1e2023; border-radius:16px; padding:28px 16px; border:1px solid rgba(255,255,255,0.1); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; box-sizing:border-box; transition:all 0.2s ease; box-shadow:0 10px 20px rgba(0,0,0,0.3);">
+          <div style="width:44px; height:44px; border-radius:12px; background-color:rgba(57,255,20,0.12); border:1px solid rgba(57,255,20,0.3); display:flex; align-items:center; justify-content:center;">
+            <span class="material-symbols-outlined" style="color:#39ff14; font-size:24px;">style</span>
+          </div>
+          <span style="color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; text-align:center;">VER CARTAS DE JUGADORES</span>
+        </button>
+
+        <!-- Card 2: HISTORIAL DE PARTIDAS -->
+        <button onclick="window.location.href='#'" style="background-color:#1e2023; border-radius:16px; padding:28px 16px; border:1px solid rgba(255,255,255,0.1); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; box-sizing:border-box; transition:all 0.2s ease; box-shadow:0 10px 20px rgba(0,0,0,0.3);">
+          <div style="width:44px; height:44px; border-radius:12px; background-color:rgba(0,227,253,0.12); border:1px solid rgba(0,227,253,0.3); display:flex; align-items:center; justify-content:center;">
+            <span class="material-symbols-outlined" style="color:#00e3fd; font-size:24px;">history</span>
+          </div>
+          <span style="color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; text-align:center;">HISTORIAL DE PARTIDAS</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Footer Info Section -->
+    <div style="margin-top:36px; display:flex; align-items:center; justify-content:center; gap:24px; font-size:10px;">
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <span style="color:#9ca3af; text-transform:uppercase; font-size:9px; font-weight:700;">SERVIDORES</span>
+        <span style="color:#39ff14; font-weight:800;">Online</span>
+      </div>
+      <div style="width:1px; height:20px; background-color:rgba(255,255,255,0.1);"></div>
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <span style="color:#9ca3af; text-transform:uppercase; font-size:9px; font-weight:700;">VERSIÓN</span>
+        <span style="color:#ffffff; font-weight:700;">Alpha 0.8.4</span>
+      </div>
+      <div style="width:1px; height:20px; background-color:rgba(255,255,255,0.1);"></div>
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <span style="color:#9ca3af; text-transform:uppercase; font-size:9px; font-weight:700;">REGIÓN</span>
+        <span style="color:#ffffff; font-weight:700;">LATAM</span>
+      </div>
+    </div>
+
+  </div>
+</main>
+</body></html>

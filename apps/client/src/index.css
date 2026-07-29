@@ -1,20 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  button {
+    background-color: transparent;
+    color: inherit;
+    border-style: none;
+  }
+}
 
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #f5f7fb;
-  background-color: #07131f;
+  color: #e2e2e6;
+  background-color: #111316;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #07131f, #15364f);
+  background: #111316;
+  color: #e2e2e6;
+  overflow-x: hidden;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
+/* Force dark input & select styling & prevent white browser autofill */
+input, select, textarea {
+  background-color: #282a2d !important;
+  color: #e2e2e6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #39ff14 !important;
+  outline: none !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.3) !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #e2e2e6 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #282a2d inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Custom scrollbar for tactical containers & brackets */
+.custom-scrollbar::-webkit-scrollbar {
+  display: block;
+  height: 8px;
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0c0e11;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #282a2d;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #333538;
+}
+
+/* Glow & neon accent utilities */
+.glow-primary {
+  box-shadow: 0 0 15px -5px #39ff14;
+}
+.glow-primary-lg {
+  box-shadow: 0 0 25px 0px #39ff14;
+}
+.glow-secondary {
+  box-shadow: 0 0 15px -5px #00e3fd;
+}

@@ -1,20 +1,21 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { MatchService, Difficulty } from './match.service';
+import { MatchService } from './match.service';
 import type { Team } from '../../../../packages/shared/types/models';
 
-class SimulateMatchDto {
+class CreateTournamentDto {
   @ApiProperty({
     type: Object,
-    description: 'Equipo del usuario con los jugadores seleccionados en la formación.',
+    description: 'Equipo del usuario con los jugadores seleccionados.',
   })
   userTeam!: Team;
+}
 
-  @ApiProperty({
-    enum: ['EASY', 'MEDIUM', 'HARD', 'LEGENDARY'],
-    description: 'Dificultad del partido a simular.',
-  })
-  difficulty!: Difficulty;
+class SimulateTournamentMatchDto {
+  @ApiProperty({ type: Object })
+  homeTeam!: Team;
+  @ApiProperty({ type: Object })
+  awayTeam!: Team;
 }
 
 @Controller('match')
@@ -22,17 +23,23 @@ class SimulateMatchDto {
 export class MatchController {
   constructor(private readonly matchService: MatchService) {}
 
-  @Post('simulate')
-  @ApiOperation({ summary: 'Simular un partido entre el equipo del usuario y un oponente generado.' })
-  @ApiBody({ type: SimulateMatchDto })
-  @ApiResponse({ status: 200, description: 'Resultado de la simulación del partido.' })
-  simulateMatch(@Body() body: SimulateMatchDto) {
+  @Post('tournament/create')
+  @ApiOperation({ summary: 'Crear un nuevo torneo de octavos de final.' })
+  @ApiBody({ type: CreateTournamentDto })
+  createTournament(@Body() body: CreateTournamentDto) {
     if (!body.userTeam) {
       throw new BadRequestException('userTeam is required');
     }
-    if (!body.difficulty) {
-      throw new BadRequestException('difficulty is required');
+    return this.matchService.createTournament(body.userTeam);
+  }
+
+  @Post('tournament/simulate-match')
+  @ApiOperation({ summary: 'Simular un partido específico del torneo.' })
+  @ApiBody({ type: SimulateTournamentMatchDto })
+  simulateMatch(@Body() body: SimulateTournamentMatchDto) {
+    if (!body.homeTeam || !body.awayTeam) {
+      throw new BadRequestException('homeTeam and awayTeam are required');
     }
-    return this.matchService.simulateMatch(body.userTeam, body.difficulty);
+    return this.matchService.simulateMatch(body.homeTeam, body.awayTeam);
   }
 }

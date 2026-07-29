@@ -1,27 +1,79 @@
-import { PackOpener } from './components/PackOpener';
-import { PitchBoard } from './components/PitchBoard';
-import { MatchSimulator } from './components/MatchSimulator';
+import { useState } from 'react';
+import { MainLayout } from './components/DashboardComponents';
+import { LoginScreen } from './components/LoginScreen';
+import { DashboardScreen } from './components/DashboardComponents';
+import { MatchCenterScreen } from './components/MatchCenterScreen';
+import { HistorialScreen } from './components/HistorialScreen';
+import { DraftRoomScreen } from './components/DraftRoomScreen';
+import { BracketScreen } from './components/BracketScreen';
+import { TacticalIntelligenceScreen } from './components/TacticalIntelligenceScreen';
+import { FormationScreen } from './components/FormationScreen';
+import { CaptainScreen } from './components/CaptainScreen';
+import { DifficultyScreen } from './components/DifficultyScreen';
+
+export type Screen =
+  | 'dashboard'
+  | 'match-center'
+  | 'historial'
+  | 'draft-room'
+  | 'bracket'
+  | 'tactical'
+  | 'formation'
+  | 'captain'
+  | 'difficulty';
 
 function App() {
-  return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.15),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.12),_transparent_30%),linear-gradient(135deg,_#07131f,_#15364f)] px-4 py-8 text-slate-100 sm:px-8">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
-        <header className="rounded-3xl border border-white/10 bg-slate-950/70 p-8 shadow-2xl shadow-black/20">
-          <h1 className="text-4xl font-bold text-white">El Pizarrón del DT</h1>
-          <p className="mt-3 max-w-2xl text-slate-300">
-            Construye tu equipo con sobres, selecciona la dificultad y enfrenta a un rival generado por IA.
-          </p>
-        </header>
+  const [username, setUsername] = useState<string | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
 
-        <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-8">
-            <PackOpener />
-            <MatchSimulator />
-          </div>
-          <PitchBoard />
-        </div>
-      </div>
-    </main>
+  if (!username) {
+    return <LoginScreen onLogin={setUsername} />;
+  }
+
+  const handleNavigate = (rawScreen: string) => {
+    let targetScreen: Screen = 'dashboard';
+    if (rawScreen === 'dashboard') targetScreen = 'dashboard';
+    else if (rawScreen === 'match-center' || rawScreen === 'live-tournament') targetScreen = 'match-center';
+    else if (rawScreen === 'historial' || rawScreen === 'historial-de-partidas') targetScreen = 'historial';
+    else if (rawScreen === 'draft-room') targetScreen = 'draft-room';
+    else if (rawScreen === 'bracket' || rawScreen === 'tournament-bracket') targetScreen = 'bracket';
+    else if (rawScreen === 'tactical' || rawScreen === 'perfil') targetScreen = 'tactical';
+    else if (rawScreen === 'formation') targetScreen = 'formation';
+    else if (rawScreen === 'captain') targetScreen = 'captain';
+    else if (rawScreen === 'difficulty') targetScreen = 'difficulty';
+
+    setCurrentScreen(targetScreen);
+  };
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'dashboard':
+        return <DashboardScreen onNavigate={() => handleNavigate('formation')} />;
+      case 'formation':
+        return <FormationScreen onNext={() => handleNavigate('draft-room')} />;
+      case 'draft-room':
+        return <DraftRoomScreen onNext={() => handleNavigate('captain')} />;
+      case 'captain':
+        return <CaptainScreen onNext={() => handleNavigate('difficulty')} />;
+      case 'difficulty':
+        return <DifficultyScreen onStartTournament={() => handleNavigate('bracket')} />;
+      case 'bracket':
+        return <BracketScreen />;
+      case 'match-center':
+        return <MatchCenterScreen />;
+      case 'historial':
+        return <HistorialScreen />;
+      case 'tactical':
+        return <TacticalIntelligenceScreen />;
+      default:
+        return <DashboardScreen onNavigate={() => handleNavigate('formation')} />;
+    }
+  };
+
+  return (
+    <MainLayout currentScreen={currentScreen} onNavigate={handleNavigate}>
+      {renderScreen()}
+    </MainLayout>
   );
 }
 

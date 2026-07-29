@@ -1,4 +1,4 @@
-import type { Player } from '../../../../packages/shared/types/models';
+import type { Player, PlayerStats } from '../../../../packages/shared/types/models';
 import { ArrowUpRight, ShieldCheck, Zap, HeartPulse, Shield, Target } from 'lucide-react';
 
 interface PlayerCardProps {
@@ -9,48 +9,81 @@ interface PlayerCardProps {
 const statIcon = (stat: string) => {
   switch (stat) {
     case 'pace':
-      return <Zap className="w-4 h-4" />;
+      return <Zap className="h-3.5 w-3.5" />;
     case 'shooting':
-      return <ArrowUpRight className="w-4 h-4" />;
+      return <ArrowUpRight className="h-3.5 w-3.5" />;
     case 'passing':
-      return <Target className="w-4 h-4" />;
+      return <Target className="h-3.5 w-3.5" />;
     case 'dribbling':
-      return <HeartPulse className="w-4 h-4" />;
+      return <HeartPulse className="h-3.5 w-3.5" />;
     case 'defending':
-      return <Shield className="w-4 h-4" />;
+      return <Shield className="h-3.5 w-3.5" />;
     case 'physical':
-      return <ShieldCheck className="w-4 h-4" />;
+      return <ShieldCheck className="h-3.5 w-3.5" />;
     default:
-      return <Zap className="w-4 h-4" />;
+      return <Zap className="h-3.5 w-3.5" />;
   }
 };
 
+const statLabel: Record<string, string> = {
+  pace: 'Ritmo',
+  shooting: 'Tiro',
+  passing: 'Pase',
+  dribbling: 'Regate',
+  defending: 'Defensa',
+  physical: 'Físico',
+};
+
+function overallRating(stats: PlayerStats) {
+  const values = Object.values(stats);
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+}
+
 export function PlayerCard({ player, onSelect }: PlayerCardProps) {
+  const rating = overallRating(player.stats);
+
   return (
     <button
       type="button"
       onClick={() => onSelect(player)}
-      className="rounded-2xl border border-white/20 bg-slate-900/90 p-4 text-left shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-cyan-400"
+      className="group relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-slate-800/90 to-slate-950/95 p-4 text-left shadow-lg shadow-black/30 transition hover:-translate-y-1 hover:border-cyan-400/60 hover:shadow-cyan-500/10"
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="absolute -right-4 -top-4 font-display text-7xl text-white/[0.04]">{rating}</div>
+
+      <div className="relative mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-slate-400">{player.nationality}</p>
-          <h3 className="text-lg font-semibold text-white">{player.name}</h3>
+          <p className="text-xs uppercase tracking-wider text-slate-500">{player.nationality}</p>
+          <h3 className="font-display text-xl tracking-wide text-white">{player.name}</h3>
         </div>
-        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/80">{player.position}</span>
+        <div className="flex flex-col items-center">
+          <span className="font-display text-3xl leading-none text-amber-400">{rating}</span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-white/70">
+            {player.position}
+          </span>
+        </div>
       </div>
 
-      <div className="grid gap-2 text-sm text-slate-200">
+      <div className="relative grid grid-cols-2 gap-1.5 text-xs">
         {(Object.entries(player.stats) as [keyof typeof player.stats, number][]).map(([key, value]) => (
-          <div key={key} className="flex items-center justify-between rounded-lg bg-slate-950/80 px-3 py-2">
-            <div className="flex items-center gap-2 text-slate-300">
+          <div key={key} className="flex items-center justify-between rounded-lg bg-slate-950/70 px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 text-slate-400">
               {statIcon(key)}
-              <span>{key}</span>
+              <span>{statLabel[key] ?? key}</span>
             </div>
-            <span className="font-semibold text-white">{value}</span>
+            <span
+              className={`font-semibold ${
+                value >= 80 ? 'text-emerald-400' : value >= 60 ? 'text-white' : 'text-slate-400'
+              }`}
+            >
+              {value}
+            </span>
           </div>
         ))}
       </div>
+
+      <p className="mt-3 text-center text-[10px] uppercase tracking-widest text-cyan-400 opacity-0 transition group-hover:opacity-100">
+        Seleccionar jugador
+      </p>
     </button>
   );
 }

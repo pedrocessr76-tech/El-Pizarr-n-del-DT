@@ -20,7 +20,8 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
-  startingEleven: Player[]; // Debe contener 11 jugadores
+  starters: Player[]; // 11
+  substitutes: Player[]; // 7
 }
 
 export type MatchStatus = 'PENDING' | 'PLAYING' | 'FINISHED';
@@ -32,4 +33,16 @@ export interface Match {
   homeScore: number;
   awayScore: number;
   status: MatchStatus;
+  winnerId?: string; // Para torneos, necesitamos saber quién avanza
+}
+
+export type RoundName = 'OCTAVOS' | 'CUARTOS' | 'SEMIS' | 'FINAL';
+
+export interface Tournament {
+  id: string;
+  userTeam: Team;
+  opponents: Team[];
+  rounds: Record<RoundName, Match[]>;
+  currentRound: RoundName;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 }

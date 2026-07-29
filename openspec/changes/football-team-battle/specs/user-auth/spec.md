@@ -20,3 +20,18 @@ El sistema DEBE recordar al usuario entre recargas de página para mantener la f
 #### Escenario: Recuperar sesión al recargar
 - **CUANDO** el usuario vuelve a abrir la aplicación
 - **ENTONCES** el sistema DEBE detectar la sesión previa y cargar automáticamente el nombre y el historial del usuario
+
+#### Requisito: Pantalla de Login (Interfaz)
+El sistema DEBE presentar una interfaz de usuario clara para que el jugador se identifique antes de acceder a la aplicación.
+
+##### Escenario: Interfaz de ingreso
+- **CUANDO** el usuario abre la aplicación por primera vez o no tiene una sesión activa
+- **ENTONCES** el sistema DEBE mostrar una pantalla central con:
+    - Un campo de texto para ingresar el "Nombre de Usuario"
+    - Un botón de acción con la etiqueta "Comenzar" o "Ingresar"
+    - Una validación que impida enviar el formulario si el nombre está vacío o tiene menos de 3 caracteres
+    - Un mensaje de error claro en caso de validación fallida
+
+##### Escenario: Validación de entrada
+- **CUANDO** el usuario intenta ingresar un nombre
+- **ENTONCES** el sistema DEBE verificar que no contenga caracteres especiales no permitidos y que cumpla con el límite de caracteres (máximo 15)
