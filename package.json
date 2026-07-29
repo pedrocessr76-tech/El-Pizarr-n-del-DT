@@ -5,9 +5,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"cd apps/server && npm run start\" \"npm run dev --workspace=client\"",
+    "dev": "concurrently \"cd apps/server && npm run start\" \"cd apps/client && npm run dev\"",
     "dev:server": "cd apps/server && npm run start",
-    "dev:client": "npm run dev --workspace=client",
+    "dev:client": "cd apps/client && npm run dev",
     "build": "npm run build --workspace=server && npm run build --workspace=client"
   },
   "devDependencies": {
