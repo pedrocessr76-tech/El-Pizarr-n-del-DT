@@ -13,11 +13,13 @@ El Pizarrón del DT necesita una base de juego para que los usuarios puedan cons
 ## Capabilities
 
 ### New Capabilities
+- `data-model`: definición de entidades Player, Team, Match, User y sus relaciones.
 - `player-catalog`: gestión de jugadores, datos básicos y búsqueda por atributos.
+- `draft-mode`: mecánica de apertura de sobres (pack opening) y selección por draft.
 - `team-building`: creación y edición de un equipo por parte del usuario.
 - `match-generation`: generación de oponentes aleatorios y resolución de enfrentamientos.
 - `game-state`: visualización del estado del equipo, resultados y resumen de la partida.
-- `user-auth`: sistema de inicio de sesión y gestión de perfiles de usuario.
+- `user-auth`: sistema de inicio de sesión y gestión de perfiles de usuario con JWT.
 
 ### Modified Capabilities
 - None.

@@ -1,0 +1,618 @@
+{
+  "liga": "Premier League",
+  "temporada": "2025/2026",
+  "equipos": [
+    {
+      "nombre": "Manchester City",
+      "abreviatura": "MCI",
+      "jugadores": [
+        {
+          "nombre": "Ederson",
+          "posicion": "POR",
+          "rating": 88,
+          "ritmo": 86,
+          "tiro": 85,
+          "pase": 92,
+          "regate": 89,
+          "defensa": 65,
+          "fisico": 83
+        },
+        {
+          "nombre": "Kyle Walker",
+          "posicion": "LD",
+          "rating": 84,
+          "ritmo": 91,
+          "tiro": 63,
+          "pase": 75,
+          "regate": 76,
+          "defensa": 81,
+          "fisico": 82
+        },
+        {
+          "nombre": "Rúben Dias",
+          "posicion": "DFC",
+          "rating": 88,
+          "ritmo": 63,
+          "tiro": 39,
+          "pase": 68,
+          "regate": 68,
+          "defensa": 89,
+          "fisico": 88
+        },
+        {
+          "nombre": "John Stones",
+          "posicion": "DFC",
+          "rating": 85,
+          "ritmo": 71,
+          "tiro": 55,
+          "pase": 80,
+          "regate": 81,
+          "defensa": 84,
+          "fisico": 76
+        },
+        {
+          "nombre": "Josko Gvardiol",
+          "posicion": "LI",
+          "rating": 83,
+          "ritmo": 81,
+          "tiro": 55,
+          "pase": 75,
+          "regate": 78,
+          "defensa": 82,
+          "fisico": 80
+        },
+        {
+          "nombre": "Rodri",
+          "posicion": "MCD",
+          "rating": 91,
+          "ritmo": 65,
+          "tiro": 78,
+          "pase": 85,
+          "regate": 84,
+          "defensa": 87,
+          "fisico": 85
+        },
+        {
+          "nombre": "Kevin De Bruyne",
+          "posicion": "MC",
+          "rating": 90,
+          "ritmo": 72,
+          "tiro": 86,
+          "pase": 94,
+          "regate": 87,
+          "defensa": 63,
+          "fisico": 77
+        },
+        {
+          "nombre": "Phil Foden",
+          "posicion": "MCO",
+          "rating": 88,
+          "ritmo": 82,
+          "tiro": 82,
+          "pase": 84,
+          "regate": 90,
+          "defensa": 56,
+          "fisico": 60
+        },
+        {
+          "nombre": "Bernardo Silva",
+          "posicion": "ED",
+          "rating": 88,
+          "ritmo": 75,
+          "tiro": 78,
+          "pase": 85,
+          "regate": 92,
+          "defensa": 63,
+          "fisico": 68
+        },
+        {
+          "nombre": "Jack Grealish",
+          "posicion": "EI",
+          "rating": 84,
+          "ritmo": 77,
+          "tiro": 76,
+          "pase": 81,
+          "regate": 87,
+          "defensa": 48,
+          "fisico": 68
+        },
+        {
+          "nombre": "Erling Haaland",
+          "posicion": "DC",
+          "rating": 91,
+          "ritmo": 89,
+          "tiro": 93,
+          "pase": 66,
+          "regate": 80,
+          "defensa": 45,
+          "fisico": 88
+        },
+        {
+          "nombre": "Stefan Ortega",
+          "posicion": "POR",
+          "rating": 81,
+          "ritmo": 80,
+          "tiro": 75,
+          "pase": 82,
+          "regate": 83,
+          "defensa": 50,
+          "fisico": 80
+        },
+        {
+          "nombre": "Nathan Aké",
+          "posicion": "DFC",
+          "rating": 84,
+          "ritmo": 74,
+          "tiro": 48,
+          "pase": 72,
+          "regate": 73,
+          "defensa": 85,
+          "fisico": 79
+        },
+        {
+          "nombre": "Manuel Akanji",
+          "posicion": "DFC",
+          "rating": 84,
+          "ritmo": 80,
+          "tiro": 50,
+          "pase": 73,
+          "regate": 75,
+          "defensa": 83,
+          "fisico": 82
+        },
+        {
+          "nombre": "Mateo Kovacic",
+          "posicion": "MC",
+          "rating": 83,
+          "ritmo": 72,
+          "tiro": 71,
+          "pase": 83,
+          "regate": 86,
+          "defensa": 75,
+          "fisico": 74
+        },
+        {
+          "nombre": "Matheus Nunes",
+          "posicion": "MC",
+          "rating": 81,
+          "ritmo": 85,
+          "tiro": 72,
+          "pase": 78,
+          "regate": 83,
+          "defensa": 65,
+          "fisico": 74
+        },
+        {
+          "nombre": "Jeremy Doku",
+          "posicion": "EI",
+          "rating": 82,
+          "ritmo": 94,
+          "tiro": 73,
+          "pase": 74,
+          "regate": 88,
+          "defensa": 35,
+          "fisico": 62
+        },
+        {
+          "nombre": "Savinho",
+          "posicion": "ED",
+          "rating": 81,
+          "ritmo": 87,
+          "tiro": 74,
+          "pase": 77,
+          "regate": 86,
+          "defensa": 42,
+          "fisico": 60
+        }
+      ]
+    },
+    {
+      "nombre": "Arsenal",
+      "abreviatura": "ARS",
+      "jugadores": [
+        {
+          "nombre": "David Raya",
+          "posicion": "POR",
+          "rating": 85,
+          "ritmo": 83,
+          "tiro": 78,
+          "pase": 85,
+          "regate": 84,
+          "defensa": 54,
+          "fisico": 81
+        },
+        {
+          "nombre": "Ben White",
+          "posicion": "LD",
+          "rating": 84,
+          "ritmo": 77,
+          "tiro": 48,
+          "pase": 77,
+          "regate": 77,
+          "defensa": 82,
+          "fisico": 77
+        },
+        {
+          "nombre": "William Saliba",
+          "posicion": "DFC",
+          "rating": 88,
+          "ritmo": 79,
+          "tiro": 35,
+          "pase": 72,
+          "regate": 71,
+          "defensa": 89,
+          "fisico": 84
+        },
+        {
+          "nombre": "Gabriel Magalhães",
+          "posicion": "DFC",
+          "rating": 86,
+          "ritmo": 70,
+          "tiro": 38,
+          "pase": 69,
+          "regate": 67,
+          "defensa": 87,
+          "fisico": 87
+        },
+        {
+          "nombre": "Riccardo Calafiori",
+          "posicion": "LI",
+          "rating": 82,
+          "ritmo": 78,
+          "tiro": 65,
+          "pase": 77,
+          "regate": 80,
+          "defensa": 81,
+          "fisico": 79
+        },
+        {
+          "nombre": "Declan Rice",
+          "posicion": "MCD",
+          "rating": 88,
+          "ritmo": 78,
+          "tiro": 76,
+          "pase": 82,
+          "regate": 80,
+          "defensa": 87,
+          "fisico": 85
+        },
+        {
+          "nombre": "Thomas Partey",
+          "posicion": "MC",
+          "rating": 84,
+          "ritmo": 71,
+          "tiro": 74,
+          "pase": 81,
+          "regate": 81,
+          "defensa": 81,
+          "fisico": 82
+        },
+        {
+          "nombre": "Martin Ødegaard",
+          "posicion": "MCO",
+          "rating": 89,
+          "ritmo": 76,
+          "tiro": 81,
+          "pase": 89,
+          "regate": 86,
+          "defensa": 63,
+          "fisico": 67
+        },
+        {
+          "nombre": "Bukayo Saka",
+          "posicion": "ED",
+          "rating": 89,
+          "ritmo": 89,
+          "tiro": 83,
+          "pase": 84,
+          "regate": 88,
+          "defensa": 67,
+          "fisico": 76
+        },
+        {
+          "nombre": "Gabriel Martinelli",
+          "posicion": "EI",
+          "rating": 84,
+          "ritmo": 91,
+          "tiro": 79,
+          "pase": 75,
+          "regate": 85,
+          "defensa": 53,
+          "fisico": 69
+        },
+        {
+          "nombre": "Kai Havertz",
+          "posicion": "DC",
+          "rating": 84,
+          "ritmo": 81,
+          "tiro": 82,
+          "pase": 78,
+          "regate": 82,
+          "defensa": 50,
+          "fisico": 76
+        },
+        {
+          "nombre": "Neto",
+          "posicion": "POR",
+          "rating": 80,
+          "ritmo": 78,
+          "tiro": 75,
+          "pase": 79,
+          "regate": 80,
+          "defensa": 50,
+          "fisico": 79
+        },
+        {
+          "nombre": "Jurriën Timber",
+          "posicion": "DFC",
+          "rating": 82,
+          "ritmo": 80,
+          "tiro": 50,
+          "pase": 76,
+          "regate": 79,
+          "defensa": 81,
+          "fisico": 77
+        },
+        {
+          "nombre": "Oleksandr Zinchenko",
+          "posicion": "LI",
+          "rating": 81,
+          "ritmo": 74,
+          "tiro": 68,
+          "pase": 83,
+          "regate": 83,
+          "defensa": 75,
+          "fisico": 66
+        },
+        {
+          "nombre": "Jorginho",
+          "posicion": "MCD",
+          "rating": 81,
+          "ritmo": 53,
+          "tiro": 60,
+          "pase": 85,
+          "regate": 80,
+          "defensa": 76,
+          "fisico": 61
+        },
+        {
+          "nombre": "Mikel Merino",
+          "posicion": "MC",
+          "rating": 83,
+          "ritmo": 67,
+          "tiro": 75,
+          "pase": 79,
+          "regate": 80,
+          "defensa": 82,
+          "fisico": 84
+        },
+        {
+          "nombre": "Leandro Trossard",
+          "posicion": "EI",
+          "rating": 82,
+          "ritmo": 79,
+          "tiro": 82,
+          "pase": 78,
+          "regate": 84,
+          "defensa": 45,
+          "fisico": 65
+        },
+        {
+          "nombre": "Raheem Sterling",
+          "posicion": "ED",
+          "rating": 81,
+          "ritmo": 86,
+          "tiro": 77,
+          "pase": 77,
+          "regate": 85,
+          "defensa": 45,
+          "fisico": 57
+        }
+      ]
+    },
+    {
+      "nombre": "Liverpool",
+      "abreviatura": "LIV",
+      "jugadores": [
+        {
+          "nombre": "Alisson",
+          "posicion": "POR",
+          "rating": 89,
+          "ritmo": 85,
+          "tiro": 85,
+          "pase": 87,
+          "regate": 90,
+          "defensa": 55,
+          "fisico": 85
+        },
+        {
+          "nombre": "Trent Alexander-Arnold",
+          "posicion": "LD",
+          "rating": 86,
+          "ritmo": 76,
+          "tiro": 79,
+          "pase": 91,
+          "regate": 83,
+          "defensa": 78,
+          "fisico": 68
+        },
+        {
+          "nombre": "Ibrahima Konaté",
+          "posicion": "DFC",
+          "rating": 84,
+          "ritmo": 76,
+          "tiro": 35,
+          "pase": 65,
+          "regate": 68,
+          "defensa": 85,
+          "fisico": 88
+        },
+        {
+          "nombre": "Virgil van Dijk",
+          "posicion": "DFC",
+          "rating": 90,
+          "ritmo": 77,
+          "tiro": 60,
+          "pase": 72,
+          "regate": 73,
+          "defensa": 91,
+          "fisico": 86
+        },
+        {
+          "nombre": "Andrew Robertson",
+          "posicion": "LI",
+          "rating": 85,
+          "ritmo": 81,
+          "tiro": 67,
+          "pase": 82,
+          "regate": 81,
+          "defensa": 81,
+          "fisico": 78
+        },
+        {
+          "nombre": "Alexis Mac Allister",
+          "posicion": "MC",
+          "rating": 86,
+          "ritmo": 72,
+          "tiro": 80,
+          "pase": 84,
+          "regate": 85,
+          "defensa": 80,
+          "fisico": 76
+        },
+        {
+          "nombre": "Wataru Endo",
+          "posicion": "MCD",
+          "rating": 82,
+          "ritmo": 67,
+          "tiro": 65,
+          "pase": 76,
+          "regate": 77,
+          "defensa": 82,
+          "fisico": 81
+        },
+        {
+          "nombre": "Dominik Szoboszlai",
+          "posicion": "MC",
+          "rating": 83,
+          "ritmo": 82,
+          "tiro": 81,
+          "pase": 83,
+          "regate": 82,
+          "defensa": 63,
+          "fisico": 76
+        },
+        {
+          "nombre": "Mohamed Salah",
+          "posicion": "ED",
+          "rating": 89,
+          "ritmo": 88,
+          "tiro": 87,
+          "pase": 82,
+          "regate": 88,
+          "defensa": 45,
+          "fisico": 75
+        },
+        {
+          "nombre": "Luis Díaz",
+          "posicion": "EI",
+          "rating": 85,
+          "ritmo": 91,
+          "tiro": 79,
+          "pase": 74,
+          "regate": 87,
+          "defensa": 40,
+          "fisico": 71
+        },
+        {
+          "nombre": "Darwin Núñez",
+          "posicion": "DC",
+          "rating": 82,
+          "ritmo": 91,
+          "tiro": 81,
+          "pase": 68,
+          "regate": 78,
+          "defensa": 42,
+          "fisico": 85
+        },
+        {
+          "nombre": "Caoimhín Kelleher",
+          "posicion": "POR",
+          "rating": 79,
+          "ritmo": 81,
+          "tiro": 74,
+          "pase": 78,
+          "regate": 80,
+          "defensa": 48,
+          "fisico": 78
+        },
+        {
+          "nombre": "Jarell Quansah",
+          "posicion": "DFC",
+          "rating": 78,
+          "ritmo": 73,
+          "tiro": 33,
+          "pase": 68,
+          "regate": 70,
+          "defensa": 79,
+          "fisico": 78
+        },
+        {
+          "nombre": "Joe Gomez",
+          "posicion": "DFC",
+          "rating": 80,
+          "ritmo": 78,
+          "tiro": 40,
+          "pase": 73,
+          "regate": 74,
+          "defensa": 80,
+          "fisico": 76
+        },
+        {
+          "nombre": "Kostas Tsimikas",
+          "posicion": "LI",
+          "rating": 79,
+          "ritmo": 80,
+          "tiro": 62,
+          "pase": 78,
+          "regate": 77,
+          "defensa": 77,
+          "fisico": 73
+        },
+        {
+          "nombre": "Ryan Gravenberch",
+          "posicion": "MC",
+          "rating": 82,
+          "ritmo": 77,
+          "tiro": 74,
+          "pase": 80,
+          "regate": 84,
+          "defensa": 76,
+          "fisico": 79
+        },
+        {
+          "nombre": "Curtis Jones",
+          "posicion": "MC",
+          "rating": 80,
+          "ritmo": 73,
+          "tiro": 72,
+          "pase": 80,
+          "regate": 83,
+          "defensa": 70,
+          "fisico": 72
+        },
+        {
+          "nombre": "Diogo Jota",
+          "posicion": "DC",
+          "rating": 85,
+          "ritmo": 83,
+          "tiro": 85,
+          "pase": 76,
+          "regate": 85,
+          "defensa": 56,
+          "fisico": 74
+        }
+      ]
+    }
+  ]
+}

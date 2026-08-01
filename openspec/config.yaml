@@ -1,20 +1,24 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context
+context: |
+  Tech stack:
+    Frontend: TypeScript, React 18, Vite 5, Tailwind CSS 4, Zustand 5, Framer Motion
+    Backend: NestJS 10, TypeORM 1.1, better-sqlite3, JWT (Passport), bcryptjs
+    Monorepo: npm workspaces (apps/server, apps/client, packages/shared)
+  Conventions:
+    - Entidades TypeORM con decoradores en archivos *.entity.ts
+    - Servicios con inyección de dependencias via @Injectable()
+    - Módulos NestJS organizados por feature (auth/, draft/, match/, player/, team/, user/)
+    - Frontend con componentes en apps/client/src/components/
+    - Estado global con Zustand en store/useDraftStore.ts
+    - API client en lib/api.ts con fetch nativo
+    - Seed automático al iniciar servidor via OnModuleInit
+  Domain: Juego de gestión futbolística, draft de jugadores, torneos de eliminación directa
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+# Per-artifact rules
+rules:
+  proposal:
+    - Always list all capabilities (including data-model and draft-mode)
+  tasks:
+    - Mark completed tasks with [x]

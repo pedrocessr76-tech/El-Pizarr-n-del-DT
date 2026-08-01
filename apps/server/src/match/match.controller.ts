@@ -1,21 +1,18 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { MatchService } from './match.service';
-import type { Team } from '../../../../packages/shared/types/models';
 
 class CreateTournamentDto {
-  @ApiProperty({
-    type: Object,
-    description: 'Equipo del usuario con los jugadores seleccionados.',
-  })
-  userTeam!: Team;
+  @ApiProperty({ example: 'team-uuid', description: 'ID del equipo del usuario' })
+  userTeamId!: string;
+
+  @ApiProperty({ example: 'user-uuid', required: false, description: 'ID del usuario (opcional)' })
+  userId?: string;
 }
 
-class SimulateTournamentMatchDto {
-  @ApiProperty({ type: Object })
-  homeTeam!: Team;
-  @ApiProperty({ type: Object })
-  awayTeam!: Team;
+class SimulateMatchDto {
+  @ApiProperty({ example: 'match-uuid', description: 'ID del partido a simular' })
+  matchId!: string;
 }
 
 @Controller('match')
@@ -24,22 +21,28 @@ export class MatchController {
   constructor(private readonly matchService: MatchService) {}
 
   @Post('tournament/create')
-  @ApiOperation({ summary: 'Crear un nuevo torneo de octavos de final.' })
+  @ApiOperation({ summary: 'Crear un torneo desde un equipo persistido.' })
   @ApiBody({ type: CreateTournamentDto })
   createTournament(@Body() body: CreateTournamentDto) {
-    if (!body.userTeam) {
-      throw new BadRequestException('userTeam is required');
-    }
-    return this.matchService.createTournament(body.userTeam);
+    return this.matchService.createTournament(body.userTeamId, body.userId);
   }
 
   @Post('tournament/simulate-match')
-  @ApiOperation({ summary: 'Simular un partido específico del torneo.' })
-  @ApiBody({ type: SimulateTournamentMatchDto })
-  simulateMatch(@Body() body: SimulateTournamentMatchDto) {
-    if (!body.homeTeam || !body.awayTeam) {
-      throw new BadRequestException('homeTeam and awayTeam are required');
-    }
-    return this.matchService.simulateMatch(body.homeTeam, body.awayTeam);
+  @ApiOperation({ summary: 'Simular un partido del torneo y persistir resultado.' })
+  @ApiBody({ type: SimulateMatchDto })
+  simulateMatch(@Body() body: SimulateMatchDto) {
+    return this.matchService.simulateMatch(body.matchId);
+  }
+
+  @Get('tournament/:id')
+  @ApiOperation({ summary: 'Obtener el estado actual de un torneo' })
+  getTournament(@Param('id') id: string) {
+    return this.matchService.getTournament(id);
+  }
+
+  @Get('team/:id')
+  @ApiOperation({ summary: 'Obtener un equipo con sus jugadores' })
+  getTeam(@Param('id') id: string) {
+    return this.matchService.getTeamById(id);
   }
 }

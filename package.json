@@ -5,15 +5,29 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"cd apps/server && npm run start\" \"cd apps/client && npm run dev\"",
-    "dev:server": "cd apps/server && npm run start",
+    "dev": "npm run build --workspace=server && concurrently \"cd apps/server && npm run start\" \"cd apps/client && npm run dev\"",
+    "dev:server": "cd apps/server && npm run build && npm run start",
     "dev:client": "cd apps/client && npm run dev",
     "build": "npm run build --workspace=server && npm run build --workspace=client"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
     "concurrently": "^9.0.1"
   },
   "dependencies": {
-    "swagger-ui-express": "^5.0.1"
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/typeorm": "^11.0.3",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "swagger-ui-express": "^5.0.1",
+    "typeorm": "^1.1.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
   }
 }
