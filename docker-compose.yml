@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: pizarron_dt_server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    volumes:
+      - ./apps/server/database.sqlite:/app/apps/server/database.sqlite
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    container_name: pizarron_dt_client
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_PROXY_TARGET=http://server:3001
+      - DOCKER_ENV=true
+    depends_on:
+      - server
+    restart: unless-stopped

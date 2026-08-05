@@ -75,11 +75,47 @@ input:-webkit-autofill:active {
 
 /* Glow & neon accent utilities */
 .glow-primary {
-  box-shadow: 0 0 15px -5px #39ff14;
+  box-shadow: 0 0 15px -5px #a5d0b9;
 }
 .glow-primary-lg {
-  box-shadow: 0 0 25px 0px #39ff14;
+  box-shadow: 0 0 25px 0px #a5d0b9;
 }
 .glow-secondary {
-  box-shadow: 0 0 15px -5px #00e3fd;
+  box-shadow: 0 0 15px -5px #e9c349;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.pitch-gradient {
+  background: linear-gradient(135deg, #081C15 0%, #1B4332 100%);
+}
+
+.pitch-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+.glass-panel {
+  background: rgba(23, 31, 51, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.premium-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.premium-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 30px rgba(165, 208, 185, 0.25);
+  border-color: rgba(165, 208, 185, 0.5);
 }

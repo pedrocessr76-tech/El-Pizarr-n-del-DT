@@ -62,6 +62,8 @@ export class SeedService implements OnModuleInit {
   async onModuleInit() {
     await this.seedMockPlayers();
     await this.seedPremierTeams();
+    await this.seedLaLigaTeams();
+    await this.seedExtraTeams();
   }
 
   private async seedMockPlayers() {
@@ -171,5 +173,142 @@ export class SeedService implements OnModuleInit {
     }
 
     this.logger.log(`Premier League seed: ${teamsCreated} teams, ${playersCreated} created, ${playersUpdated} updated`);
+  }
+
+  private async seedLaLigaTeams() {
+    const possiblePaths = [
+      path.join(__dirname, 'data', 'laliga_teams.json'),
+      path.join(process.cwd(), 'src', 'seed', 'data', 'laliga_teams.json'),
+    ];
+    const filePath = possiblePaths.find(p => fs.existsSync(p));
+    if (!filePath) {
+      this.logger.warn('laliga_teams.json not found, skipping La Liga seed');
+      return;
+    }
+
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const data: PremierData = JSON.parse(raw);
+
+    let teamsCreated = 0;
+    let playersCreated = 0;
+    let playersUpdated = 0;
+
+    for (const team of data.equipos) {
+      let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
+
+      if (!teamEntity) {
+        teamEntity = new TeamEntity();
+        teamEntity.id = crypto.randomUUID();
+        teamEntity.name = team.nombre;
+        await this.teamRepo.save(teamEntity);
+        teamsCreated++;
+      }
+
+      for (const player of team.jugadores) {
+        let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
+
+        if (playerEntity) {
+          playerEntity.rating = player.rating;
+          playerEntity.pace = player.ritmo;
+          playerEntity.shooting = player.tiro;
+          playerEntity.passing = player.pase;
+          playerEntity.dribbling = player.regate;
+          playerEntity.defending = player.defensa;
+          playerEntity.physical = player.fisico;
+          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
+          await this.playerRepo.save(playerEntity);
+          playersUpdated++;
+        } else {
+          playerEntity = new PlayerEntity();
+          playerEntity.id = crypto.randomUUID();
+          playerEntity.name = player.nombre;
+          playerEntity.nationality = 'España';
+          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
+          playerEntity.rating = player.rating;
+          playerEntity.pace = player.ritmo;
+          playerEntity.shooting = player.tiro;
+          playerEntity.passing = player.pase;
+          playerEntity.dribbling = player.regate;
+          playerEntity.defending = player.defensa;
+          playerEntity.physical = player.fisico;
+          await this.playerRepo.save(playerEntity);
+          playersCreated++;
+        }
+
+        const existingLink = await this.teamPlayerRepo.findOneBy({
+          teamId: teamEntity.id,
+          playerId: playerEntity.id,
+        });
+
+        if (!existingLink) {
+          const link = new TeamPlayerEntity();
+          link.id = crypto.randomUUID();
+          link.teamId = teamEntity.id;
+          link.playerId = playerEntity.id;
+          link.isStarter = true;
+          link.slotIndex = team.jugadores.indexOf(player);
+          await this.teamPlayerRepo.save(link);
+        }
+      }
+    }
+
+    this.logger.log(`La Liga seed: ${teamsCreated} teams, ${playersCreated} created, ${playersUpdated} updated`);
+  }
+
+  private async seedExtraTeams() {
+    const possiblePaths = [
+      path.join(__dirname, 'data', 'extra_teams.json'),
+      path.join(process.cwd(), 'src', 'seed', 'data', 'extra_teams.json'),
+    ];
+    const filePath = possiblePaths.find(p => fs.existsSync(p));
+    if (!filePath) return;
+
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const data: PremierData = JSON.parse(raw);
+
+    for (const team of data.equipos) {
+      let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
+      if (!teamEntity) {
+        teamEntity = new TeamEntity();
+        teamEntity.id = crypto.randomUUID();
+        teamEntity.name = team.nombre;
+        await this.teamRepo.save(teamEntity);
+      }
+
+      for (const player of team.jugadores) {
+        let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
+        if (!playerEntity) {
+          playerEntity = new PlayerEntity();
+          playerEntity.id = crypto.randomUUID();
+          playerEntity.name = player.nombre;
+          playerEntity.nationality = 'International';
+          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
+          playerEntity.rating = player.rating;
+          playerEntity.pace = player.ritmo;
+          playerEntity.shooting = player.tiro;
+          playerEntity.passing = player.pase;
+          playerEntity.dribbling = player.regate;
+          playerEntity.defending = player.defensa;
+          playerEntity.physical = player.fisico;
+          await this.playerRepo.save(playerEntity);
+        }
+
+        const existingLink = await this.teamPlayerRepo.findOneBy({
+          teamId: teamEntity.id,
+          playerId: playerEntity.id,
+        });
+
+        if (!existingLink) {
+          const link = new TeamPlayerEntity();
+          link.id = crypto.randomUUID();
+          link.teamId = teamEntity.id;
+          link.playerId = playerEntity.id;
+          link.isStarter = true;
+          link.slotIndex = team.jugadores.indexOf(player);
+          await this.teamPlayerRepo.save(link);
+        }
+      }
+    }
+    this.logger.log('Extra teams (Bayern, PSG, City) seeded successfully');
   }
 }

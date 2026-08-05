@@ -5,25 +5,9 @@ import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from './entities/match.entity';
+import { TournamentEntity } from './entities/tournament.entity';
 import type { Match, Team, Player, Tournament, RoundName } from '../../../../packages/shared/types/models';
-
-const REAL_TEAMS_DATA = [
-  { name: 'Real Madrid', baseRating: 88 },
-  { name: 'Manchester City', baseRating: 89 },
-  { name: 'Liverpool FC', baseRating: 87 },
-  { name: 'FC Barcelona', baseRating: 86 },
-  { name: 'Bayern Munich', baseRating: 87 },
-  { name: 'Paris Saint-Germain', baseRating: 86 },
-  { name: 'Inter Milan', baseRating: 85 },
-  { name: 'Arsenal FC', baseRating: 85 },
-  { name: 'Bayer Leverkusen', baseRating: 84 },
-  { name: 'Atletico Madrid', baseRating: 84 },
-  { name: 'Borussia Dortmund', baseRating: 83 },
-  { name: 'Juventus', baseRating: 83 },
-  { name: 'AC Milan', baseRating: 83 },
-  { name: 'Chelsea FC', baseRating: 82 },
-  { name: 'Manchester United', baseRating: 82 },
-];
+import * as crypto from 'crypto';
 
 @Injectable()
 export class MatchService {
@@ -36,7 +20,10 @@ export class MatchService {
     private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
     @InjectRepository(MatchEntity)
     private readonly matchRepo: Repository<MatchEntity>,
+    @InjectRepository(TournamentEntity)
+    private readonly tournamentRepo: Repository<TournamentEntity>,
   ) {}
+
 
   private toPlayer(entity: PlayerEntity): Player {
     return {
@@ -90,83 +77,80 @@ export class MatchService {
     };
   }
 
-  private generatePlayerWithRating(id: string, name: string, rating: number): Player {
-    const statValue = Math.max(1, Math.min(99, rating));
-    return {
-      id,
-      name,
-      nationality: 'International',
-      position: 'MID',
-      stats: { pace: statValue, shooting: statValue, passing: statValue, dribbling: statValue, defending: statValue, physical: statValue },
-    };
-  }
-
-  private generateRealTeam(teamData: { name: string; baseRating: number }): Team {
-    const allPlayers: Player[] = Array.from({ length: 18 }, (_, i) =>
-      this.generatePlayerWithRating(`${teamData.name}-p-${i}`, `Jugador ${i + 1}`, teamData.baseRating),
-    );
-    return {
-      id: teamData.name.toLowerCase().replace(/\s+/g, '-'),
-      name: teamData.name,
-      starters: allPlayers.slice(0, 11),
-      substitutes: allPlayers.slice(11),
-    };
-  }
-
-  private sumTeamStats(team: Team): number {
-    return team.starters.reduce((total, player) => {
-      return total + player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical;
-    }, 0);
-  }
-
-  async simulateMatch(matchId: string): Promise<Match> {
-    const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
-    if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
-
-    const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
-    const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
-    if (!homeTeam || !awayTeam) throw new NotFoundException('Equipo no encontrado.');
-
-    const homeScoreValue = this.sumTeamStats(homeTeam);
-    const awayScoreValue = this.sumTeamStats(awayTeam);
-    const scoreDiff = (homeScoreValue - awayScoreValue) / 66;
-
-    const homeScore = Math.max(0, Math.round(Math.random() * 3 + scoreDiff));
-    const awayScore = Math.max(0, Math.round(Math.random() * 3 - scoreDiff));
-
-    let winnerId = homeScore > awayScore ? homeTeam.id : homeScore < awayScore ? awayTeam.id : undefined;
-
-    if (homeScore === awayScore) {
-      winnerId = Math.random() + (scoreDiff / 10) > 0.5 ? homeTeam.id : awayTeam.id;
+    private sumTeamStats(team: Team): number {
+      return team.starters.reduce((total, player) => {
+        return total + player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical;
+      }, 0);
     }
 
-    matchEntity.homeScore = homeScore;
-    matchEntity.awayScore = awayScore;
-    matchEntity.status = 'FINISHED';
-    matchEntity.winnerId = winnerId;
-    await this.matchRepo.save(matchEntity);
+    async simulateMatch(matchId: string): Promise<Match> {
+      const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
+      if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
 
-    return {
-      id: matchEntity.id,
-      homeTeam,
-      awayTeam,
-      homeScore,
-      awayScore,
-      status: 'FINISHED',
-      winnerId,
-    };
-  }
+      const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
+      const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
+      if (!homeTeam || !awayTeam) throw new NotFoundException('Equipo no encontrado.');
 
-  async createTournament(userTeamId: string, userId?: string): Promise<Tournament> {
+      const homeScoreValue = this.sumTeamStats(homeTeam);
+      const awayScoreValue = this.sumTeamStats(awayTeam);
+      const scoreDiff = (homeScoreValue - awayScoreValue) / 66;
+
+      const homeScore = Math.max(0, Math.round(Math.random() * 3 + scoreDiff));
+      const awayScore = Math.max(0, Math.round(Math.random() * 3 - scoreDiff));
+
+      let winnerId = homeScore > awayScore ? homeTeam.id : homeScore < awayScore ? awayTeam.id : undefined;
+
+      if (homeScore === awayScore) {
+        winnerId = Math.random() + (scoreDiff / 10) > 0.5 ? homeTeam.id : awayTeam.id;
+      }
+
+      matchEntity.homeScore = homeScore;
+      matchEntity.awayScore = awayScore;
+      matchEntity.status = 'FINISHED';
+      matchEntity.winnerId = winnerId;
+      await this.matchRepo.save(matchEntity);
+
+      return {
+        id: matchEntity.id,
+        homeTeam,
+        awayTeam,
+        homeScore,
+        awayScore,
+        status: 'FINISHED',
+        winnerId,
+      };
+    }
+
+    async createTournament(userTeamId: string, userId?: string): Promise<Tournament> {
+
     const userTeam = await this.getTeamById(userTeamId);
     if (!userTeam) throw new NotFoundException('Equipo de usuario no encontrado.');
 
-    const opponents = REAL_TEAMS_DATA.sort(() => 0.5 - Math.random())
-      .slice(0, 15)
-      .map((t) => this.generateRealTeam(t));
+    // Buscar equipos oponentes reales en la DB (excluyendo el del usuario si es uno real)
+    const allAvailableTeams = await this.teamRepo.find();
+    const opponentEntities = allAvailableTeams
+      .filter((t) => t.id !== userTeamId && t.userId === null) // Solo equipos reales, no de otros usuarios
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 15);
+
+    const opponents: Team[] = [];
+    for (const entity of opponentEntities) {
+      const team = await this.getTeamById(entity.id);
+      if (team) opponents.push(team);
+    }
 
     const allTeams = [userTeam, ...opponents].sort(() => 0.5 - Math.random());
     const tournamentId = crypto.randomUUID();
+
+    // Persistir el torneo
+    const tournamentEntity = new TournamentEntity();
+    tournamentEntity.id = tournamentId;
+    tournamentEntity.userId = userId;
+    tournamentEntity.userTeamId = userTeamId;
+    tournamentEntity.status = 'IN_PROGRESS';
+    tournamentEntity.currentRound = 'OCTAVOS';
+    await this.tournamentRepo.save(tournamentEntity);
+
     const matches: Match[] = [];
 
     for (let i = 0; i < allTeams.length; i += 2) {
@@ -201,6 +185,7 @@ export class MatchService {
       status: 'IN_PROGRESS',
     };
   }
+
 
   async getTournament(tournamentId: string): Promise<{ rounds: Record<string, MatchEntity[]> }> {
     const matches = await this.matchRepo.find({ where: { tournamentId } });

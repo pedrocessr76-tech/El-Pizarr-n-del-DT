@@ -17,7 +17,7 @@ interface DraftState {
   resetAll: () => void;
 }
 
-export const useDraftStore = create<DraftState>((set, get) => ({
+export const useDraftStore = create<DraftState>()((set, get) => ({
   team: [],
   formation: '4-3-3',
   captainId: null,

@@ -1,0 +1,8 @@
+node_modules
+apps/server/dist
+apps/client/dist
+.git
+.vscode
+.idea
+*.log
+database.sqlite
