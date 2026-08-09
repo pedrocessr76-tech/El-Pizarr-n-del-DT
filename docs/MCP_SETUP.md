@@ -8,7 +8,7 @@ El servidor MCP `stitch` de Google está configurado con las siguientes credenci
     "stitch": {
       "serverUrl": "https://stitch.googleapis.com/mcp",
       "headers": {
-        "X-Goog-Api-Key": "REDACTED_API_KEY"
+        "X-Goog-Api-Key": "YOUR_API_KEY_HERE"
       }
     }
   }
