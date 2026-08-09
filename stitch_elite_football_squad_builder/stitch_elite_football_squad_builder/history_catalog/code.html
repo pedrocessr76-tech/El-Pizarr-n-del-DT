@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FOOTBALL ELITE - Match History &amp; Card Catalog</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Montserrat:wght@600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#a4baaf",
+                        "secondary-fixed": "#d1e8dc",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#222a3d",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-fixed-variant": "#374b42",
+                        "on-primary-fixed": "#002114",
+                        "inverse-surface": "#dae2fd",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#dae2fd",
+                        "surface": "#0b1326",
+                        "surface-container": "#171f33",
+                        "secondary-fixed-dim": "#b5ccc0",
+                        "surface-dim": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-primary": "#0e3727",
+                        "on-tertiary-fixed-variant": "#574500",
+                        "tertiary-fixed-dim": "#e9c349",
+                        "primary-fixed": "#c1ecd4",
+                        "outline": "#8b938d",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "surface-variant": "#2d3449",
+                        "on-primary-container": "#86af99",
+                        "tertiary": "#e9c349",
+                        "surface-tint": "#a5d0b9",
+                        "background": "#0b1326",
+                        "on-tertiary-fixed": "#241a00",
+                        "outline-variant": "#414844",
+                        "tertiary-fixed": "#ffe088",
+                        "inverse-on-surface": "#283044",
+                        "primary": "#a5d0b9",
+                        "on-surface-variant": "#c1c8c2",
+                        "inverse-primary": "#3f6653",
+                        "on-tertiary-container": "#4e3d00",
+                        "secondary-container": "#374b42",
+                        "tertiary-container": "#cba72f",
+                        "on-error": "#690005",
+                        "surface-bright": "#31394d",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#0b1f18",
+                        "on-secondary": "#21342c",
+                        "secondary": "#b5ccc0",
+                        "on-tertiary": "#3c2f00",
+                        "surface-container-highest": "#2d3449",
+                        "on-background": "#dae2fd",
+                        "primary-container": "#1b4332"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "margin": "24px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "stat-value": ["Montserrat"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Montserrat"],
+                        "display-lg": ["Montserrat"],
+                        "headline-lg": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "stat-value": ["22px", { "lineHeight": "22px", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .metallic-sheen {
+            background: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
+            background-size: 200% 200%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .deep-field-shadow {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+        }
+        .light-leak-border {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-x-hidden selection:bg-primary/30 selection:text-primary-fixed">
+<!-- Screen 3: Match History -->
+<main class="min-h-screen pb-xl flex flex-col relative" id="screen-match-history">
+<!-- Sequential Header -->
+<header class="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/5 px-gutter py-md flex items-center justify-between">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md group">
+<span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                Atrás
+            </button>
+<h1 class="font-headline-sm text-headline-sm text-primary">Historial</h1>
+<div class="w-20"></div> <!-- Balancer -->
+</header>
+<div class="max-w-5xl mx-auto w-full px-gutter mt-lg flex-1">
+<div class="bg-surface-container rounded-xl light-leak-border border border-outline-variant/30 overflow-hidden deep-field-shadow">
+<!-- Table Header -->
+<div class="grid grid-cols-5 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<div class="col-span-1">Fecha</div>
+<div class="col-span-2">Rival</div>
+<div class="col-span-1 text-center">Resultado</div>
+<div class="col-span-1 text-right">Dificultad</div>
+</div>
+<!-- Table Rows -->
+<div class="flex flex-col">
+<!-- Row 1: W -->
+<div class="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="col-span-1 text-on-surface font-body-md text-body-md opacity-70">12 Oct 2023</div>
+<div class="col-span-2 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-tertiary">shield</span>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface truncate">Real Madrid C.F.</span>
+</div>
+<div class="col-span-1 flex items-center justify-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(165,208,185,0.6)]"></span>
+<span class="font-stat-value text-[18px] text-primary">2 - 1</span>
+</div>
+<div class="col-span-1 text-right flex justify-end">
+<span class="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
+</div>
+</div>
+<!-- Row 2: L -->
+<div class="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="col-span-1 text-on-surface font-body-md text-body-md opacity-70">08 Oct 2023</div>
+<div class="col-span-2 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-error">shield</span>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface truncate">FC Barcelona</span>
+</div>
+<div class="col-span-1 flex items-center justify-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]"></span>
+<span class="font-stat-value text-[18px] text-error">0 - 3</span>
+</div>
+<div class="col-span-1 text-right flex justify-end">
+<span class="px-2 py-1 bg-surface-bright text-on-surface rounded font-label-md text-[10px] uppercase border border-outline-variant/50">Clase Mundial</span>
+</div>
+</div>
+<!-- Row 3: D -->
+<div class="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="col-span-1 text-on-surface font-body-md text-body-md opacity-70">05 Oct 2023</div>
+<div class="col-span-2 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-secondary">shield</span>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface truncate">Atlético de Madrid</span>
+</div>
+<div class="col-span-1 flex items-center justify-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(181,204,192,0.6)]"></span>
+<span class="font-stat-value text-[18px] text-secondary">1 - 1</span>
+</div>
+<div class="col-span-1 text-right flex justify-end">
+<span class="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Screen 4: Card Catalog (Hidden by default for sequential demo, toggle display to view) -->
+<main class="min-h-screen pb-xl flex flex-col relative hidden" id="screen-card-catalog">
+<!-- Sequential Header -->
+<header class="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/5 px-gutter py-md flex items-center justify-between">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md group" onclick="document.getElementById('screen-card-catalog').classList.add('hidden'); document.getElementById('screen-match-history').classList.remove('hidden');">
+<span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                Atrás
+            </button>
+<h1 class="font-headline-sm text-headline-sm text-primary">Catálogo</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-container hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface">tune</span>
+</button>
+</header>
+<div class="max-w-7xl mx-auto w-full px-gutter mt-lg">
+<!-- Filter Bar (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-xl">
+<div class="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-label-md text-label-md text-on-surface-variant">Calidad</span>
+<div class="flex gap-2">
+<span class="w-4 h-4 rounded bg-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.4)]"></span>
+<span class="w-4 h-4 rounded bg-[#C0C0C0]"></span>
+<span class="w-4 h-4 rounded bg-[#CD7F32]"></span>
+</div>
+</div>
+<div class="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-label-md text-label-md text-on-surface-variant">Posición</span>
+<span class="font-headline-sm text-[16px] text-on-surface">DEL, MED...</span>
+</div>
+<div class="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-label-md text-label-md text-on-surface-variant">Valoración</span>
+<span class="font-stat-value text-[18px] text-primary">85+</span>
+</div>
+</div>
+<!-- Card Grid (6x3 roughly implies a dense grid, using CSS Grid auto-fit for responsiveness) -->
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+<!-- Player Card: Rare (Gold) -->
+<article class="relative aspect-[2/3] rounded-xl overflow-hidden bg-gradient-to-br from-[#FFDF00]/20 to-surface-container border border-[#FFDF00]/50 deep-field-shadow group cursor-pointer transform hover:scale-105 hover:-translate-y-2 transition-all duration-300">
+<div class="absolute inset-0 metallic-sheen opacity-50 z-0"></div>
+<div class="absolute inset-0 z-10 flex flex-col p-3">
+<!-- Header -->
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col items-center">
+<span class="font-stat-value text-[24px] text-[#FFDF00] drop-shadow-[0_0_8px_rgba(255,223,0,0.8)]">91</span>
+<span class="font-label-md text-[10px] text-on-surface">DEL</span>
+</div>
+<img class="w-6 h-6 rounded-full border border-white/20 object-cover" data-alt="A small detailed circular icon of the flag of Argentina, high quality, flat design, vector style, placed on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtO8w5KRobAnGFXzZeyE6aTftrBxtmJrXWGq5WeLBQR-MJJ4flLC7Nvs3Ve6n4CB21K9aYW_LHjrjZ6TQvx9Y8qHCzxsCYGYjEKNDCLZGj2_fAKh7wBIf5iu_rcTAZ77X8OKdAfze_7JFNehKDPOIg4bUhBFgzrLQMpjA7v3W3xoC5sdWNtes0jDmhtsoYmqe6KXNWdAKFoWzDZkjH30Ouab7UpudoXXWq3jh6y8Q6_lATh2YQqCeAvA"/>
+</div>
+<!-- Visual -->
+<div class="flex-1 relative flex items-end justify-center mb-1">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent opacity-50"></div>
+<img class="h-[80%] w-auto object-contain z-10 drop-shadow-lg filter grayscale contrast-125" data-alt="A dynamic silhouette of a professional soccer player in mid-stride, cinematic dramatic lighting from behind, dark slate background, high contrast, elite aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSomgYykRcpUr35suz1cuaY23TVyVTjNVjG9m2I1zipxwreL0FJ2mNIN9_L8GkGGNE_Bi0e6vs56cw1y4AIzJUJ0E5hpfrnEfhJzjFGmMEZs-VAfHnKof8_FGFhgtRxuJ-TuEDk0yB8qSEorppLEEYKxFHeWYW6T9TIV9v7XGLo4ruOAqWLeAgfiBpN75oY2_oateN1BhVKXcG0LLreId5ExfooKCwYikumEvAh1IiggRhROrcYXLoEA"/>
+</div>
+<!-- Identity -->
+<div class="text-center border-b border-[#FFDF00]/30 pb-1 mb-1">
+<h3 class="font-headline-sm text-[14px] text-on-surface uppercase tracking-tight">Messi</h3>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PAC</span><span class="font-stat-value text-[12px] text-on-surface">85</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">DRI</span><span class="font-stat-value text-[12px] text-on-surface">94</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">SHO</span><span class="font-stat-value text-[12px] text-on-surface">89</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">DEF</span><span class="font-stat-value text-[12px] text-on-surface">34</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PAS</span><span class="font-stat-value text-[12px] text-on-surface">90</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PHY</span><span class="font-stat-value text-[12px] text-on-surface">64</span></div>
+</div>
+</div>
+</article>
+<!-- Player Card: Common (Silver) -->
+<article class="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-container border border-outline-variant/50 deep-field-shadow group cursor-pointer transform hover:scale-105 hover:-translate-y-2 transition-all duration-300">
+<div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity z-0"></div>
+<div class="absolute inset-0 z-10 flex flex-col p-3">
+<!-- Header -->
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col items-center">
+<span class="font-stat-value text-[24px] text-on-surface">78</span>
+<span class="font-label-md text-[10px] text-on-surface-variant">MED</span>
+</div>
+<img class="w-6 h-6 rounded-full border border-white/20 object-cover" data-alt="A small detailed circular icon of the flag of Spain, high quality, flat design, vector style, placed on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyHVOtBUsJVSFyneHHEmiwEJoiXCtSJwof7lJbB_IWG7cTPc5y-KLmOvABWDpzpiW90DDmVXYtaVBl4X3wSDgZidK5uEqS57rAVXXPGLWi12N8ClmU6aKVYxiDKdzySTrUoTcOOFceZfuB9nwN7qrAFxqUCZwv0EG9nudre34_lOc1ThDXabp0SsLd77c2MgA29mbWPYOZvyOdKG5wuV3ZmN_h8k7Yv9aKhw8_2lAJnvyw8o1cxyjbyw"/>
+</div>
+<!-- Visual -->
+<div class="flex-1 relative flex items-end justify-center mb-1">
+<img class="h-[80%] w-auto object-contain z-10 drop-shadow-lg filter grayscale contrast-125 opacity-80" data-alt="A focused silhouette of a professional soccer player passing the ball, dramatic side lighting, dark slate background, high contrast, athletic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-PD3c7DaGcw6GoqMbM75RkEC-Qa6P_9wVi96XWL9drFq-v-BoFbHQg_zE-QdS68pHuxvYoLiKhAQXLBofYHt01iV445g6MEZhOhuLyPajS4yf-8DPQVbQNKHVlsfQKL-H9zzYt-OkMxLnLtoNtu0hIy4Fv5SFE8FckkebhcG7jAbwrIMr4Qhp1n6BVrOfioZoiPSAfqzmZCHEYvLAyFG-LTwZBAR8RQL4_D-U0m_QSMzSjolCCPLd4Q"/>
+</div>
+<!-- Identity -->
+<div class="text-center border-b border-outline-variant/30 pb-1 mb-1">
+<h3 class="font-headline-sm text-[14px] text-on-surface-variant uppercase tracking-tight">Ruiz</h3>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto opacity-80">
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PAC</span><span class="font-stat-value text-[12px] text-on-surface-variant">72</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">DRI</span><span class="font-stat-value text-[12px] text-on-surface-variant">79</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">SHO</span><span class="font-stat-value text-[12px] text-on-surface-variant">74</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">DEF</span><span class="font-stat-value text-[12px] text-on-surface-variant">68</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PAS</span><span class="font-stat-value text-[12px] text-on-surface-variant">81</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">PHY</span><span class="font-stat-value text-[12px] text-on-surface-variant">70</span></div>
+</div>
+</div>
+</article>
+<!-- Player Card: Rare (Gold) -->
+<article class="relative aspect-[2/3] rounded-xl overflow-hidden bg-gradient-to-br from-[#FFDF00]/20 to-surface-container border border-[#FFDF00]/50 deep-field-shadow group cursor-pointer transform hover:scale-105 hover:-translate-y-2 transition-all duration-300">
+<div class="absolute inset-0 metallic-sheen opacity-50 z-0"></div>
+<div class="absolute inset-0 z-10 flex flex-col p-3">
+<!-- Header -->
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col items-center">
+<span class="font-stat-value text-[24px] text-[#FFDF00] drop-shadow-[0_0_8px_rgba(255,223,0,0.8)]">89</span>
+<span class="font-label-md text-[10px] text-on-surface">POR</span>
+</div>
+<img class="w-6 h-6 rounded-full border border-white/20 object-cover" data-alt="A small detailed circular icon of the flag of Brazil, high quality, flat design, vector style, placed on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDca0lBUr7tFNy-uMM5RjKiety4H6ie-tNNn7R4co8fiXW28rqQ3jUMvLztiIRYpOHyNjOyfifeEbIJDsnk7A0dHDDaI8BbVQL00i-_owYRh9rKcv57Ug2q0Up37idcTNN8jPdoc6H5BC1xJUXCkf8hyWcDBtM-izR3j-PM_BLIHaBfMszVXoXgxaUaICeo9r_xF76NVyN_OmThMm8XIO6xHbPy6qQIb86_zfSxK_lqmQ1cVWYFeUYPow"/>
+</div>
+<!-- Visual -->
+<div class="flex-1 relative flex items-end justify-center mb-1">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent opacity-50"></div>
+<img class="h-[80%] w-auto object-contain z-10 drop-shadow-lg filter grayscale contrast-125" data-alt="A dynamic silhouette of a professional soccer goalkeeper diving for a save, cinematic dramatic lighting from top, dark slate background, high contrast, elite aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUw4D37CE1GX__RYB-VzmpL7hFOc3HdNipqqHu1NuPlhltJ5gr0E2-Tnluty6iTAaoCnEKPTLkrbJL9aeq-w8lrr3KV8CccWQaTG7zGlyfxRTPLjXKyqiWgBFK3TKYcbd78ERc8r2I1oTJJfqPw8V-KmYJ8MsPX3bqC3IAjhyWHlhISNhMWS-yRWqrRvB-RZeVAH_hIusn_hdrXXlZXWKkbZhWOgG2EwQiZUXrG3U_we9qvCN6tUN0-w"/>
+</div>
+<!-- Identity -->
+<div class="text-center border-b border-[#FFDF00]/30 pb-1 mb-1">
+<h3 class="font-headline-sm text-[14px] text-on-surface uppercase tracking-tight">Alisson</h3>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">DIV</span><span class="font-stat-value text-[12px] text-on-surface">86</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">REF</span><span class="font-stat-value text-[12px] text-on-surface">89</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">HAN</span><span class="font-stat-value text-[12px] text-on-surface">85</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">SPD</span><span class="font-stat-value text-[12px] text-on-surface">54</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">KIC</span><span class="font-stat-value text-[12px] text-on-surface">85</span></div>
+<div class="flex justify-between items-center"><span class="font-label-md text-[8px] text-on-surface-variant">POS</span><span class="font-stat-value text-[12px] text-on-surface">90</span></div>
+</div>
+</div>
+</article>
+</div>
+</div>
+</main>
+<script>
+        // Simple toggle for demo purposes to show both screens asked in the prompt
+        // In reality these would be separate routes or views managed by a router.
+        document.querySelector('#screen-match-history .material-symbols-outlined').parentElement.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('screen-match-history').classList.add('hidden');
+            document.getElementById('screen-card-catalog').classList.remove('hidden');
+        });
+    </script>
+</body></html>

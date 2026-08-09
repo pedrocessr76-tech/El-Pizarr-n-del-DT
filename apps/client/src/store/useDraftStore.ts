@@ -3,6 +3,7 @@ import type { Player, Tournament } from '../../../../packages/shared/types/model
 
 interface DraftState {
   team: Player[];
+  teamId: string | null;
   formation: string;
   captainId: string | null;
   difficulty: string;
@@ -10,6 +11,7 @@ interface DraftState {
   addPlayerToTeam: (player: Player) => void;
   removePlayerFromTeam: (playerId: string) => void;
   resetTeam: () => void;
+  setTeamId: (teamId: string | null) => void;
   setFormation: (formation: string) => void;
   setCaptainId: (captainId: string | null) => void;
   setDifficulty: (difficulty: string) => void;
@@ -19,6 +21,7 @@ interface DraftState {
 
 export const useDraftStore = create<DraftState>()((set, get) => ({
   team: [],
+  teamId: null,
   formation: '4-3-3',
   captainId: null,
   difficulty: 'Normal',
@@ -36,10 +39,11 @@ export const useDraftStore = create<DraftState>()((set, get) => ({
     });
   },
   resetTeam: () => set({ team: [], captainId: null }),
+  setTeamId: (teamId) => set({ teamId }),
   setFormation: (formation) => set({ formation }),
   setCaptainId: (captainId) => set({ captainId }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setTournament: (tournament) => set({ tournament }),
-  resetAll: () => set({ team: [], formation: '4-3-3', captainId: null, difficulty: 'Normal', tournament: null }),
+  resetAll: () => set({ team: [], teamId: null, formation: '4-3-3', captainId: null, difficulty: 'Normal', tournament: null }),
 }));
 

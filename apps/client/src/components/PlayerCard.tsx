@@ -1,129 +1,114 @@
 import React from 'react';
-
-export interface PlayerStats {
-  pac: number;
-  sho: number;
-  pas: number;
-  dri: number;
-  def: number;
-  phy: number;
-}
-
-export interface Player {
-  id: string;
-  name: string;
-  rating: number;
-  position: string;
-  nation: string;
-  club: string;
-  rarity: 'common' | 'rare' | 'legend';
-  stats: PlayerStats;
-  avatarUrl?: string;
-}
+import type { Player } from '../../../../packages/shared/types/models';
 
 interface PlayerCardProps {
   player: Player;
-  variant?: 'full' | 'mini';
-  onClick?: () => void;
 }
 
-export const PlayerCard: React.FC<PlayerCardProps> = ({ player, variant = 'full', onClick }) => {
-  const getBorderColor = () => {
-    switch (player.rarity) {
-      case 'legend':
-        return 'border-[#e9c349] bg-gradient-to-b from-[#1b4332] to-[#0b1326] shadow-[0_0_20px_rgba(233,195,73,0.3)]';
-      case 'rare':
-        return 'border-[#a5d0b9] bg-gradient-to-b from-[#171f33] to-[#060e20] shadow-[0_0_15px_rgba(165,208,185,0.2)]';
-      default:
-        return 'border-[#414844] bg-[#131b2e]';
-    }
-  };
+// Orden de estadísticas que se muestra en la carta (coincide con el mock)
+const STAT_LABELS: { key: keyof Player['stats']; label: string }[] = [
+  { key: 'pace', label: 'PAC' },
+  { key: 'dribbling', label: 'DRI' },
+  { key: 'shooting', label: 'SHO' },
+  { key: 'defending', label: 'DEF' },
+  { key: 'passing', label: 'PAS' },
+  { key: 'physical', label: 'PHY' },
+];
 
-  if (variant === 'mini') {
-    return (
-      <div
-        onClick={onClick}
-        className={`cursor-pointer rounded-xl p-2 border ${getBorderColor()} flex flex-col items-center justify-center transition-all hover:scale-105 hover:z-20 w-24 h-28 text-center relative overflow-hidden`}
-      >
-        <div className="flex items-center justify-between w-full text-[11px] font-montserrat font-bold px-1">
-          <span className="text-[#e9c349]">{player.rating}</span>
-          <span className="text-gray-300">{player.position}</span>
-        </div>
-        <div className="w-10 h-10 my-1 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-          <span className="material-symbols-outlined text-gray-300 text-xl">person</span>
-        </div>
-        <div className="font-montserrat font-bold text-[10px] text-white truncate w-full px-1">
-          {player.name}
-        </div>
-      </div>
-    );
-  }
+// Determina la rareza de la carta según el rating
+const getRarity = (rating: number) => {
+  if (rating >= 85) return 'gold';
+  if (rating >= 75) return 'silver';
+  return 'bronze';
+};
+
+const RARITY_COLORS: Record<string, { border: string; text: string; shadow: string; bg: string }> = {
+  gold: {
+    border: 'border-[#FFDF00]/50',
+    text: 'text-[#FFDF00]',
+    shadow: 'shadow-[0_0_15px_rgba(255,223,0,0.4)]',
+    bg: 'bg-gradient-to-br from-[#FFDF00]/20 to-surface-container',
+  },
+  silver: {
+    border: 'border-outline-variant/50',
+    text: 'text-on-surface',
+    shadow: 'shadow-[0_0_15px_rgba(192,192,192,0.3)]',
+    bg: 'bg-surface-container',
+  },
+  bronze: {
+    border: 'border-[#CD7F32]/50',
+    text: 'text-[#CD7F32]',
+    shadow: 'shadow-[0_0_15px_rgba(205,127,50,0.4)]',
+    bg: 'bg-gradient-to-br from-[#CD7F32]/20 to-surface-container',
+  },
+};
+
+export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
+  const rarity = getRarity(player.rating ?? 50);
+  const colors = RARITY_COLORS[rarity];
+  const isGold = rarity === 'gold';
+  const isSilver = rarity === 'silver';
 
   return (
-    <div
-      onClick={onClick}
-      className={`relative cursor-pointer rounded-2xl p-4 border ${getBorderColor()} flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl w-56 h-80 overflow-hidden group`}
+    <article
+      className={`relative aspect-[2/3] rounded-xl overflow-hidden ${colors.bg} ${colors.border} deep-field-shadow group cursor-pointer transform hover:scale-105 hover:-translate-y-2 transition-all duration-300`}
     >
-      {/* Header Info */}
-      <div className="flex justify-between items-start">
-        <div className="flex flex-col items-start">
-          <span className="font-montserrat font-black text-3xl text-[#e9c349] leading-none tracking-tight">
-            {player.rating}
-          </span>
-          <span className="font-montserrat font-bold text-sm text-gray-300 tracking-wider">
-            {player.position}
-          </span>
-        </div>
-        <div className="text-right">
-          <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-gray-300 font-medium">
-            {player.nation}
-          </span>
-        </div>
-      </div>
+      {isGold && <div className="absolute inset-0 metallic-sheen opacity-50 z-0"></div>}
+      {isSilver && <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity z-0"></div>}
 
-      {/* Visual Avatar */}
-      <div className="relative my-2 h-28 flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1326] via-transparent to-transparent z-10 opacity-70"></div>
-        <div className="w-20 h-20 rounded-full bg-[#222a3d] border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-          <span className="material-symbols-outlined text-gray-400 text-5xl">person</span>
+      <div className="absolute inset-0 z-10 flex flex-col p-3">
+        {/* Rating & Position */}
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex flex-col items-center">
+            <span
+              className={`font-stat-value text-[24px] ${
+                isGold
+                  ? 'text-[#FFDF00] drop-shadow-[0_0_8px_rgba(255,223,0,0.8)]'
+                  : isSilver
+                    ? 'text-on-surface'
+                    : 'text-[#CD7F32] drop-shadow-[0_0_8px_rgba(205,127,50,0.8)]'
+              }`}
+            >
+              {player.rating}
+            </span>
+            <span className="font-label-md text-[10px] text-on-surface-variant">{player.position}</span>
+          </div>
         </div>
-      </div>
 
-      {/* Identity */}
-      <div className="text-center z-20 mb-2">
-        <h4 className="font-montserrat font-bold text-base text-white truncate tracking-wide">
-          {player.name}
-        </h4>
-        <p className="text-[11px] text-gray-400 font-medium">{player.club}</p>
-      </div>
+        {/* Player Icon */}
+        <div className="flex-1 relative flex items-center justify-center">
+          <span
+            className={`material-symbols-outlined text-[64px] ${
+              isGold ? 'text-tertiary' : isSilver ? 'text-on-surface-variant opacity-80' : 'text-[#CD7F32] opacity-80'
+            }`}
+          >
+            person
+          </span>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-2 border-t border-white/10 text-xs font-montserrat z-20 bg-black/20 p-2 rounded-lg">
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">PAC</span>
-          <span className="font-bold text-white">{player.stats.pac}</span>
+        {/* Player Name */}
+        <div className={`text-center border-b ${isGold ? 'border-[#FFDF00]/30' : 'border-outline-variant/30'} pb-1 mb-1`}>
+          <h3
+            className={`font-headline-sm text-[14px] ${
+              isGold ? 'text-on-surface' : isSilver ? 'text-on-surface-variant' : 'text-[#CD7F32]'
+            } uppercase tracking-tight`}
+          >
+            {player.name}
+          </h3>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">DRI</span>
-          <span className="font-bold text-white">{player.stats.dri}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">SHO</span>
-          <span className="font-bold text-white">{player.stats.sho}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">DEF</span>
-          <span className="font-bold text-white">{player.stats.def}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">PAS</span>
-          <span className="font-bold text-white">{player.stats.pas}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400 font-semibold">PHY</span>
-          <span className="font-bold text-white">{player.stats.phy}</span>
+
+        {/* Stats Grid */}
+        <div className={`grid grid-cols-2 gap-x-2 gap-y-1 mt-auto ${isSilver ? 'opacity-80' : ''}`}>
+          {STAT_LABELS.map((stat) => (
+            <div key={stat.label} className="flex justify-between items-center">
+              <span className="font-label-md text-[8px] text-on-surface-variant">{stat.label}</span>
+              <span className={`font-stat-value text-[12px] ${isGold ? 'text-on-surface' : isSilver ? 'text-on-surface-variant' : 'text-[#CD7F32]'}`}>
+                {player.stats[stat.key as keyof Player['stats']]}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </article>
   );
 };

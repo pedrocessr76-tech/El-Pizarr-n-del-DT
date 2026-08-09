@@ -14,6 +14,7 @@ export interface Player {
   name: string;
   nationality: string;
   position: Position;
+  rating?: number;
   stats: PlayerStats;
 }
 

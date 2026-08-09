@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Builder - FOOTBALL ELITE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Montserrat:wght@600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#a4baaf",
+                        "secondary-fixed": "#d1e8dc",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#222a3d",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-fixed-variant": "#374b42",
+                        "on-primary-fixed": "#002114",
+                        "inverse-surface": "#dae2fd",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#dae2fd",
+                        "surface": "#0b1326",
+                        "surface-container": "#171f33",
+                        "secondary-fixed-dim": "#b5ccc0",
+                        "surface-dim": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-primary": "#0e3727",
+                        "on-tertiary-fixed-variant": "#574500",
+                        "tertiary-fixed-dim": "#e9c349",
+                        "primary-fixed": "#c1ecd4",
+                        "outline": "#8b938d",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "surface-variant": "#2d3449",
+                        "on-primary-container": "#86af99",
+                        "tertiary": "#e9c349",
+                        "surface-tint": "#a5d0b9",
+                        "background": "#0b1326",
+                        "on-tertiary-fixed": "#241a00",
+                        "outline-variant": "#414844",
+                        "tertiary-fixed": "#ffe088",
+                        "inverse-on-surface": "#283044",
+                        "primary": "#a5d0b9",
+                        "on-surface-variant": "#c1c8c2",
+                        "inverse-primary": "#3f6653",
+                        "on-tertiary-container": "#4e3d00",
+                        "secondary-container": "#374b42",
+                        "tertiary-container": "#cba72f",
+                        "on-error": "#690005",
+                        "surface-bright": "#31394d",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#0b1f18",
+                        "on-secondary": "#21342c",
+                        "secondary": "#b5ccc0",
+                        "on-tertiary": "#3c2f00",
+                        "surface-container-highest": "#2d3449",
+                        "on-background": "#dae2fd",
+                        "primary-container": "#1b4332"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "margin": "24px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "stat-value": ["Montserrat"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Montserrat"],
+                        "display-lg": ["Montserrat"],
+                        "headline-lg": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "stat-value": ["22px", { "lineHeight": "22px", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pitch-bg {
+            background: linear-gradient(180deg, #081C15 0%, #1B4332 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .pitch-lines {
+            position: absolute;
+            inset: 0;
+            border: 0.5px solid rgba(255,255,255,0.2);
+            margin: 16px;
+            pointer-events: none;
+        }
+        .pitch-center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border: 0.5px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+        }
+        .pitch-center-line {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            right: 16px;
+            height: 0.5px;
+            background: rgba(255,255,255,0.2);
+        }
+        .pitch-penalty-area-top {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 60px;
+            border: 0.5px solid rgba(255,255,255,0.2);
+            border-top: none;
+        }
+        .pitch-penalty-area-bottom {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 60px;
+            border: 0.5px solid rgba(255,255,255,0.2);
+            border-bottom: none;
+        }
+        
+        .card-shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 3s infinite;
+        }
+        
+        /* Modal Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .card-gold {
+            background: linear-gradient(135deg, #FFD700 0%, #B8860B 50%, #DAA520 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .card-gold::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-25deg);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+        
+        .card-silver {
+            background: linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 50%, #BDBDBD 100%);
+        }
+        
+        .stat-bar-fill {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col relative">
+<!-- Top Navigation (Mobile & Desktop) -->
+<nav class="fixed top-0 w-full z-40 flex justify-between items-center px-gutter h-16 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+<button class="text-primary dark:text-primary hover:opacity-80 transition-opacity flex items-center gap-xs">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+<span class="font-label-md text-label-md hidden md:inline">Atrás</span>
+</button>
+<div class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary tracking-tighter">
+            FOOTBALL ELITE
+        </div>
+<div class="flex items-center gap-sm text-primary dark:text-primary">
+<span class="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer">account_circle</span>
+<span class="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer">settings</span>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 mt-16 pb-32 md:pb-0 px-gutter py-margin max-w-5xl mx-auto w-full flex flex-col md:flex-row gap-margin">
+<!-- Left Column: Pitch / Team Builder -->
+<section class="flex-1 flex flex-col gap-sm">
+<!-- Header for Pitch -->
+<div class="flex justify-between items-end bg-surface-container-high rounded-t-xl p-md border-b border-white/10">
+<div>
+<h1 class="text-headline-sm font-headline-sm text-on-background">4-3-3</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">Alineación Táctica</p>
+</div>
+<div class="text-right">
+<div class="text-stat-value font-stat-value text-primary">11/11</div>
+<div class="text-label-md font-label-md text-on-surface-variant">TITULARES</div>
+</div>
+</div>
+<!-- The Pitch -->
+<div class="pitch-bg rounded-b-xl aspect-[3/4] md:aspect-[4/5] w-full shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] relative flex flex-col justify-around py-margin">
+<div class="pitch-lines"></div>
+<div class="pitch-center-circle"></div>
+<div class="pitch-center-line"></div>
+<div class="pitch-penalty-area-top"></div>
+<div class="pitch-penalty-area-bottom"></div>
+<!-- Attackers Row -->
+<div class="flex justify-around items-center w-full px-lg z-10 relative">
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<!-- Filled Slot (Mini Card) -->
+<div class="w-20 h-28 bg-surface-container-high border border-tertiary rounded-lg shadow-lg flex flex-col items-center justify-between p-xs card-shimmer cursor-pointer hover:scale-105 transition-transform" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<div class="text-label-md font-label-md text-tertiary font-bold self-start w-full text-center bg-background/50 rounded-sm">94 ST</div>
+<div class="w-12 h-12 rounded-full overflow-hidden border border-white/10 mt-1">
+<img class="w-full h-full object-cover" data-alt="A detailed portrait shot of an elite, athletic male football striker with intense focus. High-key dramatic lighting on a dark metallic background. Professional sports aesthetic, sharp focus, 8k resolution, cinematic grading, deep shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEEs2v_t9Km9-ZyFiJyHjQSa7i9hrpeIwZO42tDd_GxcE8AvJEOS1TOuE5pFQbB2YEQ4fzOUL_MrxG_VkDKyY_38mu0id9q6RBrTlaGXJf60NqFD02sZ7zPq6RFdGrEbCde-WCeCAx8uMXjhasp_98RPew0VKxl8gYpGZWbnKO8SkA_R5MornjdZku61nKytUi22nvX3Wbpayicp16tBbIU-bNkLscrxdSYumC_ELidkzhKW4UDkgvyg"/>
+</div>
+<div class="text-[10px] leading-tight font-body-md text-on-background truncate w-full text-center font-bold mt-1">HAALAND</div>
+</div>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+</div>
+<!-- Midfielders Row -->
+<div class="flex justify-around items-center w-full px-md z-10 relative mt-4">
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+</div>
+<!-- Defenders Row -->
+<div class="flex justify-around items-center w-full px-sm z-10 relative mt-4">
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+</div>
+<!-- Goalkeeper Row -->
+<div class="flex justify-center items-center w-full z-10 relative mt-4">
+<button class="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-md font-headline-md">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Right Column (Desktop) / Bottom Section (Mobile): Substitutes & Action -->
+<section class="w-full md:w-80 flex flex-col gap-margin">
+<!-- Formation Selection -->
+<div class="bg-surface-container-high rounded-xl p-md border border-white/5 shadow-lg">
+<div class="flex justify-between items-center mb-sm">
+<h2 class="text-label-md font-label-md text-on-background">SELECCIONA TU ALINEACIÓN</h2>
+<button class="text-primary text-label-md font-label-md hover:opacity-80 transition-opacity">Ver todas</button>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-primary-container/30 border border-primary/50 rounded-lg p-sm cursor-pointer hover:bg-primary-container/50 transition-colors flex flex-col items-center justify-center h-20">
+<span class="text-headline-sm font-headline-sm text-primary">4-3-3</span>
+<span class="text-[10px] text-primary/80">Activa</span>
+</div>
+<div class="bg-surface border border-white/5 rounded-lg p-sm cursor-pointer hover:bg-surface-variant transition-colors flex flex-col items-center justify-center h-20 text-on-surface-variant opacity-70">
+<span class="text-headline-sm font-headline-sm">4-4-2</span>
+</div>
+<div class="bg-surface border border-white/5 rounded-lg p-sm cursor-pointer hover:bg-surface-variant transition-colors flex flex-col items-center justify-center h-20 text-on-surface-variant opacity-70">
+<span class="text-headline-sm font-headline-sm">3-5-2</span>
+</div>
+<div class="bg-surface border border-white/5 rounded-lg p-sm cursor-pointer hover:bg-surface-variant transition-colors flex flex-col items-center justify-center h-20 text-on-surface-variant opacity-70">
+<span class="text-headline-sm font-headline-sm">5-4-1</span>
+</div>
+</div>
+</div>
+<!-- Substitutes -->
+<div class="bg-surface-container-high rounded-xl p-md border border-white/5 shadow-lg flex-1">
+<div class="flex justify-between items-center border-b border-white/10 pb-sm mb-sm">
+<h2 class="text-headline-sm font-headline-sm text-on-background">SUPLENTES</h2>
+<div class="text-stat-value font-stat-value text-on-surface-variant">7/7</div>
+</div>
+<div class="flex flex-wrap gap-sm justify-start">
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+<button class="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner" onclick="document.getElementById('player-selection-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined text-headline-sm">add</span>
+</button>
+</div>
+</div>
+<!-- Primary Action Button (Enabled for Modal Trigger) -->
+<button class="w-full py-md px-lg rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center border border-tertiary shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.6)] transition-all" onclick="document.getElementById('match-prep-overlay').classList.remove('hidden')">
+                JUGAR
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-40 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest/90 dark:bg-surface-container-lowest/90 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-primary bg-primary-container/30 rounded-xl px-4 py-1 scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">strategy</span>
+<span class="text-label-md font-label-md mt-1">Plantilla</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">storefront</span>
+<span class="text-label-md font-label-md mt-1">Mercado</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sports_soccer</span>
+<span class="text-label-md font-label-md mt-1">Jugar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shield</span>
+<span class="text-label-md font-label-md mt-1">Club</span>
+</a>
+</nav>
+<!-- OVERLAYS -->
+<!-- Player Selection Overlay -->
+<div class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-md p-4" id="player-selection-overlay">
+<div class="glass-panel w-full max-w-2xl rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden max-h-[90vh]">
+<div class="p-6 border-b border-surface-variant flex justify-between items-center bg-surface/50">
+<div>
+<h2 class="text-headline-sm font-headline-sm text-primary uppercase tracking-wider">Select Player</h2>
+<p class="text-label-md font-label-md text-on-surface-variant mt-1">Position: ST</p>
+</div>
+<button class="text-on-surface-variant hover:text-white transition-colors" onclick="document.getElementById('player-selection-overlay').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 overflow-x-auto no-scrollbar">
+<div class="flex gap-4 w-max px-2 pb-4">
+<!-- Card 1: Gold -->
+<div class="card-gold w-48 h-72 rounded-lg p-1 cursor-pointer transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-tertiary/20 transition-all duration-300 group">
+<div class="bg-surface-container-lowest h-full w-full rounded-md flex flex-col relative overflow-hidden">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface-variant/20 via-transparent to-transparent opacity-50"></div>
+<div class="flex justify-between items-start p-2 z-10">
+<div class="flex flex-col items-center">
+<span class="text-headline-md font-headline-md text-tertiary drop-shadow-md">94</span>
+<span class="text-label-md font-label-md text-on-surface-variant">ST</span>
+</div>
+<div class="w-6 h-4 rounded-sm overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYWGj8ecvfC93dP0yjHPhxjHYE1CWH7KXICGdPq3FwU7DOETXm5b1lagOc_PItT8q9HqjPzICL5lCeioIsLhfiRGzAf_NMK7GISQ7v01wxr2F0u4ZXvy1dMLvr2pT5HmMr-3u3mY1qsPQcslIEBCtlfbIjQDkvaSYTEkZBQlRQXOEL3GrJ4ZiXRI9Q7HH8EqkubGImoqzmzNqH_nvX93kSvULx6ZNLj33oeCSlNXuJFvGOA9wvbezDSg"/>
+</div>
+</div>
+<div class="flex-1 flex justify-center items-end px-2 z-10">
+<img class="w-40 h-32 object-cover object-top mask-image-b group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmJR9pnDV8jLQ0oaTCeitJxl5ueVfAr1ghF1vfbZJYIKTquWqAsbrC-vZvMBbuhC_O0iLEmOj972hF98tf7JZSCTED1IPWJf1WbOiNSkxIa6RQ7sFT431LIDESXRZuLfImD8E0_W1fj7T5Icc8bExwP89gNXfOud0MbHbdg3U9qmoJdpC-azeS-b5c7kkBapBNEaErPpWVnlbiCZSsHp3V9cZU7TiBi5J7qpxOLsTzUVnXmV-WXozbUg"/>
+</div>
+<div class="bg-surface-container/90 backdrop-blur-sm border-t border-tertiary/30 p-2 z-10">
+<h3 class="text-body-md font-body-md font-bold text-center uppercase tracking-wide truncate mb-1">M. Rossi</h3>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1">
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAC</span><span class="text-label-md font-label-md font-bold text-white">92</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DRI</span><span class="text-label-md font-label-md font-bold text-white">95</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">SHO</span><span class="text-label-md font-label-md font-bold text-white">96</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DEF</span><span class="text-label-md font-label-md font-bold text-white">40</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAS</span><span class="text-label-md font-label-md font-bold text-white">88</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PHY</span><span class="text-label-md font-label-md font-bold text-white">82</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Gold -->
+<div class="card-gold w-48 h-72 rounded-lg p-1 cursor-pointer transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group opacity-90">
+<div class="bg-surface-container-lowest h-full w-full rounded-md flex flex-col relative overflow-hidden">
+<div class="flex justify-between items-start p-2 z-10">
+<div class="flex flex-col items-center">
+<span class="text-headline-md font-headline-md text-tertiary drop-shadow-md">89</span>
+<span class="text-label-md font-label-md text-on-surface-variant">ST</span>
+</div>
+<div class="w-6 h-4 rounded-sm overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWPfIMBtonSSdgoSpwZl6UFGm6AvGuDCHuBE2--2ahc_iGVRaR9tsskYCBfIDIY5s6NREFguMCKb8xWsFZVnr2TqsR-JPj9kaDZWW7AKn-xe8iUpmLzEj0gOQ232re7BrdPXxQ7e8yncCIyyu549sHym5bxavQchMWbIcnSEZBvOOYTibxtX-lrOh1t7nT67tq0lB-_3ESk99JLdmCyuYGd08rqX_QqptHX0YWSwEBnUVTauwVWTOqCA"/>
+</div>
+</div>
+<div class="flex-1 flex justify-center items-end px-2 z-10">
+<img class="w-40 h-32 object-cover object-top mask-image-b group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM_2voJw6vqgqCTaiGy1iU1B2qlOnfijh7jyjQJpe_aBpzbsAAQ7Q4g1RpITVJ12mmFlIkvo41T8o3bnKEdLtuXbBmCxQQ2MF1unfPUdUzc5UNo8nZxGDDP_WhYZ0ZID8nw2mm8_GvKutiaKeCnaHTZ7Ujup-_Gtkv2VzrRX9abjbXx6pCOwSGRRU0ge9ynDqlEnbVpsd3anq-g4dd-GHDf1J5YPnnwZfJ6U97Hfr_93CNCRD7FDqSIw"/>
+</div>
+<div class="bg-surface-container/90 backdrop-blur-sm border-t border-tertiary/20 p-2 z-10">
+<h3 class="text-body-md font-body-md font-bold text-center uppercase tracking-wide truncate mb-1">J. Dubois</h3>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1">
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAC</span><span class="text-label-md font-label-md font-bold text-white">95</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DRI</span><span class="text-label-md font-label-md font-bold text-white">88</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">SHO</span><span class="text-label-md font-label-md font-bold text-white">90</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DEF</span><span class="text-label-md font-label-md font-bold text-white">45</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAS</span><span class="text-label-md font-label-md font-bold text-white">82</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PHY</span><span class="text-label-md font-label-md font-bold text-white">86</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Silver -->
+<div class="card-silver w-48 h-72 rounded-lg p-[1px] cursor-pointer transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group opacity-80 hover:opacity-100">
+<div class="bg-surface-container-lowest h-full w-full rounded-md flex flex-col relative overflow-hidden">
+<div class="flex justify-between items-start p-2 z-10">
+<div class="flex flex-col items-center">
+<span class="text-headline-md font-headline-md text-secondary-fixed drop-shadow-md">78</span>
+<span class="text-label-md font-label-md text-on-surface-variant">ST</span>
+</div>
+<div class="w-6 h-4 rounded-sm overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8zKTN0-3kYzOEY2iLGg9eqRsMeBeqhgwpKA2UclYdRzry1Z2swlwTXLA4JONlCcKsxdNtsPpwVObIvJtpLiL_Y-VSXQrRGXRuDGhQVgN78l-SeE_hdIgkVO01t3oeVSMQ3SIAskZbhO0P01qcZjF16LsfpwGtEwiw2M0VfWvxUcTnysmPTx3NUrvAMG5K2DMML31xfavJ_wEXQkGHowr9v0frtenH0Gs8HUFwI-rnUPUPXk87LZfuoQ"/>
+</div>
+</div>
+<div class="flex-1 flex justify-center items-end px-2 z-10">
+<img class="w-40 h-32 object-cover object-top mask-image-b group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIrkIk9RBV0kcqx_IegHN-4sudCUkbYXowhPBR_wCjv6xLcCb2WffVZxb8xWBIEfkT_BRUDY1UoPHZGjq70mON3c3lZU9a2GC44JI2LTAbeak7FsL-4Xk_suAaIFp-ug92kBmntQ8feYjm4y0mWxVpnzVrD2tv7NBOjV6NW2r8djTHIb-eXQ1BbVdy8IcQ1IWSECJJbKh0UNOTmxepXZ1esWT8o0nmARhTxUMt_LxT9sZiRGQtjQG91A"/>
+</div>
+<div class="bg-surface-container/90 backdrop-blur-sm border-t border-secondary-fixed/20 p-2 z-10">
+<h3 class="text-body-md font-body-md font-bold text-center uppercase tracking-wide truncate mb-1">L. Silva</h3>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1">
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAC</span><span class="text-label-md font-label-md font-bold text-white">89</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DRI</span><span class="text-label-md font-label-md font-bold text-white">80</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">SHO</span><span class="text-label-md font-label-md font-bold text-white">79</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">DEF</span><span class="text-label-md font-label-md font-bold text-white">30</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PAS</span><span class="text-label-md font-label-md font-bold text-white">70</span></div>
+<div class="flex justify-between items-center"><span class="text-[10px] text-on-surface-variant uppercase">PHY</span><span class="text-label-md font-label-md font-bold text-white">65</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Placeholders for the remaining 2 of 5 -->
+<div class="w-48 h-72 rounded-lg border border-surface-variant bg-surface-container/50 flex flex-col justify-center items-center opacity-60">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">person_search</span>
+<span class="text-label-md text-on-surface-variant">Slot 4</span>
+</div>
+<div class="w-48 h-72 rounded-lg border border-surface-variant bg-surface-container/50 flex flex-col justify-center items-center opacity-60">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">person_search</span>
+<span class="text-label-md text-on-surface-variant">Slot 5</span>
+</div>
+</div>
+</div>
+<div class="p-4 bg-surface-container-highest border-t border-surface-variant text-center">
+<p class="text-label-md text-on-surface-variant">Select a player to assign to the active slot.</p>
+</div>
+</div>
+</div>
+<!-- Match Preparation Overlay -->
+<div class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-md p-4" id="match-prep-overlay">
+<div class="glass-panel w-full max-w-md rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden relative">
+<button class="absolute top-6 right-6 text-on-surface-variant hover:text-white transition-colors z-20" onclick="document.getElementById('match-prep-overlay').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay">
+<div class="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
+</div>
+<div class="p-6 border-b border-surface-variant bg-surface/30 z-10">
+<h2 class="text-headline-sm font-headline-sm text-primary uppercase tracking-wider text-center">Match Preparation</h2>
+</div>
+<div class="p-6 flex flex-col gap-8 z-10">
+<!-- Team Stats Summary -->
+<div class="space-y-4">
+<div class="flex justify-between items-end mb-2">
+<h3 class="text-body-md font-body-md text-white font-semibold">Team Rating</h3>
+<span class="text-headline-md font-headline-md text-tertiary">88 <span class="text-label-md text-on-surface-variant">OVR</span></span>
+</div>
+<!-- Stat Bars -->
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-label-md font-label-md mb-1">
+<span class="text-on-surface-variant">ATT</span>
+<span class="text-white">92</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary stat-bar-fill" style="width: 92%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-label-md font-label-md mb-1">
+<span class="text-on-surface-variant">MID</span>
+<span class="text-white">86</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary stat-bar-fill" style="width: 86%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-label-md font-label-md mb-1">
+<span class="text-on-surface-variant">DEF</span>
+<span class="text-white">84</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-fixed-dim stat-bar-fill" style="width: 84%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-px w-full bg-surface-variant"></div>
+<!-- Difficulty Selector -->
+<div class="space-y-3">
+<h3 class="text-body-md font-body-md text-white font-semibold mb-2">Difficulty</h3>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 px-1 text-center rounded bg-surface-container border border-surface-variant text-on-surface-variant hover:text-white hover:border-primary-fixed-dim transition-colors text-label-md">
+                            Principiante
+                        </button>
+<button class="py-2 px-1 text-center rounded bg-primary-container border border-primary text-primary font-bold shadow-[0_0_10px_rgba(165,208,185,0.2)] text-label-md">
+                            Profesional
+                        </button>
+<button class="py-2 px-1 text-center rounded bg-surface-container border border-surface-variant text-on-surface-variant hover:text-white hover:border-tertiary transition-colors text-label-md">
+                            Leyenda
+                        </button>
+</div>
+<p class="text-[12px] text-on-surface-variant text-center mt-2">Rewards multiplier: 1.5x</p>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest z-10 border-t border-surface-variant">
+<button class="w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                    CONFIRMAR Y EMPEZAR PARTIDO
+                </button>
+</div>
+</div>
+</div>
+</body></html>

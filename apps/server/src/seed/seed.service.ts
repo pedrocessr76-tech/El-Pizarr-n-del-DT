@@ -9,6 +9,10 @@ import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { mockPlayers } from '../../../../packages/shared/types/mockData';
 
+// Nomenclatura FIFA estándar
+type FIFA_POSITION = 
+  | 'POR' | 'LD' | 'LI' | 'DFC' | 'MCD' | 'MC' | 'MCO' | 'MD' | 'MI' | 'ED' | 'EI' | 'SD' | 'DC' | 'ST';
+
 interface PremierPlayer {
   nombre: string;
   posicion: string;
@@ -33,17 +37,48 @@ interface PremierData {
   equipos: PremierTeam[];
 }
 
-const POSITION_MAP: Record<string, string> = {
-  POR: 'GK',
-  LD: 'DEF',
-  LI: 'DEF',
-  DFC: 'DEF',
-  MCD: 'MID',
-  MC: 'MID',
-  MCO: 'MID',
-  ED: 'FWD',
-  EI: 'FWD',
-  DC: 'FWD',
+const POSITION_MAP: Record<string, FIFA_POSITION> = {
+  // Portero
+  'GK': 'POR',
+  'POR': 'POR',
+  
+  // Laterales
+  'RB': 'LD',
+  'RWB': 'LD',
+  'LB': 'LI',
+  'LWB': 'LI',
+  
+  // Defensas centrales
+  'CB': 'DFC',
+  'DEF': 'DFC',
+  
+  // Mediocentros
+  'CDM': 'MCD',
+  'CM': 'MC',
+  'CAM': 'MCO',
+  
+  // Extremos y medios
+  'RM': 'MD',
+  'RW': 'ED',
+  'LM': 'MI',
+  'LW': 'EI',
+  
+  // Delanteros
+  'FWD': 'DC',
+  'ST': 'ST',
+  'DC': 'DC',
+  'CF': 'SD',
+  'SS': 'SD',
+  
+  // Posiciones del JSON (formato antiguo) - solo las que no están ya definidas
+  'LD': 'LD',
+  'LI': 'LI',
+  'DFC': 'DFC',
+  'MCD': 'MCD',
+  'MC': 'MC',
+  'MCO': 'MCO',
+  'ED': 'ED',
+  'EI': 'EI',
 };
 
 @Injectable()

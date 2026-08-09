@@ -1,6 +1,7 @@
 import React from 'react';
+import { useAuthStore } from '../store/useAuthStore';
 
-export type ActiveTab = 'home' | 'builder' | 'catalog' | 'bracket';
+export type ActiveTab = 'home' | 'builder' | 'catalog' | 'bracket' | 'history';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -9,6 +10,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLogin }) => {
+  const { user, logout } = useAuthStore();
   const navItems: { id: ActiveTab; label: string; icon: string }[] = [
     { id: 'home', label: 'Inicio', icon: 'home' },
     { id: 'builder', label: 'Formación y Equipo', icon: 'tactics' },
@@ -58,13 +60,29 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLo
 
         {/* Action Button */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenLogin}
-            className="flex items-center gap-2 px-4 py-2 bg-[#222a3d] border border-white/10 rounded-lg text-sm font-montserrat font-semibold text-[#a5d0b9] hover:bg-[#2d3449] hover:border-[#a5d0b9]/40 transition-colors shadow-sm"
-          >
-            <span className="material-symbols-outlined text-lg">login</span>
-            Iniciar Sesión
-          </button>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#1b4332] border border-[#a5d0b9]/30 rounded-lg text-sm font-montserrat font-semibold text-[#a5d0b9]">
+                <span className="material-symbols-outlined text-lg">account_circle</span>
+                <span className="max-w-[120px] truncate">{user.username}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-3 py-2 bg-[#222a3d] border border-white/10 rounded-lg text-sm font-montserrat font-semibold text-gray-400 hover:text-white hover:bg-[#2d3449] transition-colors shadow-sm"
+                title="Cerrar sesión"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenLogin}
+              className="flex items-center gap-2 px-4 py-2 bg-[#222a3d] border border-white/10 rounded-lg text-sm font-montserrat font-semibold text-[#a5d0b9] hover:bg-[#2d3449] hover:border-[#a5d0b9]/40 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-lg">login</span>
+              Iniciar Sesión
+            </button>
+          )}
         </div>
       </div>
     </header>

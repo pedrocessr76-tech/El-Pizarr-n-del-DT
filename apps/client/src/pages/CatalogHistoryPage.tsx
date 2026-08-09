@@ -1,156 +1,191 @@
-import React, { useState } from 'react';
-import { Player, PlayerCard } from '../components/PlayerCard';
+import React, { useState, useEffect } from 'react';
+import { PlayerCard } from '../components/PlayerCard';
+import { playerService } from '../services/playerService';
+import type { Player } from '../../../../packages/shared/types/models';
 
-interface MatchHistoryItem {
-  id: string;
-  opponent: string;
-  myScore: number;
-  oppScore: number;
-  result: 'W' | 'L' | 'D';
-  date: string;
-  formation: string;
+interface CatalogHistoryPageProps {
+  initialView?: 'history' | 'catalog';
+  onBack?: () => void;
 }
 
-const MOCK_MATCHES: MatchHistoryItem[] = [
-  { id: '1', opponent: 'Real Madrid F.C.', myScore: 3, oppScore: 1, result: 'W', date: '04 Ago 2026', formation: '4-3-3' },
-  { id: '2', opponent: 'Boca Juniors', myScore: 2, oppScore: 2, result: 'D', date: '03 Ago 2026', formation: '4-4-2' },
-  { id: '3', opponent: 'Manchester City', myScore: 1, oppScore: 2, result: 'L', date: '01 Ago 2026', formation: '3-5-2' },
-  { id: '4', opponent: 'Bayern München', myScore: 4, oppScore: 0, result: 'W', date: '29 Jul 2026', formation: '4-3-3' },
-];
+export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialView = 'catalog', onBack }) => {
+  const [activeView, setActiveView] = useState<'history' | 'catalog'>(initialView);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-const MOCK_CATALOG_PLAYERS: Player[] = [
-  { id: '1', name: 'Mbappé', rating: 92, position: 'DC', nation: 'FRA', club: 'Real Madrid', rarity: 'legend', stats: { pac: 97, sho: 90, pas: 80, dri: 92, def: 36, phy: 78 } },
-  { id: '2', name: 'Bellingham', rating: 91, position: 'MCO', nation: 'ENG', club: 'Real Madrid', rarity: 'legend', stats: { pac: 82, sho: 87, pas: 88, dri: 90, def: 78, phy: 85 } },
-  { id: '3', name: 'Vinicius Jr', rating: 91, position: 'EI', nation: 'BRA', club: 'Real Madrid', rarity: 'legend', stats: { pac: 95, sho: 84, pas: 81, dri: 92, def: 29, phy: 68 } },
-  { id: '4', name: 'Courtois', rating: 90, position: 'GK', nation: 'BEL', club: 'Real Madrid', rarity: 'legend', stats: { pac: 85, sho: 89, pas: 75, dri: 88, def: 52, phy: 88 } },
-  { id: '5', name: 'Valverde', rating: 89, position: 'MC', nation: 'URU', club: 'Real Madrid', rarity: 'rare', stats: { pac: 88, sho: 84, pas: 85, dri: 84, def: 80, phy: 85 } },
-  { id: '6', name: 'Rüdiger', rating: 88, position: 'DFC', nation: 'GER', club: 'Real Madrid', rarity: 'rare', stats: { pac: 82, sho: 54, pas: 71, dri: 72, def: 89, phy: 86 } },
-  { id: '7', name: 'Pedri', rating: 87, position: 'MC', nation: 'ESP', club: 'FC Barcelona', rarity: 'rare', stats: { pac: 78, sho: 72, pas: 89, dri: 89, def: 68, phy: 73 } },
-  { id: '8', name: 'Mendy', rating: 84, position: 'LI', nation: 'FRA', club: 'Real Madrid', rarity: 'common', stats: { pac: 92, sho: 64, pas: 75, dri: 80, def: 82, phy: 85 } },
-];
-
-export const CatalogHistoryPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'history' | 'catalog'>('catalog');
-  const [rarityFilter, setRarityFilter] = useState<'all' | 'legend' | 'rare' | 'common'>('all');
-
-  const filteredPlayers = MOCK_CATALOG_PLAYERS.filter(
-    (p) => rarityFilter === 'all' || p.rarity === rarityFilter
-  );
+  useEffect(() => {
+    const loadPlayers = async () => {
+      try {
+        const data = await playerService.getAllPlayers();
+        setPlayers(data);
+      } catch (err: any) {
+        setLoadError(err.response?.data?.message || 'Error al cargar el catálogo de jugadores.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPlayers();
+  }, []);
 
   return (
-    <div className="min-h-[calc(100vh-73px)] pitch-gradient pitch-pattern p-6 flex flex-col items-center">
-      {/* Top Header & Tab Control */}
-      <div className="w-full max-w-7xl glass-panel rounded-2xl p-6 mb-8 border border-white/10 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="font-montserrat font-extrabold text-2xl text-white tracking-wide">
-            Historial & Catálogo Élite
-          </h2>
-          <p className="text-xs text-gray-400">Revisa tu historial de partidos o explora la colección completa de cartas.</p>
-        </div>
+    <div className="bg-background text-on-background min-h-screen pb-xl flex flex-col relative selection:bg-primary/30 selection:text-primary-fixed">
+      {/* Sequential Header */}
+      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/5 px-gutter py-md flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md group"
+        >
+          <span className="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+          Atrás
+        </button>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-[#060e20] p-1.5 rounded-xl border border-white/10">
+        <div className="flex items-center gap-2 bg-surface-container p-1 rounded-xl border border-white/10">
           <button
-            onClick={() => setActiveTab('catalog')}
-            className={`px-5 py-2 rounded-lg text-sm font-montserrat font-bold transition-all ${
-              activeTab === 'catalog'
-                ? 'bg-[#1b4332] text-[#a5d0b9] border border-[#a5d0b9]/30 shadow-md'
-                : 'text-gray-400 hover:text-white'
+            onClick={() => setActiveView('history')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-headline-sm transition-all ${
+              activeView === 'history' ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md' : 'text-on-surface-variant hover:text-white'
             }`}
           >
-            Todas las Cartas
+            Historial
           </button>
           <button
-            onClick={() => setActiveTab('history')}
-            className={`px-5 py-2 rounded-lg text-sm font-montserrat font-bold transition-all ${
-              activeTab === 'history'
-                ? 'bg-[#1b4332] text-[#a5d0b9] border border-[#a5d0b9]/30 shadow-md'
-                : 'text-gray-400 hover:text-white'
+            onClick={() => setActiveView('catalog')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-headline-sm transition-all ${
+              activeView === 'catalog' ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md' : 'text-on-surface-variant hover:text-white'
             }`}
           >
-            Historial de Partidos
+            Catálogo
           </button>
         </div>
-      </div>
 
-      {/* Main Tab Content */}
-      <div className="w-full max-w-7xl">
-        {activeTab === 'catalog' ? (
-          <div>
-            {/* Filter Bar */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-sm font-montserrat font-semibold text-gray-300">
-                Mostrando <span className="text-[#a5d0b9]">{filteredPlayers.length}</span> cartas de jugador
-              </span>
+        <button className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-container hover:bg-surface-variant transition-colors">
+          <span className="material-symbols-outlined text-on-surface">tune</span>
+        </button>
+      </header>
 
-              <div className="flex items-center gap-2">
-                {(['all', 'legend', 'rare', 'common'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setRarityFilter(r)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-montserrat font-semibold capitalize border transition-all ${
-                      rarityFilter === r
-                        ? 'bg-[#a5d0b9] text-[#0e3727] border-[#a5d0b9]'
-                        : 'bg-[#131b2e] text-gray-400 border-white/10 hover:text-white'
-                    }`}
-                  >
-                    {r === 'all' ? 'Todas' : r}
-                  </button>
-                ))}
+      {/* Screen 3: Match History */}
+      {activeView === 'history' && (
+        <main className="max-w-5xl mx-auto w-full px-gutter mt-lg flex-1">
+          <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow">
+            {/* Table Header */}
+            <div className="grid grid-cols-5 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+              <div className="col-span-1">Fecha</div>
+              <div className="col-span-2">Rival</div>
+              <div className="col-span-1 text-center">Resultado</div>
+              <div className="col-span-1 text-right">Dificultad</div>
+            </div>
+            {/* Table Rows */}
+            <div className="flex flex-col">
+              {/* Row 1: W */}
+              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">12 Oct 2023</div>
+                <div className="col-span-2 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[16px] text-tertiary">shield</span>
+                  </div>
+                  <span className="font-headline-sm text-[16px] text-on-surface truncate">Real Madrid C.F.</span>
+                </div>
+                <div className="col-span-1 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(165,208,185,0.6)]"></span>
+                  <span className="font-stat-value text-[18px] text-primary">2 - 1</span>
+                </div>
+                <div className="col-span-1 text-right flex justify-end">
+                  <span className="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
+                </div>
+              </div>
+              {/* Row 2: L */}
+              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">08 Oct 2023</div>
+                <div className="col-span-2 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[16px] text-error">shield</span>
+                  </div>
+                  <span className="font-headline-sm text-[16px] text-on-surface truncate">FC Barcelona</span>
+                </div>
+                <div className="col-span-1 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]"></span>
+                  <span className="font-stat-value text-[18px] text-error">0 - 3</span>
+                </div>
+                <div className="col-span-1 text-right flex justify-end">
+                  <span className="px-2 py-1 bg-surface-bright text-on-surface rounded font-label-md text-[10px] uppercase border border-outline-variant/50">Clase Mundial</span>
+                </div>
+              </div>
+              {/* Row 3: D */}
+              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
+                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">05 Oct 2023</div>
+                <div className="col-span-2 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[16px] text-secondary">shield</span>
+                  </div>
+                  <span className="font-headline-sm text-[16px] text-on-surface truncate">Atlético de Madrid</span>
+                </div>
+                <div className="col-span-1 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(181,204,192,0.6)]"></span>
+                  <span className="font-stat-value text-[18px] text-secondary">1 - 1</span>
+                </div>
+                <div className="col-span-1 text-right flex justify-end">
+                  <span className="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
+                </div>
               </div>
             </div>
+          </div>
+        </main>
+      )}
 
-            {/* Players Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
-              {filteredPlayers.map((player) => (
-                <PlayerCard key={player.id} player={player} variant="full" />
-              ))}
+      {/* Screen 4: Card Catalog */}
+      {activeView === 'catalog' && (
+        <main className="max-w-7xl mx-auto w-full px-gutter mt-lg flex-1">
+          {/* Filter Bar (Bento Style) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-xl">
+            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+              <span className="font-label-md text-label-md text-on-surface-variant">Calidad</span>
+              <div className="flex gap-2">
+                <span className="w-4 h-4 rounded bg-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.4)]"></span>
+                <span className="w-4 h-4 rounded bg-[#C0C0C0]"></span>
+                <span className="w-4 h-4 rounded bg-[#CD7F32]"></span>
+              </div>
+            </div>
+            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+              <span className="font-label-md text-label-md text-on-surface-variant">Posición</span>
+              <span className="font-headline-sm text-[16px] text-on-surface">DEL, MED...</span>
+            </div>
+            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+              <span className="font-label-md text-label-md text-on-surface-variant">Valoración</span>
+              <span className="font-stat-value text-[18px] text-primary">85+</span>
             </div>
           </div>
-        ) : (
-          /* Match History View */
-          <div className="glass-panel rounded-2xl p-6 border border-white/10">
-            <h3 className="font-montserrat font-extrabold text-xl text-white mb-6 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#a5d0b9]">history</span>
-              Últimas Partidas Jugadas
-            </h3>
 
-            <div className="space-y-4">
-              {MOCK_MATCHES.map((match) => (
-                <div
-                  key={match.id}
-                  className="bg-[#131b2e] border border-white/10 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4 hover:border-white/20 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center font-montserrat font-black text-lg ${
-                        match.result === 'W'
-                          ? 'bg-[#1b4332] text-[#a5d0b9] border border-[#a5d0b9]/30'
-                          : match.result === 'L'
-                          ? 'bg-[#93000a]/40 text-[#ffb4ab] border border-[#ffb4ab]/30'
-                          : 'bg-[#374b42] text-gray-300'
-                      }`}
-                    >
-                      {match.result}
-                    </div>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-16">
+              <div className="flex flex-col items-center gap-4 text-on-surface-variant">
+                <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="font-body-md text-body-md">Cargando catálogo de jugadores...</span>
+              </div>
+            </div>
+          )}
 
-                    <div>
-                      <h4 className="font-montserrat font-bold text-white text-base">{match.opponent}</h4>
-                      <p className="text-xs text-gray-400">
-                        Formación: <span className="text-gray-200">{match.formation}</span> • {match.date}
-                      </p>
-                    </div>
-                  </div>
+          {/* Error State */}
+          {!isLoading && loadError && (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center text-error">
+                <span className="material-symbols-outlined text-[48px] mb-2">error</span>
+                <p className="font-body-md text-body-md">{loadError}</p>
+              </div>
+            </div>
+          )}
 
-                  <div className="font-montserrat font-black text-2xl text-white tracking-widest bg-[#060e20] px-4 py-2 rounded-lg border border-white/10">
-                    {match.myScore} - {match.oppScore}
-                  </div>
-                </div>
+          {/* Card Grid - Dynamic from DB */}
+          {!isLoading && !loadError && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-220px)] pb-8">
+              {players.map((player) => (
+                <PlayerCard key={player.id} player={player} />
               ))}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </main>
+      )}
     </div>
   );
 };

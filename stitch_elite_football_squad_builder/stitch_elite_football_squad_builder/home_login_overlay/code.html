@@ -1,0 +1,322 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Football Elite - Home</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#a4baaf",
+                    "secondary-fixed": "#d1e8dc",
+                    "error-container": "#93000a",
+                    "surface-container-high": "#222a3d",
+                    "surface-container-low": "#131b2e",
+                    "on-secondary-fixed-variant": "#374b42",
+                    "on-primary-fixed": "#002114",
+                    "inverse-surface": "#dae2fd",
+                    "primary-fixed-dim": "#a5d0b9",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#dae2fd",
+                    "surface": "#0b1326",
+                    "surface-container": "#171f33",
+                    "secondary-fixed-dim": "#b5ccc0",
+                    "surface-dim": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "on-primary": "#0e3727",
+                    "on-tertiary-fixed-variant": "#574500",
+                    "tertiary-fixed-dim": "#e9c349",
+                    "primary-fixed": "#c1ecd4",
+                    "outline": "#8b938d",
+                    "on-primary-fixed-variant": "#274e3d",
+                    "surface-variant": "#2d3449",
+                    "on-primary-container": "#86af99",
+                    "tertiary": "#e9c349",
+                    "surface-tint": "#a5d0b9",
+                    "background": "#0b1326",
+                    "on-tertiary-fixed": "#241a00",
+                    "outline-variant": "#414844",
+                    "tertiary-fixed": "#ffe088",
+                    "inverse-on-surface": "#283044",
+                    "primary": "#a5d0b9",
+                    "on-surface-variant": "#c1c8c2",
+                    "inverse-primary": "#3f6653",
+                    "on-tertiary-container": "#4e3d00",
+                    "secondary-container": "#374b42",
+                    "tertiary-container": "#cba72f",
+                    "on-error": "#690005",
+                    "surface-bright": "#31394d",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#0b1f18",
+                    "on-secondary": "#21342c",
+                    "secondary": "#b5ccc0",
+                    "on-tertiary": "#3c2f00",
+                    "surface-container-highest": "#2d3449",
+                    "on-background": "#dae2fd",
+                    "primary-container": "#1b4332"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "sm": "8px",
+                    "margin": "24px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "stat-value": [
+                            "Montserrat"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Montserrat"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Montserrat"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Montserrat"
+                    ],
+                    "display-lg": [
+                            "Montserrat"
+                    ],
+                    "headline-lg": [
+                            "Montserrat"
+                    ]
+            },
+            "fontSize": {
+                    "stat-value": [
+                            "22px",
+                            {
+                                    "lineHeight": "22px",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style type="text/tailwindcss">
+      @layer utilities {
+        .pitch-gradient {
+          background: linear-gradient(135deg, #081C15 0%, #1B4332 100%);
+        }
+        .pitch-pattern {
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+          background-size: 100px 100px;
+        }
+        .glass-panel {
+          @apply bg-surface/80 backdrop-blur-xl border border-white/10 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),_0_10px_10px_-5px_rgba(0,0,0,0.4)];
+        }
+        .premium-hover {
+          @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(165,208,185,0.3)] hover:border-primary/50;
+        }
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-full overflow-hidden pitch-gradient relative">
+<!-- Pitch Pattern Overlay -->
+<div class="absolute inset-0 pitch-pattern pointer-events-none opacity-50"></div>
+<!-- Main Content Container -->
+<div class="relative z-10 w-full h-full flex flex-col justify-center items-center px-gutter transition-all duration-500 blur-sm scale-95" id="main-content">
+<!-- Top Right Action -->
+<div class="absolute top-lg right-lg">
+<button class="px-6 py-3 bg-surface-container-high border border-white/10 rounded-lg text-primary font-label-md hover:bg-surface-variant transition-colors flex items-center gap-2 group" onclick="toggleLoginModal()">
+<span class="material-symbols-outlined text-[20px] group-hover:text-tertiary transition-colors">login</span>
+                Iniciar Sesión
+            </button>
+</div>
+<!-- Branding -->
+<div class="text-center mb-xl">
+<h1 class="font-display-lg text-display-lg text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter drop-shadow-2xl">FOOTBALL ELITE</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-sm opacity-80">Domina la cancha. Construye tu legado.</p>
+</div>
+<!-- Main Actions Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-lg">
+<!-- JUGAR Card -->
+<button class="glass-panel rounded-xl p-8 flex flex-col items-center justify-center text-center premium-hover group relative overflow-hidden h-64">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary-container/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-16 h-16 rounded-full bg-primary-container/50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px] text-primary">sports_soccer</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">JUGAR</h3>
+<p class="font-body-md text-body-md text-on-surface-variant/70">Entra al campo y demuestra tus habilidades estratégicas.</p>
+</button>
+<!-- HISTORIAL Card -->
+<button class="glass-panel rounded-xl p-8 flex flex-col items-center justify-center text-center premium-hover group relative overflow-hidden h-64">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface-variant/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px] text-on-secondary-container">history</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">VER HISTORIAL DE PARTIDAS</h3>
+<p class="font-body-md text-body-md text-on-surface-variant/70">Analiza tus resultados y mejora tus tácticas futuras.</p>
+</button>
+<!-- CARTAS Card -->
+<button class="glass-panel rounded-xl p-8 flex flex-col items-center justify-center text-center premium-hover group relative overflow-hidden h-64">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-tertiary-container/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-tertiary/20">
+<span class="material-symbols-outlined text-[32px] text-tertiary" style="font-variation-settings: &quot;FILL&quot; 1;">style</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">VER TODAS LAS CARTAS</h3>
+<p class="font-body-md text-body-md text-on-surface-variant/70">Explora tu colección de jugadores de élite.</p>
+</button>
+</div>
+</div>
+<!-- Login Modal Overlay (Hidden by default) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 bg-background/60 backdrop-blur-md opacity-100" id="login-modal">
+<div class="glass-panel rounded-2xl w-full max-w-md mx-4 relative transform transition-transform duration-300 scale-100" id="login-card">
+<!-- Close Button -->
+<button class="absolute top-4 right-4 p-2 text-on-surface-variant hover:text-white transition-colors" onclick="toggleLoginModal()">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="p-8">
+<div class="text-center mb-8">
+<h2 class="font-headline-lg text-headline-lg text-white font-bold mb-2">Acceso Élite</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Ingresa tus credenciales para continuar.</p>
+</div>
+<form class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Email</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="as" type="email">
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Contraseña</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="sa" type="password">
+</div>
+<div class="pt-4">
+<button class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-3 rounded-lg hover:bg-primary-fixed-dim transition-colors shadow-[0_0_15px_rgba(165,208,185,0.4)]" type="button">
+                            Entrar
+                        </button>
+</div>
+</form>
+<div class="mt-6 flex items-center justify-center gap-4">
+<div class="h-px bg-white/10 flex-1"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">O continúa con</span>
+<div class="h-px bg-white/10 flex-1"></div>
+</div>
+<div class="mt-6 flex gap-4">
+<button class="flex-1 bg-surface-container-high border border-white/10 rounded-lg py-2 flex items-center justify-center hover:bg-surface-variant transition-colors">
+<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"></path></svg>
+</button>
+<button class="flex-1 bg-surface-container-high border border-white/10 rounded-lg py-2 flex items-center justify-center hover:bg-surface-variant transition-colors">
+<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.19 2.31-.88 3.5-1.15 1.4-.29 2.58.07 3.53.86-1.52 1-2.12 2.61-1.63 4.14.47 1.51 1.9 2.45 3.47 2.39-1.06 3.19-2.58 5.4-3.95 5.93zm-4.32-14.7c-.12-1.63 1.12-3.21 2.75-3.58.33 1.81-1.19 3.57-2.75 3.58z"></path></svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        function toggleLoginModal() {
+            const modal = document.getElementById('login-modal');
+            const card = document.getElementById('login-card');
+            const mainContent = document.getElementById('main-content');
+            
+            if (modal.classList.contains('opacity-0')) {
+                // Show modal
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+                mainContent.classList.add('blur-sm', 'scale-95');
+            } else {
+                // Hide modal
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+                mainContent.classList.remove('blur-sm', 'scale-95');
+            }
+        }
+    </script>
+
+
+</body></html>

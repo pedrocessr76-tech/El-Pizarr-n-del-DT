@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Football Elite - Bracket</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Montserrat:wght@600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "on-primary-container": "#86af99",
+                        "on-secondary-fixed-variant": "#374b42",
+                        "inverse-primary": "#3f6653",
+                        "surface-container": "#171f33",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffe088",
+                        "on-secondary-fixed": "#0b1f18",
+                        "on-primary-fixed": "#002114",
+                        "surface-variant": "#2d3449",
+                        "on-surface": "#dae2fd",
+                        "surface-bright": "#31394d",
+                        "tertiary-fixed-dim": "#e9c349",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-on-surface": "#283044",
+                        "on-secondary": "#21342c",
+                        "on-primary": "#0e3727",
+                        "on-tertiary-fixed": "#241a00",
+                        "primary": "#a5d0b9",
+                        "primary-container": "#1b4332",
+                        "primary-fixed": "#c1ecd4",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary-container": "#4e3d00",
+                        "surface-tint": "#a5d0b9",
+                        "on-error": "#690005",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-fixed-dim": "#b5ccc0",
+                        "on-background": "#dae2fd",
+                        "tertiary": "#e9c349",
+                        "secondary": "#b5ccc0",
+                        "tertiary-container": "#cba72f",
+                        "outline": "#8b938d",
+                        "on-tertiary-fixed-variant": "#574500",
+                        "on-secondary-container": "#a4baaf",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "surface": "#0b1326",
+                        "secondary-fixed": "#d1e8dc",
+                        "background": "#0b1326",
+                        "on-surface-variant": "#c1c8c2",
+                        "on-tertiary": "#3c2f00",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#414844",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "secondary-container": "#374b42"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "margin": "24px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "stat-value": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "display-lg": ["Montserrat"],
+                        "headline-sm": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Montserrat"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "stat-value": ["22px", { "lineHeight": "22px", "fontWeight": "800" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .bracket-connector {
+            position: absolute;
+            border: 2px solid theme('colors.surface-variant');
+            z-index: 0;
+        }
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            100% { left: 200%; }
+        }
+        
+        /* Pitch background gradient */
+        .pitch-bg {
+            background: radial-gradient(circle at center, #1b4332 0%, #0b1326 100%);
+            background-size: cover;
+        }
+        
+        /* Thin white lines for pitch */
+        .pitch-lines {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Prevent scroll on body, handle inside canvas */
+        body { overflow: hidden; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen flex antialiased">
+<main class="flex-1 h-full flex flex-col relative pitch-bg pitch-lines overflow-hidden">
+<header class="w-full z-50 flex justify-between items-center px-gutter h-16 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+<button class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">arrow_back</span>
+<span class="font-label-md text-label-md tracking-wider">VOLVER</span>
+</button>
+<div class="text-headline-md font-headline-md font-extrabold text-primary tracking-tighter">
+                COPA ÉLITE
+            </div>
+<div class="w-[88px]"></div>
+</header>
+<div class="flex-1 overflow-auto relative p-xl pb-32">
+<div class="min-w-[1200px] h-[900px] relative flex justify-between items-center px-16">
+<!-- Stage 1: Cuartos de Final -->
+<div class="flex flex-col justify-around h-full w-[280px] z-10 relative">
+<!-- QF 1 -->
+<div class="bg-surface-container-high rounded-xl border border-white/10 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.4)] p-4 flex flex-col gap-2 relative z-10">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A small, stylized crest logo for a modern professional football team, featuring geometric shapes in crimson and gold, set against a dark background, dramatic lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2FgOcRW9PAf7y7dNdDffLqLqxb_aNQciZ9p5ITxxRliVR-3KadLYTWOC1-sAG6kOSBmbfZiwU3AS-HvPXlydOuFn7GZ1HbuEtm1e_6o2cRm23r9OIBhmGt6br8_bd2d0rz4zKGOsw92Ct4UqReC7hOtpfpI2_fplYDnZAUSScJ9PH9cWM1aObVAxlGjO1POba5-eLJ73qf3a8wO2IiRF17GxVG2qL5D6oj1Vql35j-U-Uq8GjqU6eLg"/>
+<span class="font-label-md text-label-md text-on-surface">Red Devils FC</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">2</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center opacity-60">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A small, stylized crest logo for a modern professional football team, featuring geometric shapes in blue and silver, set against a dark background, dramatic lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzmL4Eb8x2MWGb5_xoQ5ZBmDX76RKDT-3sLbfUdM-e3_qT6oHHn020LBoK3Vur-lZGDvflYlw_5pLBP_cUtZppvX2njU2FPlpaE3z7nAkxtoIolmRWnTCH0zxHdzz5WW9-iPRyJd7ODQGqbLas1U_M6B_SvNyUTc_HggFZPeLQY1xd23_V7ZEZb8dh3OQrVf55cm6CPCU8BZcphB3PGs6ma7W0fNlCIpJc4hILf5pPGNkGf6thPyDmEw"/>
+<span class="font-label-md text-label-md text-on-surface-variant">Blue Hawks</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface-variant">1</span>
+</div>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute top-1/2 -right-[64px] w-px h-[calc(100%+1rem)] bg-surface-variant"></div>
+</div>
+<!-- QF 2 (User's Match - Active) -->
+<div class="bg-surface-container-high rounded-xl border-2 border-primary shadow-[0_0_30px_-5px_rgba(165,208,185,0.4)] p-4 flex flex-col gap-4 relative z-10 transform scale-105 shimmer">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-3 py-0.5 rounded-full font-label-md text-xs uppercase tracking-widest font-bold z-20">Tu Partido</div>
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<img class="w-8 h-8 rounded-full object-cover ring-2 ring-tertiary" data-alt="A premium, highly detailed stylized crest logo for the user's professional football team, featuring a majestic golden lion head with emerald green accents, set against a dark background, cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGuRgBQM5c2JWB8PHoVTzGM7-6Vsy5EwuRQMgG8fYtXnE9nhog5uiaPRs6qTZSZWaynFEoaziKF_5kq_Sw_t4NzXxK6NV_YwKRFp7J18YAqrmaFpa_on-bh9oGalxB5Z3vRE5QBHntrcTSRNhjIh4q_aQiCJkCqWKM3ihyWmFAYu2k9YiEI7pB6pZrKmfloULydk5jCnlb4GUvzJb2pDMZgYosTtDZPBanpANZbTLLS9qSKtnMyi5BVw"/>
+<span class="font-headline-sm text-headline-sm text-tertiary">PRO SCOUT XI</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">-</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A small, stylized crest logo for a modern professional football team, featuring geometric shapes in black and yellow, set against a dark background, dramatic lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW1vPwmKponExa3LJT5dhUYrbim2V2mEn0fC9gS7ZVk8mrseDV8yXUHRpUDe1EZZMABgdi26dvLc1XZ2FCS6UZWmpPjQr28o3aJoT71Lck56Tdobm4WWd_cXGBEsnyn4zXEpQFwd_MQVgZiEl9hANyKiWn7YwxESvA26WfeHc_e4ds230HOlQkgZX8jjcE8LGO2svhJLOaJ2y8J0PqKot3csiOMBmUBjXIRtgSWlV7Hj-TiNg5ORKg4g"/>
+<span class="font-label-md text-label-md text-on-surface">Yellow Jackets</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">-</span>
+</div>
+</div>
+<button class="w-full bg-primary-container border border-primary text-primary hover:bg-primary hover:text-on-primary font-headline-sm text-sm uppercase py-3 rounded-lg transition-all duration-300 shadow-[0_4px_14px_0_rgba(27,67,50,0.39)] hover:shadow-[0_6px_20px_rgba(165,208,185,0.23)]" onclick="openModal()">
+                            JUGAR PARTIDO
+                        </button>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute bottom-1/2 -right-[64px] w-px h-[calc(100%+1.5rem)] bg-surface-variant"></div>
+</div>
+<!-- QF 3 -->
+<div class="bg-surface-container-high rounded-xl border border-white/10 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.4)] p-4 flex flex-col gap-2 relative z-10">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Metro City</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">3</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center opacity-60">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">North Star</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface-variant">0</span>
+</div>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute top-1/2 -right-[64px] w-px h-[calc(100%+1rem)] bg-surface-variant"></div>
+</div>
+<!-- QF 4 -->
+<div class="bg-surface-container-high rounded-xl border border-white/10 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.4)] p-4 flex flex-col gap-2 relative z-10">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Golden Lions</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">1</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center opacity-60">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Ocean Waves</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface-variant">0</span>
+</div>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute bottom-1/2 -right-[64px] w-px h-[calc(100%+1rem)] bg-surface-variant"></div>
+</div>
+</div>
+<!-- Stage 2: Semifinales -->
+<div class="flex flex-col justify-around h-[75%] w-[280px] z-10 relative">
+<!-- SF 1 (Waiting for User Match) -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 shadow-lg p-4 flex flex-col gap-2 relative z-10 opacity-80">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A small, stylized crest logo for a modern professional football team, featuring geometric shapes in crimson and gold, set against a dark background, dramatic lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2FgOcRW9PAf7y7dNdDffLqLqxb_aNQciZ9p5ITxxRliVR-3KadLYTWOC1-sAG6kOSBmbfZiwU3AS-HvPXlydOuFn7GZ1HbuEtm1e_6o2cRm23r9OIBhmGt6br8_bd2d0rz4zKGOsw92Ct4UqReC7hOtpfpI2_fplYDnZAUSScJ9PH9cWM1aObVAxlGjO1POba5-eLJ73qf3a8wO2IiRF17GxVG2qL5D6oj1Vql35j-U-Uq8GjqU6eLg"/>
+<span class="font-label-md text-label-md text-on-surface">Red Devils FC</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">-</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">hourglass_empty</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant italic">Por definir</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface-variant">-</span>
+</div>
+<!-- Input connection line -->
+<div class="absolute top-1/2 -left-[64px] w-[64px] h-px bg-surface-variant"></div>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute top-1/2 -right-[64px] w-px h-[calc(100%+1rem)] bg-surface-variant"></div>
+</div>
+<!-- SF 2 -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 shadow-lg p-4 flex flex-col gap-2 relative z-10 opacity-80">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Metro City</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">-</span>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">shield</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Golden Lions</span>
+</div>
+<span class="font-stat-value text-stat-value text-on-surface">-</span>
+</div>
+<!-- Input connection line -->
+<div class="absolute top-1/2 -left-[64px] w-[64px] h-px bg-surface-variant"></div>
+<!-- Connection Line out -->
+<div class="absolute top-1/2 -right-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute bottom-1/2 -right-[64px] w-px h-[calc(100%+1rem)] bg-surface-variant"></div>
+</div>
+</div>
+<!-- Stage 3: La Gran Final -->
+<div class="flex flex-col justify-center h-full w-[320px] z-10 relative">
+<div class="bg-surface-container-high rounded-xl border-2 border-tertiary-fixed-dim/30 shadow-[0_20px_40px_-5px_rgba(233,195,73,0.15)] p-6 flex flex-col gap-6 relative z-10 backdrop-blur-md">
+<!-- Input connection line -->
+<div class="absolute top-1/2 -left-[64px] w-[64px] h-px bg-surface-variant"></div>
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<span class="material-symbols-outlined text-[48px] text-tertiary drop-shadow-[0_0_15px_rgba(233,195,73,0.5)]">trophy</span>
+<span class="font-headline-sm text-sm uppercase tracking-widest text-tertiary mt-2 whitespace-nowrap">LA GRAN FINAL</span>
+</div>
+<div class="flex justify-between items-center mt-4">
+<div class="flex flex-col items-center gap-3 w-[45%]">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center border-2 border-dashed border-white/20">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant">help</span>
+</div>
+<span class="font-label-md text-xs text-center text-on-surface-variant">Ganador SF1</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface-variant opacity-50 shrink-0">VS</div>
+<div class="flex flex-col items-center gap-3 w-[45%]">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center border-2 border-dashed border-white/20">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant">help</span>
+</div>
+<span class="font-label-md text-xs text-center text-on-surface-variant">Ganador SF2</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Live Match Modal -->
+<div class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4" id="live-match-modal">
+<div class="absolute inset-0 bg-background/80 backdrop-blur-xl"></div>
+<div class="relative w-full max-w-5xl h-[85vh] bg-surface-container rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
+<div class="bg-surface-container-high border-b border-white/10 p-4 flex justify-between items-center flex-shrink-0">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary animate-pulse">sensors</span>
+<span class="font-label-md text-primary tracking-widest uppercase">EN VIVO - 65'</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<span class="font-headline-sm text-tertiary">PRO SCOUT XI</span>
+<img class="w-10 h-10 rounded-full object-cover ring-2 ring-tertiary" data-alt="A premium, highly detailed stylized crest logo for the user's professional football team, featuring a majestic golden lion head with emerald green accents, set against a dark background, cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGuRgBQM5c2JWB8PHoVTzGM7-6Vsy5EwuRQMgG8fYtXnE9nhog5uiaPRs6qTZSZWaynFEoaziKF_5kq_Sw_t4NzXxK6NV_YwKRFp7J18YAqrmaFpa_on-bh9oGalxB5Z3vRE5QBHntrcTSRNhjIh4q_aQiCJkCqWKM3ihyWmFAYu2k9YiEI7pB6pZrKmfloULydk5jCnlb4GUvzJb2pDMZgYosTtDZPBanpANZbTLLS9qSKtnMyi5BVw"/>
+</div>
+<div class="bg-surface-variant px-6 py-2 rounded-lg border border-white/5">
+<span class="font-display-lg text-4xl text-on-surface">2 - 1</span>
+</div>
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A small, stylized crest logo for a modern professional football team, featuring geometric shapes in black and yellow, set against a dark background, dramatic lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW1vPwmKponExa3LJT5dhUYrbim2V2mEn0fC9gS7ZVk8mrseDV8yXUHRpUDe1EZZMABgdi26dvLc1XZ2FCS6UZWmpPjQr28o3aJoT71Lck56Tdobm4WWd_cXGBEsnyn4zXEpQFwd_MQVgZiEl9hANyKiWn7YwxESvA26WfeHc_e4ds230HOlQkgZX8jjcE8LGO2svhJLOaJ2y8J0PqKot3csiOMBmUBjXIRtgSWlV7Hj-TiNg5ORKg4g"/>
+<span class="font-headline-sm text-on-surface">Yellow Jackets</span>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeModal()">
+<span class="material-symbols-outlined text-3xl">close</span>
+</button>
+</div>
+<div class="flex-1 flex overflow-hidden">
+<div class="flex-1 p-6 flex items-center justify-center border-r border-white/10 relative bg-surface-dim">
+<div class="w-full max-w-lg aspect-[2/3] pitch-bg pitch-lines border border-white/20 rounded-xl relative overflow-hidden shadow-2xl">
+<div class="absolute inset-x-0 top-1/2 h-px bg-white/30"></div>
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border border-white/30"></div>
+<div class="absolute inset-x-20 top-0 h-32 border border-white/30 border-t-0"></div>
+<div class="absolute inset-x-20 bottom-0 h-32 border border-white/30 border-b-0"></div>
+<div class="absolute top-1/4 left-1/3 w-3 h-3 bg-tertiary rounded-full shadow-[0_0_10px_rgba(233,195,73,0.8)] animate-pulse"></div>
+<div class="absolute top-1/3 left-2/3 w-3 h-3 bg-tertiary rounded-full shadow-[0_0_10px_rgba(233,195,73,0.8)]"></div>
+<div class="absolute top-1/2 left-1/2 w-3 h-3 bg-tertiary rounded-full shadow-[0_0_10px_rgba(233,195,73,0.8)]"></div>
+<div class="absolute bottom-1/3 left-1/4 w-3 h-3 bg-on-surface-variant rounded-full"></div>
+<div class="absolute bottom-1/4 left-3/4 w-3 h-3 bg-on-surface-variant rounded-full"></div>
+<div class="absolute top-1/4 left-[38%] w-2 h-2 bg-white rounded-full shadow-[0_0_5px_white]"></div>
+</div>
+</div>
+<div class="w-96 flex flex-col bg-surface-container">
+<div class="p-6 border-b border-white/10 flex flex-col gap-6">
+<div class="font-headline-sm text-on-surface mb-2">Estadísticas</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-label-md text-on-surface-variant">
+<span>58%</span>
+<span>Posesión</span>
+<span>42%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
+<div class="w-[58%] h-full bg-tertiary"></div>
+<div class="w-[42%] h-full bg-outline"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-label-md text-on-surface-variant">
+<span>12</span>
+<span>Tiros</span>
+<span>5</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
+<div class="w-[70%] h-full bg-tertiary"></div>
+<div class="w-[30%] h-full bg-outline"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-label-md text-on-surface-variant">
+<span>6</span>
+<span>A puerta</span>
+<span>2</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
+<div class="w-[75%] h-full bg-tertiary"></div>
+<div class="w-[25%] h-full bg-outline"></div>
+</div>
+</div>
+</div>
+<div class="flex-1 p-6 overflow-y-auto flex flex-col gap-4">
+<div class="font-headline-sm text-on-surface sticky top-0 bg-surface-container py-1 z-10">Comentarios en vivo</div>
+<div class="flex gap-4">
+<div class="font-stat-value text-primary w-8 shrink-0">65'</div>
+<div class="font-body-md text-on-surface-variant">
+<strong class="text-on-surface">¡Gran jugada!</strong> El mediocampista de PRO SCOUT XI filtra un pase peligroso, pero la defensa despeja.
+                        </div>
+</div>
+<div class="flex gap-4 opacity-70">
+<div class="font-stat-value text-tertiary w-8 shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">sports_soccer</span>
+</div>
+<div class="font-body-md text-on-surface-variant">
+<strong class="text-tertiary">¡GOL DE PRO SCOUT XI!</strong> Remate implacable cruzado al segundo palo.
+                        </div>
+</div>
+<div class="flex gap-4 opacity-60">
+<div class="font-stat-value text-primary w-8 shrink-0">51'</div>
+<div class="font-body-md text-on-surface-variant">
+                            Tiro libre peligroso a favor de Yellow Jackets que pasa rozando el travesaño.
+                        </div>
+</div>
+<div class="flex gap-4 opacity-50">
+<div class="font-stat-value text-primary w-8 shrink-0">45'</div>
+<div class="font-body-md text-on-surface-variant">
+                            Arranca el segundo tiempo.
+                        </div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-high border-t border-white/10 p-4 flex justify-end">
+<button class="px-6 py-2 rounded-lg border border-outline text-on-surface hover:bg-surface-variant transition-colors font-label-md uppercase" onclick="closeModal()">
+                CERRAR
+            </button>
+</div>
+</div>
+</div>
+<script>
+    function openModal() {
+        document.getElementById('live-match-modal').classList.remove('hidden');
+    }
+    function closeModal() {
+        document.getElementById('live-match-modal').classList.add('hidden');
+    }
+</script>
+</body></html>

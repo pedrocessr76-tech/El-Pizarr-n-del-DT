@@ -18,6 +18,8 @@ function App() {
         return <TeamBuilderPage />;
       case 'catalog':
         return <CatalogHistoryPage />;
+      case 'history':
+        return <CatalogHistoryPage initialView="history" />;
       case 'bracket':
         return <TournamentBracketPage />;
       default:
