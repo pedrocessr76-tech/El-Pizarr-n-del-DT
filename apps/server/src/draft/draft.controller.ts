@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DraftService } from './draft.service';
 
@@ -13,6 +13,9 @@ class AddPlayerToTeamDto {
 
   @ApiProperty({ example: 'player-uuid', description: 'ID del jugador' })
   playerId!: string;
+
+  @ApiProperty({ example: true, description: 'true = titular, false = suplente', required: false })
+  isStarter?: boolean;
 }
 
 class CreateTeamDto {
@@ -28,8 +31,8 @@ export class DraftController {
   @Get('pack')
   @ApiOperation({ summary: 'Obtener un sobre aleatorio de 5 jugadores desde la DB' })
   @ApiResponse({ status: 200, description: 'Sobre de jugadores generado.' })
-  getPack() {
-    return this.draftService.getPack();
+  getPack(@Query('position') position?: string) {
+    return this.draftService.getPack(position);
   }
 
   @Post('select')
@@ -50,7 +53,7 @@ export class DraftController {
   @ApiOperation({ summary: 'Agregar un jugador al equipo (máx 11 titulares)' })
   @ApiBody({ type: AddPlayerToTeamDto })
   addPlayerToTeam(@Body() body: AddPlayerToTeamDto) {
-    return this.draftService.addPlayerToTeam(body.teamId, body.playerId);
+    return this.draftService.addPlayerToTeam(body.teamId, body.playerId, body.isStarter);
   }
 
   @Delete('team/:teamId/player/:playerId')

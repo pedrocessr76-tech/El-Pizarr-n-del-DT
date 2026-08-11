@@ -3,15 +3,25 @@ import type { Player } from '../../../../packages/shared/types/models';
 import { draftService } from '../services/draftService';
 import { useAuthStore } from '../store/useAuthStore';
 import { useDraftStore } from '../store/useDraftStore';
+import type { ActiveTab } from '../components/Navbar';
 
 interface TeamBuilderPageProps {
   onBack?: () => void;
+  onNavigate?: (tab: ActiveTab) => void;
 }
 
 interface SlotAssignment {
   slotId: string;
   player: Player;
 }
+
+type Difficulty = 'Principiante' | 'Profesional' | 'Leyenda';
+
+const DIFFICULTY_MULTIPLIER: Record<Difficulty, string> = {
+  Principiante: '1.0x',
+  Profesional: '1.5x',
+  Leyenda: '2.0x',
+};
 
 // Nomenclatura FIFA estándar
 export type FIFA_POSITION = 
@@ -58,8 +68,22 @@ const GENERIC_TO_FIFA: Record<string, FIFA_POSITION[]> = {
 
 // Función para verificar compatibilidad de posiciones
 const arePositionsCompatible = (slotPosition: FIFA_POSITION, playerPosition: string): boolean => {
-  const normalizedPlayerPosition = playerPosition.toUpperCase();
-  const playerFIFAPositions = GENERIC_TO_FIFA[normalizedPlayerPosition] || [];
+  const normalizedPlayerPosition = playerPosition.toUpperCase().trim();
+  
+  // Verificar si la posición del jugador es una posición FIFA específica
+  const fifaPositions: FIFA_POSITION[] = [
+    'POR', 'LD', 'LI', 'DFC', 'MCD', 'MC', 'MCO', 'MD', 'MI', 'ED', 'EI', 'SD', 'DC', 'ST'
+  ];
+  
+  let playerFIFAPositions: FIFA_POSITION[];
+  
+  if (fifaPositions.includes(normalizedPlayerPosition as FIFA_POSITION)) {
+    // Si ya es una posición FIFA, usarla directamente
+    playerFIFAPositions = [normalizedPlayerPosition as FIFA_POSITION];
+  } else {
+    // Si es una posición genérica, mapearla
+    playerFIFAPositions = GENERIC_TO_FIFA[normalizedPlayerPosition] || [];
+  }
   
   // Si el jugador no tiene posiciones FIFA mapeadas, no es compatible
   if (playerFIFAPositions.length === 0) {
@@ -425,10 +449,11 @@ const FORMATIONS: Record<string, Formation> = {
   },
 };
 
-export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
+export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavigate }) => {
   const [activeFormation, setActiveFormation] = useState<string>('4-3-3 (Plana)');
   const [showPlayerOverlay, setShowPlayerOverlay] = useState<boolean>(false);
   const [showMatchPrepOverlay, setShowMatchPrepOverlay] = useState<boolean>(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('Profesional');
   const [packPlayers, setPackPlayers] = useState<Player[]>([]);
   const [isLoadingPack, setIsLoadingPack] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -465,7 +490,8 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
     setIsLoadingPack(true);
     setMessage(null);
     try {
-      const data = await draftService.getPack();
+      const position = selectedPosition === 'ANY' ? undefined : selectedPosition;
+      const data = await draftService.getPack(position);
       setPackPlayers(data.players);
     } catch (err) {
       setMessage('Error al cargar el sobre de jugadores. Verifica que el backend esté corriendo.');
@@ -479,9 +505,21 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
       setMessage('Primero debes crear un equipo.');
       return;
     }
+    
+    // Verificar si el jugador ya está asignado a otro slot
+    const isAlreadyAssigned = assignedPlayers.some(ap => ap.player.id === player.id);
+    if (isAlreadyAssigned) {
+      setMessage('Este jugador ya está asignado en el equipo.');
+      return;
+    }
+    
     setMessage(null);
     try {
-      await draftService.addPlayerToTeam(teamId, player.id);
+      // Determinar si el slot seleccionado es titular o suplente
+      const slot = currentFormation.slots.find(s => s.id === selectedSlotId);
+      const isStarter = slot?.type === 'starter';
+
+      await draftService.addPlayerToTeam(teamId, player.id, isStarter);
       setAssignedPlayers(prev => {
         const filtered = prev.filter(p => p.slotId !== selectedSlotId);
         return [...filtered, { slotId: selectedSlotId, player }];
@@ -495,6 +533,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
   const handleSlotClick = (position: FIFA_POSITION, slotId: string) => {
     setSelectedPosition(position);
     setSelectedSlotId(slotId);
+    setPackPlayers([]); // Limpiar pack anterior
     setShowPlayerOverlay(true);
   };
 
@@ -522,21 +561,32 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
       return getRandomPlayers(packPlayers, 5);
     }
     
-    // Filtrar jugadores compatibles con la posición seleccionada
-    const compatiblePlayers = packPlayers.filter(p => arePositionsCompatible(selectedPosition, p.position));
+    // Obtener jugadores ya asignados
+    const assignedPlayerIds = new Set(assignedPlayers.map(ap => ap.player.id));
     
-    // Si hay 5 o más jugadores compatibles, tomar 5 aleatorios
-    if (compatiblePlayers.length >= 5) {
-      return getRandomPlayers(compatiblePlayers, 5);
+    // Filtrar jugadores que pueden jugar EXACTAMENTE en la posición seleccionada
+    // y que no estén ya asignados
+    const exactMatchPlayers = packPlayers.filter(p => {
+      if (assignedPlayerIds.has(p.id)) return false;
+      return p.position.toUpperCase().trim() === selectedPosition;
+    });
+    
+    // Si hay 5 o más jugadores con la posición exacta, tomar 5 aleatorios
+    if (exactMatchPlayers.length >= 5) {
+      return getRandomPlayers(exactMatchPlayers, 5);
     }
     
-    // Si hay menos de 5 jugadores compatibles, tomar todos los compatibles
-    // y completar con jugadores aleatorios del pack completo
-    const remainingNeeded = 5 - compatiblePlayers.length;
-    const otherPlayers = packPlayers.filter(p => !compatiblePlayers.includes(p));
-    const randomOthers = getRandomPlayers(otherPlayers, remainingNeeded);
+    // Si hay menos de 5 jugadores con la posición exacta, tomar todos
+    // y completar con jugadores compatibles (pero no asignados)
+    const remainingNeeded = 5 - exactMatchPlayers.length;
+    const compatiblePlayers = packPlayers.filter(p => {
+      if (assignedPlayerIds.has(p.id)) return false;
+      if (exactMatchPlayers.includes(p)) return false;
+      return arePositionsCompatible(selectedPosition, p.position);
+    });
+    const randomOthers = getRandomPlayers(compatiblePlayers, remainingNeeded);
     
-    return [...compatiblePlayers, ...randomOthers];
+    return [...exactMatchPlayers, ...randomOthers];
   })();
 
   return (
@@ -905,21 +955,34 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack }) => {
               <div className="space-y-3">
                 <h3 className="text-body-md font-body-md text-white font-semibold mb-2">Difficulty</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  <button className="py-2 px-1 text-center rounded bg-surface-container border border-surface-variant text-on-surface-variant hover:text-white hover:border-primary-fixed-dim transition-colors text-label-md">
-                    Principiante
-                  </button>
-                  <button className="py-2 px-1 text-center rounded bg-primary-container border border-primary text-primary font-bold shadow-[0_0_10px_rgba(165,208,185,0.2)] text-label-md">
-                    Profesional
-                  </button>
-                  <button className="py-2 px-1 text-center rounded bg-surface-container border border-surface-variant text-on-surface-variant hover:text-white hover:border-tertiary transition-colors text-label-md">
-                    Leyenda
-                  </button>
+                  {(['Principiante', 'Profesional', 'Leyenda'] as Difficulty[]).map((d) => {
+                    const isSelected = difficulty === d;
+                    return (
+                      <button
+                        key={d}
+                        onClick={() => setDifficulty(d)}
+                        className={`py-2 px-1 text-center rounded transition-colors text-label-md ${
+                          isSelected
+                            ? 'bg-primary-container border border-primary text-primary font-bold shadow-[0_0_10px_rgba(165,208,185,0.2)]'
+                            : 'bg-surface-container border border-surface-variant text-on-surface-variant hover:text-white hover:border-primary-fixed-dim'
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-[12px] text-on-surface-variant text-center mt-2">Rewards multiplier: 1.5x</p>
+                <p className="text-[12px] text-on-surface-variant text-center mt-2">Rewards multiplier: {DIFFICULTY_MULTIPLIER[difficulty]}</p>
               </div>
             </div>
             <div className="p-6 bg-surface-container-lowest z-10 border-t border-surface-variant">
-              <button className="w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+              <button
+                onClick={() => {
+                  setShowMatchPrepOverlay(false);
+                  onNavigate?.('bracket');
+                }}
+                className="w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              >
                 CONFIRMAR Y EMPEZAR PARTIDO
               </button>
             </div>

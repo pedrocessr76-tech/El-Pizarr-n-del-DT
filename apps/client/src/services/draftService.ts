@@ -21,8 +21,8 @@ export interface TeamActionResponse {
 }
 
 export const draftService = {
-  async getPack(): Promise<PlayerPack> {
-    const { data } = await api.get<PlayerPack>('/draft/pack');
+  async getPack(position?: string): Promise<PlayerPack> {
+    const { data } = await api.get<PlayerPack>('/draft/pack', { params: { position } });
     return data;
   },
 
@@ -36,8 +36,8 @@ export const draftService = {
     return data;
   },
 
-  async addPlayerToTeam(teamId: string, playerId: string): Promise<TeamActionResponse> {
-    const { data } = await api.post<TeamActionResponse>('/draft/team/player', { teamId, playerId });
+  async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<TeamActionResponse> {
+    const { data } = await api.post<TeamActionResponse>('/draft/team/player', { teamId, playerId, isStarter });
     return data;
   },
 

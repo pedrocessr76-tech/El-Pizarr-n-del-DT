@@ -12,4 +12,14 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('debug/positions')
+  @ApiOperation({ summary: 'Verificar posiciones en la base de datos' })
+  async getPositions() {
+    const positions = await this.appService.getPlayerPositions();
+    return {
+      message: 'Posiciones actuales en la base de datos',
+      positions: positions
+    };
+  }
 }

@@ -15,7 +15,7 @@ function App() {
       case 'home':
         return <HomePage onNavigate={(tab) => setActiveTab(tab)} onOpenLogin={() => setIsLoginOpen(true)} />;
       case 'builder':
-        return <TeamBuilderPage />;
+        return <TeamBuilderPage onNavigate={(tab) => setActiveTab(tab)} />;
       case 'catalog':
         return <CatalogHistoryPage />;
       case 'history':

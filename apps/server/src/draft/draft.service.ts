@@ -38,19 +38,51 @@ export class DraftService {
     };
   }
 
-  async getPack(): Promise<PlayerPack> {
+  async getPack(position?: string): Promise<PlayerPack> {
     const count = await this.playerRepo.count();
     if (count === 0) {
       return { players: [] };
     }
 
-    const randomPlayers = await this.playerRepo
+    // Si no hay posición específica, devolver 5 jugadores aleatorios
+    if (!position || position === 'ANY') {
+      const randomPlayers = await this.playerRepo
+        .createQueryBuilder('p')
+        .orderBy('RANDOM()')
+        .take(5)
+        .getMany();
+      return { players: randomPlayers.map((p) => this.toPlayer(p)) };
+    }
+
+    // Mapeo de posiciones compatibles
+    const compatiblePositions: Record<string, string[]> = {
+      'POR': ['POR'],
+      'LD': ['LD', 'DFC'],
+      'LI': ['LI', 'DFC'],
+      'DFC': ['DFC', 'LD', 'LI'],
+      'MCD': ['MCD', 'MC', 'MCO'],
+      'MC': ['MC', 'MCD', 'MCO'],
+      'MCO': ['MCO', 'MC', 'MCD'],
+      'MD': ['MD', 'ED', 'MC'],
+      'MI': ['MI', 'EI', 'MC'],
+      'ED': ['ED', 'MD', 'EI', 'SD'],
+      'EI': ['EI', 'MI', 'ED', 'SD'],
+      'SD': ['SD', 'DC', 'ST', 'ED', 'EI'],
+      'DC': ['DC', 'ST', 'SD'],
+      'ST': ['ST', 'DC', 'SD'],
+    };
+
+    const positionsToSearch = compatiblePositions[position.toUpperCase()] || [position.toUpperCase()];
+    
+    // Obtener jugadores de la posición y posiciones compatibles
+    const players = await this.playerRepo
       .createQueryBuilder('p')
+      .where('UPPER(p.position) IN (:...positions)', { positions: positionsToSearch })
       .orderBy('RANDOM()')
       .take(5)
       .getMany();
 
-    return { players: randomPlayers.map((p) => this.toPlayer(p)) };
+    return { players: players.map((p) => this.toPlayer(p)) };
   }
 
   async selectPlayer(playerId: string): Promise<{ success: boolean; player: Player | null; message: string }> {
@@ -76,7 +108,7 @@ export class DraftService {
     return { teamId: team.id };
   }
 
-  async addPlayerToTeam(teamId: string, playerId: string): Promise<{ success: boolean; message: string }> {
+  async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<{ success: boolean; message: string }> {
     const team = await this.teamRepo.findOne({ where: { id: teamId } });
     if (!team) {
       throw new NotFoundException('Equipo no encontrado.');
@@ -87,24 +119,37 @@ export class DraftService {
       throw new NotFoundException('Jugador no encontrado.');
     }
 
-    const currentCount = await this.teamPlayerRepo.count({ where: { teamId, isStarter: true } });
-    if (currentCount >= 11) {
-      throw new BadRequestException('El equipo ya tiene 11 jugadores titulares.');
-    }
-
     const existing = await this.teamPlayerRepo.findOne({ where: { teamId, playerId } });
     if (existing) {
       throw new BadRequestException('El jugador ya está en el equipo.');
     }
 
+    const starterCount = await this.teamPlayerRepo.count({ where: { teamId, isStarter: true } });
+    const substituteCount = await this.teamPlayerRepo.count({ where: { teamId, isStarter: false } });
+
+    // Validación de plantilla máxima (11 titulares + 7 suplentes = 18)
+    if (starterCount + substituteCount >= 18) {
+      throw new BadRequestException('El equipo ya tiene 18 jugadores (11 titulares + 7 suplentes).');
+    }
+
+    if (isStarter) {
+      if (starterCount >= 11) {
+        throw new BadRequestException('El equipo ya tiene 11 jugadores titulares.');
+      }
+    } else {
+      if (substituteCount >= 7) {
+        throw new BadRequestException('El equipo ya tiene 7 jugadores suplentes.');
+      }
+    }
+
     const tp = new TeamPlayerEntity();
     tp.teamId = teamId;
     tp.playerId = playerId;
-    tp.isStarter = true;
-    tp.slotIndex = currentCount;
+    tp.isStarter = isStarter;
+    tp.slotIndex = isStarter ? starterCount : substituteCount;
     await this.teamPlayerRepo.save(tp);
 
-    return { success: true, message: 'Jugador agregado al equipo.' };
+    return { success: true, message: isStarter ? 'Jugador agregado al equipo.' : 'Suplente agregado al equipo.' };
   }
 
   async removePlayerFromTeam(teamId: string, playerId: string): Promise<{ success: boolean; message: string }> {
