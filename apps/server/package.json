@@ -15,7 +15,7 @@
     "@nestjs/typeorm": "^11.0.3",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.0.0",
-    "sqlite3": "^6.0.1",
+    "pg": "^8.13.1",
     "swagger-ui-express": "^5.0.1",
     "ts-loader": "^9.6.2",
     "typeorm": "^1.1.0"

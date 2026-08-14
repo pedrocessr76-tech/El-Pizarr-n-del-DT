@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('matches')
 export class MatchEntity {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn({ type: 'text' })
   id!: string;
 
   @Column({ length: 50, nullable: true })

@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('tournaments')
 export class TournamentEntity {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn({ type: 'text' })
   id!: string;
 
   @Column({ nullable: true })

@@ -5,6 +5,10 @@
       "headers": {
         "X-Goog-Api-Key": "YOUR_API_KEY_HERE"
       }
+    },
+    "basic-memory": {
+      "command": "C:\\Users\\pedro\\.local\\bin\\bm.exe",
+      "args": ["mcp"]
     }
   }
 }

@@ -13,8 +13,12 @@ import { SeedModule } from './seed/seed.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: 'database.sqlite',
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USER || 'pizarron',
+      password: process.env.DB_PASSWORD || 'pizarron',
+      database: process.env.DB_NAME || 'pizarron_dt',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

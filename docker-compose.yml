@@ -1,6 +1,22 @@
-version: '3.8'
-
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: pizarron_dt_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=pizarron_dt
+      - POSTGRES_USER=pizarron
+      - POSTGRES_PASSWORD=pizarron
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pizarron -d pizarron_dt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   server:
     build:
       context: .
@@ -11,8 +27,14 @@ services:
     environment:
       - PORT=3001
       - NODE_ENV=development
-    volumes:
-      - ./apps/server/database.sqlite:/app/apps/server/database.sqlite
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=pizarron
+      - DB_PASSWORD=pizarron
+      - DB_NAME=pizarron_dt
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   client:
@@ -28,3 +50,6 @@ services:
     depends_on:
       - server
     restart: unless-stopped
+
+volumes:
+  pg_data:
