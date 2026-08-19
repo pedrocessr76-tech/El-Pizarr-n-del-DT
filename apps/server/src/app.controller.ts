@@ -13,6 +13,12 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('health')
+  @ApiOperation({ summary: 'Verificar disponibilidad del backend' })
+  getHealth() {
+    return { status: 'ok' };
+  }
+
   @Get('debug/positions')
   @ApiOperation({ summary: 'Verificar posiciones en la base de datos' })
   async getPositions() {

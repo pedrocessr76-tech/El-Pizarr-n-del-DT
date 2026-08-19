@@ -4,7 +4,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  const corsOrigins = process.env.CORS_ORIGIN
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors(corsOrigins?.length ? { origin: corsOrigins } : undefined);
 
   const config = new DocumentBuilder()
     .setTitle('API de El Pizarrón del DT')
