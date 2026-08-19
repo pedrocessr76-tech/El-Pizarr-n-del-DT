@@ -8,6 +8,10 @@ export class TournamentEntity {
   @Column({ nullable: true })
   userId?: string;
 
+  // Sesión de invitado efímera (se borra con la sesión).
+  @Column({ type: 'text', nullable: true })
+  sessionId?: string | null;
+
   @Column()
   userTeamId!: string;
 

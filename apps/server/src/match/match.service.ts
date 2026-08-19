@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { PlayerEntity } from '../player/player.entity';
@@ -6,8 +6,10 @@ import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from './entities/match.entity';
 import { TournamentEntity } from './entities/tournament.entity';
-import type { Match, Team, Player, Tournament, RoundName } from '../../../../packages/shared/types/models';
+import type { Match, Team, Player, Tournament, RoundName, MatchStatus } from '../../../../packages/shared/types/models';
 import * as crypto from 'crypto';
+
+const ROUND_ORDER: RoundName[] = ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
 
 @Injectable()
 export class MatchService {
@@ -77,31 +79,76 @@ export class MatchService {
     };
   }
 
+    private averageTeamRating(team: Team): number {
+      const ratings = team.starters
+        .filter((player) => typeof player.rating === 'number')
+        .map((player) => player.rating as number);
+      if (ratings.length === 0) return 50;
+      return ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    }
+
     private sumTeamStats(team: Team): number {
       return team.starters.reduce((total, player) => {
         return total + player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical;
       }, 0);
     }
 
-    async simulateMatch(matchId: string): Promise<Match> {
-      const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
-      if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
+    private shuffle<T>(input: T[]): T[] {
+      const arr = [...input];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
 
+    // Nombre normalizado para detectar equipos duplicados: minúsculas, sin acentos,
+    // sin "FC/CF" como palabra suelta y con espacios colapsados.
+    private normalizeTeamName(name: string): string {
+      return (name || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\b(?:fc|cf)\b/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Distribución de Poisson (Knuth): nº de goles esperados según lambda
+    private poissonRandom(lambda: number): number {
+      const L = Math.exp(-lambda);
+      let k = 0;
+      let p = 1;
+      do {
+        k += 1;
+        p *= Math.random();
+      } while (p > L);
+      return Math.max(0, k - 1);
+    }
+
+    // Simula un partido completo (ponderado por rating medio) y persiste el resultado.
+    private async simulateAndPersistMatch(matchEntity: MatchEntity): Promise<Match> {
       const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
       const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
       if (!homeTeam || !awayTeam) throw new NotFoundException('Equipo no encontrado.');
 
-      const homeScoreValue = this.sumTeamStats(homeTeam);
-      const awayScoreValue = this.sumTeamStats(awayTeam);
-      const scoreDiff = (homeScoreValue - awayScoreValue) / 66;
+      const homeRating = this.averageTeamRating(homeTeam);
+      const awayRating = this.averageTeamRating(awayTeam);
+      const ratingDiff = homeRating - awayRating;
 
-      const homeScore = Math.max(0, Math.round(Math.random() * 3 + scoreDiff));
-      const awayScore = Math.max(0, Math.round(Math.random() * 3 - scoreDiff));
+      // Goles esperados ponderados: ±12 puntos de rating ≈ ±1 gol esperado.
+      const homeLambda = Math.max(0.25, 1.5 + ratingDiff / 12);
+      const awayLambda = Math.max(0.25, 1.5 - ratingDiff / 12);
 
-      let winnerId = homeScore > awayScore ? homeTeam.id : homeScore < awayScore ? awayTeam.id : undefined;
+      const homeScore = Math.min(7, this.poissonRandom(homeLambda));
+      const awayScore = Math.min(7, this.poissonRandom(awayLambda));
 
+      let winnerId = homeScore > awayScore ? homeTeam.id : awayTeam.id;
+
+      // Empate → tanda de penales ponderada por rating para decidir quien avanza.
       if (homeScore === awayScore) {
-        winnerId = Math.random() + (scoreDiff / 10) > 0.5 ? homeTeam.id : awayTeam.id;
+        const homeWinProb = Math.min(0.85, Math.max(0.15, 0.5 + ratingDiff / 40));
+        winnerId = Math.random() < homeWinProb ? homeTeam.id : awayTeam.id;
       }
 
       matchEntity.homeScore = homeScore;
@@ -121,55 +168,97 @@ export class MatchService {
       };
     }
 
-    async createTournament(userTeamId: string, userId?: string): Promise<Tournament> {
+    async simulateMatch(matchId: string): Promise<Match> {
+      const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
+      if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
+      return this.simulateAndPersistMatch(matchEntity);
+    }
+
+    async createTournament(userTeamId: string, userId?: string, sessionId?: string): Promise<Tournament> {
+
+    // Validar identidad: o userId o sessionId
+    if (!userId && !sessionId) {
+      throw new NotFoundException('Se requiere identidad (usuario o sesión) para crear un torneo.');
+    }
 
     const userTeam = await this.getTeamById(userTeamId);
     if (!userTeam) throw new NotFoundException('Equipo de usuario no encontrado.');
 
-    // Buscar equipos oponentes reales en la DB (excluyendo el del usuario si es uno real)
-    const allAvailableTeams = await this.teamRepo.find();
-    const opponentEntities = allAvailableTeams
-      .filter((t) => t.id !== userTeamId && t.userId === null) // Solo equipos reales, no de otros usuarios
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 15);
-
-    const opponents: Team[] = [];
-    for (const entity of opponentEntities) {
-      const team = await this.getTeamById(entity.id);
-      if (team) opponents.push(team);
+    // 1) Limpiar estado residual: torneos previos SIN terminar de la misma identidad.
+    const identityWhere = userId ? { userId } : { sessionId };
+    const previousTournaments = await this.tournamentRepo.find({ where: { ...identityWhere, status: 'IN_PROGRESS' } });
+    if (previousTournaments.length) {
+      const previousIds = previousTournaments.map((t) => t.id);
+      await this.matchRepo.delete({ tournamentId: In(previousIds) });
+      await this.tournamentRepo.delete(previousIds);
     }
 
-    const allTeams = [userTeam, ...opponents].sort(() => 0.5 - Math.random());
+    // 2) 15 oponentes ÚNICOS (sin duplicados por nombre; excluye al equipo del usuario por ID y nombre)
+    const allAvailableTeams = await this.teamRepo.find({ where: { isReal: true } });
+    const shuffledTeams = this.shuffle(allAvailableTeams);
+
+    const userTeamNameKey = this.normalizeTeamName(userTeam.name);
+    const usedNames = new Set<string>([userTeamNameKey]);
+    const opponents: Team[] = [];
+
+    for (const entity of shuffledTeams) {
+      if (opponents.length >= 15) break;
+      if (entity.id === userTeamId) continue;
+      const nameKey = this.normalizeTeamName(entity.name);
+      if (!nameKey || usedNames.has(nameKey)) continue; // evita "Mi Equipo" residual repetido
+      const team = await this.getTeamById(entity.id);
+      if (!team || team.starters.length === 0) continue; // solo equipos jugables
+      usedNames.add(nameKey);
+      opponents.push(team);
+    }
+
+    if (opponents.length < 15) {
+      throw new BadRequestException(
+        'No hay suficientes equipos disponibles en la base de datos para armar el torneo (se necesitan 15 oponentes únicos).',
+      );
+    }
+
+
+    // 3) Mezclar los 16 equipos para generar los 8 cruces de octavos.
+    const allTeams = this.shuffle([userTeam, ...opponents]);
     const tournamentId = crypto.randomUUID();
 
-    // Persistir el torneo
+    // 4) Persistir el torneo
     const tournamentEntity = new TournamentEntity();
     tournamentEntity.id = tournamentId;
     tournamentEntity.userId = userId;
+    tournamentEntity.sessionId = sessionId;
     tournamentEntity.userTeamId = userTeamId;
     tournamentEntity.status = 'IN_PROGRESS';
     tournamentEntity.currentRound = 'OCTAVOS';
     await this.tournamentRepo.save(tournamentEntity);
 
-    const matches: Match[] = [];
+    const octavos: Match[] = [];
 
     for (let i = 0; i < allTeams.length; i += 2) {
+      const home = allTeams[i];
+      const away = allTeams[i + 1];
+      if (!home || !away) {
+        throw new BadRequestException('Error al generar los cruces de octavos de final.');
+      }
+
       const matchEntity = new MatchEntity();
       matchEntity.id = crypto.randomUUID();
       matchEntity.tournamentId = tournamentId;
       matchEntity.round = 'OCTAVOS';
       matchEntity.userId = userId;
-      matchEntity.homeTeamId = allTeams[i].id;
-      matchEntity.awayTeamId = allTeams[i + 1].id;
+      matchEntity.sessionId = sessionId;
+      matchEntity.homeTeamId = home.id;
+      matchEntity.awayTeamId = away.id;
       matchEntity.homeScore = 0;
       matchEntity.awayScore = 0;
       matchEntity.status = 'PENDING';
       await this.matchRepo.save(matchEntity);
 
-      matches.push({
+      octavos.push({
         id: matchEntity.id,
-        homeTeam: allTeams[i],
-        awayTeam: allTeams[i + 1],
+        homeTeam: home,
+        awayTeam: away,
         homeScore: 0,
         awayScore: 0,
         status: 'PENDING',
@@ -180,20 +269,187 @@ export class MatchService {
       id: tournamentId,
       userTeam,
       opponents,
-      rounds: { OCTAVOS: matches, CUARTOS: [], SEMIS: [], FINAL: [] },
+      rounds: { OCTAVOS: octavos, CUARTOS: [], SEMIS: [], FINAL: [] },
       currentRound: 'OCTAVOS',
       status: 'IN_PROGRESS',
     };
   }
 
 
-  async getTournament(tournamentId: string): Promise<{ rounds: Record<string, MatchEntity[]> }> {
+  async getTournament(tournamentId: string): Promise<Tournament> {
+    const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
+    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+
     const matches = await this.matchRepo.find({ where: { tournamentId } });
-    const rounds: Record<string, MatchEntity[]> = {};
+    const rounds: Record<RoundName, Match[]> = { OCTAVOS: [], CUARTOS: [], SEMIS: [], FINAL: [] };
+
     for (const m of matches) {
-      if (!rounds[m.round]) rounds[m.round] = [];
-      rounds[m.round].push(m);
+      const round = m.round as RoundName;
+      if (!rounds[round]) continue;
+      const homeTeam = await this.getTeamById(m.homeTeamId);
+      const awayTeam = await this.getTeamById(m.awayTeamId);
+      if (!homeTeam || !awayTeam) continue;
+      rounds[round].push({
+        id: m.id,
+        homeTeam,
+        awayTeam,
+        homeScore: m.homeScore,
+        awayScore: m.awayScore,
+        status: m.status as MatchStatus,
+        winnerId: m.winnerId ?? undefined,
+      });
     }
-    return { rounds };
+
+    const userTeam = await this.getTeamById(tournamentEntity.userTeamId);
+
+    return {
+      id: tournamentEntity.id,
+      userTeam: userTeam ?? { id: tournamentEntity.userTeamId, name: 'Mi Equipo', starters: [], substitutes: [] },
+      opponents: [],
+      rounds,
+      currentRound: tournamentEntity.currentRound as RoundName,
+      status: tournamentEntity.status as Tournament['status'],
+    };
+  }
+
+  /**
+   * Avanza la llave una fase:
+   *  - Exige que el partido del usuario esté jugado.
+   *  - Simula y persiste los partidos IA pendientes de la ronda actual.
+   *  - Genera la siguiente ronda (OCTAVOS → CUARTOS → SEMIS → FINAL).
+   *  - Si la Gran Final termina, marca el torneo como COMPLETADO.
+   */
+  async advanceTournament(tournamentId: string): Promise<Tournament> {
+    const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
+    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+
+    if (tournamentEntity.status === 'COMPLETED') {
+      return this.getTournament(tournamentId);
+    }
+
+    const currentRound = tournamentEntity.currentRound as RoundName;
+    const currentMatches = await this.matchRepo.find({ where: { tournamentId, round: currentRound } });
+
+    // El partido del usuario DEBE estar jugado para avanzar de ronda.
+    const userMatch = currentMatches.find(
+      (m) => m.homeTeamId === tournamentEntity.userTeamId || m.awayTeamId === tournamentEntity.userTeamId,
+    );
+    if (!userMatch || userMatch.status !== 'FINISHED') {
+      throw new BadRequestException('Debes jugar tu partido antes de que avance la llave.');
+    }
+
+    // Simular (y persistir) todos los partidos IA pendientes de la ronda actual.
+    for (const m of currentMatches) {
+      if (m.status !== 'FINISHED') {
+        await this.simulateAndPersistMatch(m);
+      }
+    }
+
+    // Ganadores en el orden de la llave → cruces de la siguiente ronda.
+    const winners: Team[] = [];
+    for (const m of currentMatches) {
+      const persisted = await this.matchRepo.findOne({ where: { id: m.id } });
+      const winnerId = persisted?.winnerId;
+      if (!winnerId) throw new BadRequestException('No se pudo determinar el ganador de un cruce.');
+      const team = await this.getTeamById(winnerId);
+      if (!team) throw new BadRequestException('No se encontró el equipo ganador de un cruce.');
+      winners.push(team);
+    }
+
+    // Gran Final terminada → torneo COMPLETADO.
+    if (currentRound === 'FINAL') {
+      tournamentEntity.status = 'COMPLETED';
+      await this.tournamentRepo.save(tournamentEntity);
+      return this.getTournament(tournamentId);
+    }
+
+    const currentIdx = ROUND_ORDER.indexOf(currentRound);
+    const nextRound = ROUND_ORDER[currentIdx + 1];
+    if (!nextRound) throw new BadRequestException('Ronda inválida.');
+
+    // Idempotencia: si la siguiente ronda ya fue generada, no duplicar cruces.
+    const nextRoundCount = await this.matchRepo.count({ where: { tournamentId, round: nextRound } });
+    if (nextRoundCount === 0) {
+      for (let i = 0; i < winners.length; i += 2) {
+        const home = winners[i];
+        const away = winners[i + 1];
+        if (!home || !away) {
+          throw new BadRequestException('Estructura de llaves inválida para la siguiente ronda.');
+        }
+
+        const nextEntity = new MatchEntity();
+        nextEntity.id = crypto.randomUUID();
+        nextEntity.tournamentId = tournamentId;
+        nextEntity.round = nextRound;
+        nextEntity.userId = tournamentEntity.userId;
+        nextEntity.sessionId = tournamentEntity.sessionId;
+        nextEntity.homeTeamId = home.id;
+        nextEntity.awayTeamId = away.id;
+        nextEntity.homeScore = 0;
+        nextEntity.awayScore = 0;
+        nextEntity.status = 'PENDING';
+        await this.matchRepo.save(nextEntity);
+      }
+    }
+
+    tournamentEntity.currentRound = nextRound;
+    await this.tournamentRepo.save(tournamentEntity);
+
+    return this.getTournament(tournamentId);
+  }
+
+  /** Marca un torneo como COMPLETADO (usado al finalizar por derrota). */
+  async completeTournament(tournamentId: string): Promise<{ success: boolean }> {
+    const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
+    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+    if (tournamentEntity.status !== 'COMPLETED') {
+      tournamentEntity.status = 'COMPLETED';
+      await this.tournamentRepo.save(tournamentEntity);
+    }
+    return { success: true };
+  }
+
+  async getHistory(userId?: string, sessionId?: string): Promise<{ tournaments: any[] }> {
+    // Solo usuarios logueados tienen historial. Invitados siempre devuelven vacío.
+    if (!userId) {
+      return { tournaments: [] };
+    }
+
+    const tournaments = await this.tournamentRepo.find({ where: { userId }, order: { createdAt: 'DESC' } });
+    const result = [];
+
+    for (const t of tournaments) {
+      const matches = await this.matchRepo.find({ where: { tournamentId: t.id }, order: { round: 'ASC' } });
+      const userTeam = await this.teamRepo.findOne({ where: { id: t.userTeamId } });
+
+      const matchItems = await Promise.all(matches.map(async (m) => {
+        const home = await this.teamRepo.findOne({ where: { id: m.homeTeamId } });
+        const away = await this.teamRepo.findOne({ where: { id: m.awayTeamId } });
+        return {
+          id: m.id,
+          round: m.round,
+          homeTeamId: m.homeTeamId,
+          awayTeamId: m.awayTeamId,
+          homeTeamName: home?.name ?? '?',
+          awayTeamName: away?.name ?? '?',
+          homeScore: m.homeScore,
+          awayScore: m.awayScore,
+          status: m.status,
+          winnerId: m.winnerId,
+        };
+      }));
+
+      result.push({
+        id: t.id,
+        createdAt: t.createdAt,
+        status: t.status,
+        currentRound: t.currentRound,
+        userTeamId: t.userTeamId,
+        userTeamName: userTeam?.name ?? 'Mi Equipo',
+        matches: matchItems,
+      });
+    }
+
+    return { tournaments: result };
   }
 }

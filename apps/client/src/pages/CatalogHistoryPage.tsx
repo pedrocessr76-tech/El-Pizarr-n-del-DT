@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerCard } from '../components/PlayerCard';
 import { playerService } from '../services/playerService';
+import { matchService } from '../services/matchService';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Player } from '../../../../packages/shared/types/models';
+import type { HistoryTournamentItem } from '../services/matchService';
 
 interface CatalogHistoryPageProps {
   initialView?: 'history' | 'catalog';
@@ -13,6 +16,12 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Estado de historial real
+  const { user } = useAuthStore();
+  const [history, setHistory] = useState<HistoryTournamentItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPlayers = async () => {
@@ -27,6 +36,28 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
     };
     loadPlayers();
   }, []);
+
+  useEffect(() => {
+    if (activeView !== 'history') return;
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      if (!user) {
+        setHistory([]);
+        setHistoryLoading(false);
+        return;
+      }
+      try {
+        const data = await matchService.getHistory(user.id);
+        setHistory(data.tournaments);
+      } catch (err: any) {
+        setHistoryError(err.response?.data?.message || 'Error al cargar el historial.');
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    loadHistory();
+  }, [activeView, user]);
 
   return (
     <div className="bg-background text-on-background min-h-screen pb-xl flex flex-col relative selection:bg-primary/30 selection:text-primary-fixed">
@@ -64,72 +95,107 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
         </button>
       </header>
 
-      {/* Screen 3: Match History */}
+      {/* Screen 3: Match History — dinámico desde backend */}
       {activeView === 'history' && (
         <main className="max-w-5xl mx-auto w-full px-gutter mt-lg flex-1">
-          <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow">
-            {/* Table Header */}
-            <div className="grid grid-cols-5 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
-              <div className="col-span-1">Fecha</div>
-              <div className="col-span-2">Rival</div>
-              <div className="col-span-1 text-center">Resultado</div>
-              <div className="col-span-1 text-right">Dificultad</div>
-            </div>
-            {/* Table Rows */}
-            <div className="flex flex-col">
-              {/* Row 1: W */}
-              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
-                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">12 Oct 2023</div>
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[16px] text-tertiary">shield</span>
-                  </div>
-                  <span className="font-headline-sm text-[16px] text-on-surface truncate">Real Madrid C.F.</span>
-                </div>
-                <div className="col-span-1 flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(165,208,185,0.6)]"></span>
-                  <span className="font-stat-value text-[18px] text-primary">2 - 1</span>
-                </div>
-                <div className="col-span-1 text-right flex justify-end">
-                  <span className="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
-                </div>
-              </div>
-              {/* Row 2: L */}
-              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
-                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">08 Oct 2023</div>
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[16px] text-error">shield</span>
-                  </div>
-                  <span className="font-headline-sm text-[16px] text-on-surface truncate">FC Barcelona</span>
-                </div>
-                <div className="col-span-1 flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]"></span>
-                  <span className="font-stat-value text-[18px] text-error">0 - 3</span>
-                </div>
-                <div className="col-span-1 text-right flex justify-end">
-                  <span className="px-2 py-1 bg-surface-bright text-on-surface rounded font-label-md text-[10px] uppercase border border-outline-variant/50">Clase Mundial</span>
-                </div>
-              </div>
-              {/* Row 3: D */}
-              <div className="grid grid-cols-5 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer">
-                <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">05 Oct 2023</div>
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">shield</span>
-                  </div>
-                  <span className="font-headline-sm text-[16px] text-on-surface truncate">Atlético de Madrid</span>
-                </div>
-                <div className="col-span-1 flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(181,204,192,0.6)]"></span>
-                  <span className="font-stat-value text-[18px] text-secondary">1 - 1</span>
-                </div>
-                <div className="col-span-1 text-right flex justify-end">
-                  <span className="px-2 py-1 bg-tertiary/20 text-tertiary rounded font-label-md text-[10px] uppercase border border-tertiary/30">Leyenda</span>
-                </div>
+          {/* Sin sesión iniciada */}
+          {!user && (
+            <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow p-xl text-center">
+              <div className="flex flex-col items-center gap-4 py-12">
+                <span className="material-symbols-outlined text-[48px] text-on-surface-variant">history</span>
+                <p className="font-headline-sm text-headline-sm text-on-surface-variant">
+                  Inicia sesión para guardar tu historial de partidas
+                </p>
+                <p className="font-body-md text-body-md text-on-surface-variant/70">
+                  Los torneos que juegues se guardarán automáticamente en tu perfil.
+                </p>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Cargando historial */}
+          {user && historyLoading && (
+            <div className="flex items-center justify-center py-16">
+              <div className="flex flex-col items-center gap-4 text-on-surface-variant">
+                <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="font-body-md text-body-md">Cargando historial...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {user && !historyLoading && historyError && (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center text-error">
+                <span className="material-symbols-outlined text-[48px] mb-2">error</span>
+                <p className="font-body-md text-body-md">{historyError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de torneos */}
+          {user && !historyLoading && !historyError && (
+            <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow">
+              <div className="grid grid-cols-6 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+                <div className="col-span-1">Fecha</div>
+                <div className="col-span-1">Estado</div>
+                <div className="col-span-2">Ronda alcanzada</div>
+                <div className="col-span-2 text-center">Partidos</div>
+              </div>
+              <div className="flex flex-col">
+                {history.length === 0 ? (
+                  <div className="p-md text-center text-on-surface-variant font-body-md text-body-md py-8">
+                    {user ? 'Aún no has jugado ningún torneo.' : ''}
+                  </div>
+                ) : (
+                  history.map((t) => (
+                    <div
+                      key={t.id}
+                      className="grid grid-cols-6 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors"
+                    >
+                      <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">
+                        {new Date(t.createdAt).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </div>
+                      <div className="col-span-1">
+                        <span className={`px-2 py-1 rounded font-label-md text-[10px] uppercase border ${
+                          t.status === 'IN_PROGRESS'
+                            ? 'bg-primary/20 text-primary border-primary/30'
+                            : t.status === 'COMPLETED'
+                            ? 'bg-tertiary/20 text-tertiary border-tertiary/30'
+                            : 'bg-error/20 text-error border-error/30'
+                        }`}>
+                          {t.status === 'IN_PROGRESS' ? 'En curso' : t.status === 'COMPLETED' ? 'Completado' : 'Fallido'}
+                        </span>
+                      </div>
+                      <div className="col-span-2 font-headline-sm text-[16px] text-on-surface">
+                        {t.currentRound}
+                      </div>
+                      <div className="col-span-2 flex flex-col gap-1">
+                        {t.matches.slice(0, 3).map((m) => (
+                          <div key={m.id} className="flex items-center justify-center gap-2 text-xs">
+                            <span className="truncate max-w-[80px] text-on-surface-variant">{m.homeTeamName}</span>
+                            <span className="font-stat-value text-primary">
+                              {m.status === 'FINISHED' ? `${m.homeScore} - ${m.awayScore}` : 'vs'}
+                            </span>
+                            <span className="truncate max-w-[80px] text-on-surface-variant">{m.awayTeamName}</span>
+                          </div>
+                        ))}
+                        {t.matches.length > 3 && (
+                          <span className="text-xs text-on-surface-variant text-center">
+                            +{t.matches.length - 3} partidos más
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </main>
       )}
 

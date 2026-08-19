@@ -478,8 +478,16 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
   const createTeamIfNeeded = async () => {
     try {
       if (!teamId) {
-        const response = await draftService.createTeam(user?.id);
-        setTeamId(response.teamId);
+        if (user) {
+          const response = await draftService.createTeam(user.id);
+          setTeamId(response.teamId);
+        } else {
+          const { getOrCreateGuestSessionId, setGuestTeamId } = await import('../utils/session');
+          const sessionId = getOrCreateGuestSessionId();
+          const response = await draftService.createTeam(undefined, sessionId);
+          setTeamId(response.teamId);
+          setGuestTeamId(response.teamId);
+        }
       }
     } catch (err) {
       console.error('Error creando equipo:', err);
@@ -534,12 +542,6 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
     setSelectedPosition(position);
     setSelectedSlotId(slotId);
     setPackPlayers([]); // Limpiar pack anterior
-    setShowPlayerOverlay(true);
-  };
-
-  const handleAnyPositionClick = () => {
-    setSelectedPosition('ANY');
-    setSelectedSlotId('');
     setShowPlayerOverlay(true);
   };
 

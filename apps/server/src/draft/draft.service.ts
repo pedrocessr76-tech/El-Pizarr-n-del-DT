@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
+import { MatchEntity } from '../match/entities/match.entity';
+import { TournamentEntity } from '../match/entities/tournament.entity';
 import type { Player } from '../../../../packages/shared/types/models';
 
 export interface PlayerPack {
@@ -19,6 +21,10 @@ export class DraftService {
     private readonly teamRepo: Repository<TeamEntity>,
     @InjectRepository(TeamPlayerEntity)
     private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
+    @InjectRepository(MatchEntity)
+    private readonly matchRepo: Repository<MatchEntity>,
+    @InjectRepository(TournamentEntity)
+    private readonly tournamentRepo: Repository<TournamentEntity>,
   ) {}
 
   private toPlayer(entity: PlayerEntity): Player {
@@ -99,13 +105,59 @@ export class DraftService {
     };
   }
 
-  async createTeam(userId?: string): Promise<{ teamId: string }> {
+  async createTeam(userId?: string, sessionId?: string): Promise<{ teamId: string }> {
+    // 1) Sesión invitado: reusar equipo existente de esta sesión
+    if (sessionId && !userId) {
+      const existing = await this.teamRepo.findOne({ where: { sessionId } });
+      if (existing) return { teamId: existing.id };
+    }
+
+    // 2) Usuario logueado adopta equipo invitado (login en mitad de sesión)
+    if (userId && sessionId) {
+      const sessionTeam = await this.teamRepo.findOne({ where: { sessionId } });
+      if (sessionTeam) {
+        sessionTeam.userId = userId;
+        sessionTeam.sessionId = null;
+        await this.teamRepo.save(sessionTeam);
+        return { teamId: sessionTeam.id };
+      }
+    }
+
+    // 3) Usuario logueado: reusar su último equipo (evita "más de un mi equipo")
+    if (userId) {
+      const existing = await this.teamRepo.findOne({ where: { userId, isReal: false }, order: { createdAt: 'DESC' } });
+      if (existing) return { teamId: existing.id };
+    }
+
+    // 4) Crear equipo nuevo
     const team = new TeamEntity();
     team.id = crypto.randomUUID();
     team.name = 'Mi Equipo';
     team.userId = userId;
+    team.sessionId = sessionId;
+    team.isReal = false; // El equipo del usuario nunca es un oponente IA real
     await this.teamRepo.save(team);
     return { teamId: team.id };
+  }
+
+  async cleanupSession(sessionId: string): Promise<{ success: boolean; cleaned: number }> {
+    const teams = await this.teamRepo.find({ where: { sessionId } });
+    const teamIds = teams.map(t => t.id);
+    if (teamIds.length === 0) return { success: true, cleaned: 0 };
+
+    // Torneos del invitado
+    const tournaments = await this.tournamentRepo.find({ where: { userTeamId: In(teamIds) } });
+    const tournamentIds = tournaments.map(t => t.id);
+    if (tournamentIds.length) {
+      await this.matchRepo.delete({ tournamentId: In(tournamentIds) });
+      await this.tournamentRepo.delete(tournamentIds);
+    }
+
+    // Equipo y sus jugadores
+    await this.teamPlayerRepo.delete({ teamId: In(teamIds) });
+    await this.teamRepo.delete(teamIds);
+
+    return { success: true, cleaned: teamIds.length };
   }
 
   async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<{ success: boolean; message: string }> {

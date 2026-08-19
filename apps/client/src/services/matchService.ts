@@ -1,24 +1,40 @@
 import { api } from './api';
-import type { Match, Team } from '../../../../packages/shared/types/models';
+import type { Match, Team, Tournament } from '../../../../packages/shared/types/models';
 
-export interface CreateTournamentResponse {
-  id: string;
-  userTeam: Team;
-  opponents: Team[];
-  rounds: Record<string, Match[]>;
-  currentRound: string;
-  status: string;
-}
+export interface CreateTournamentResponse extends Tournament {}
 
 export interface SimulateMatchResponse extends Match {}
 
-export interface GetTournamentResponse {
-  rounds: Record<string, Match[]>;
+export interface GetTournamentResponse extends Tournament {}
+
+export interface AdvanceTournamentResponse extends Tournament {}
+
+export interface HistoryMatchItem {
+  id: string;
+  round: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeTeamName: string;
+  awayTeamName: string;
+  homeScore: number;
+  awayScore: number;
+  status: string;
+  winnerId?: string;
+}
+
+export interface HistoryTournamentItem {
+  id: string;
+  createdAt: string;
+  status: string;
+  currentRound: string;
+  userTeamId: string;
+  userTeamName: string;
+  matches: HistoryMatchItem[];
 }
 
 export const matchService = {
-  async createTournament(userTeamId: string, userId?: string): Promise<CreateTournamentResponse> {
-    const { data } = await api.post<CreateTournamentResponse>('/match/tournament/create', { userTeamId, userId });
+  async createTournament(userTeamId: string, userId?: string, sessionId?: string): Promise<CreateTournamentResponse> {
+    const { data } = await api.post<CreateTournamentResponse>('/match/tournament/create', { userTeamId, userId, sessionId });
     return data;
   },
 
@@ -27,8 +43,26 @@ export const matchService = {
     return data;
   },
 
+  async advanceTournament(tournamentId: string): Promise<AdvanceTournamentResponse> {
+    const { data } = await api.post<AdvanceTournamentResponse>(`/match/tournament/${tournamentId}/advance`);
+    return data;
+  },
+
+  async completeTournament(tournamentId: string): Promise<{ success: boolean }> {
+    const { data } = await api.post<{ success: boolean }>(`/match/tournament/${tournamentId}/complete`);
+    return data;
+  },
+
   async getTournament(tournamentId: string): Promise<GetTournamentResponse> {
     const { data } = await api.get<GetTournamentResponse>(`/match/tournament/${tournamentId}`);
+    return data;
+  },
+
+  async getHistory(userId?: string, sessionId?: string): Promise<{ tournaments: HistoryTournamentItem[] }> {
+    const params: Record<string, string> = {};
+    if (userId) params.userId = userId;
+    if (sessionId) params.sessionId = sessionId;
+    const { data } = await api.get<{ tournaments: HistoryTournamentItem[] }>('/match/history', { params });
     return data;
   },
 

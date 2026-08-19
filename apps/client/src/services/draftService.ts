@@ -31,9 +31,13 @@ export const draftService = {
     return data;
   },
 
-  async createTeam(userId?: string): Promise<CreateTeamResponse> {
-    const { data } = await api.post<CreateTeamResponse>('/draft/team', { userId });
+  async createTeam(userId?: string, sessionId?: string): Promise<CreateTeamResponse> {
+    const { data } = await api.post<CreateTeamResponse>('/draft/team', { userId, sessionId });
     return data;
+  },
+
+  async cleanupSession(sessionId: string): Promise<void> {
+    await api.post('/draft/session/cleanup', { sessionId });
   },
 
   async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<TeamActionResponse> {

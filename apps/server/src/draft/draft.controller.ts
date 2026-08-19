@@ -21,6 +21,14 @@ class AddPlayerToTeamDto {
 class CreateTeamDto {
   @ApiProperty({ example: 'user-uuid', description: 'ID del usuario (opcional)', required: false })
   userId?: string;
+
+  @ApiProperty({ example: 'session-uuid', description: 'ID de sesión invitado (opcional)', required: false })
+  sessionId?: string;
+}
+
+class CleanupSessionDto {
+  @ApiProperty({ example: 'session-uuid', description: 'ID de sesión invitado a limpiar' })
+  sessionId!: string;
 }
 
 @Controller('draft')
@@ -43,10 +51,17 @@ export class DraftController {
   }
 
   @Post('team')
-  @ApiOperation({ summary: 'Crear un nuevo equipo vacío' })
+  @ApiOperation({ summary: 'Crear un nuevo equipo vacío, o reusar el existente (soporta sesión invitado)' })
   @ApiBody({ type: CreateTeamDto })
   createTeam(@Body() body: CreateTeamDto) {
-    return this.draftService.createTeam(body.userId);
+    return this.draftService.createTeam(body.userId, body.sessionId);
+  }
+
+  @Post('session/cleanup')
+  @ApiOperation({ summary: 'Limpia todos los datos de una sesión invitado (equipo, torneos, partidos)' })
+  @ApiBody({ type: CleanupSessionDto })
+  cleanupSession(@Body() body: CleanupSessionDto) {
+    return this.draftService.cleanupSession(body.sessionId);
   }
 
   @Post('team/player')

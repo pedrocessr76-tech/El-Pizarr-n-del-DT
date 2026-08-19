@@ -1,12 +1,14 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, IsNull } from 'typeorm';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
+import { MatchEntity } from '../match/entities/match.entity';
+import { TournamentEntity } from '../match/entities/tournament.entity';
 import { mockPlayers } from '../../../../packages/shared/types/mockData';
 
 // Nomenclatura FIFA estándar
@@ -92,13 +94,44 @@ export class SeedService implements OnModuleInit {
     private readonly teamRepo: Repository<TeamEntity>,
     @InjectRepository(TeamPlayerEntity)
     private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
+    @InjectRepository(MatchEntity)
+    private readonly matchRepo: Repository<MatchEntity>,
+    @InjectRepository(TournamentEntity)
+    private readonly tournamentRepo: Repository<TournamentEntity>,
   ) {}
 
   async onModuleInit() {
+    await this.cleanupOrphanedGuestData();
     await this.seedMockPlayers();
     await this.seedPremierTeams();
     await this.seedLaLigaTeams();
     await this.seedExtraTeams();
+  }
+
+  /**
+   * Limpia equipos huérfanos de versiones anteriores: userId=NULL, isReal=false, sessionId=NULL.
+   * También borra sus torneos/partidos asociados.
+   */
+  private async cleanupOrphanedGuestData() {
+    const orphans = await this.teamRepo.find({ where: { userId: IsNull(), isReal: false, sessionId: IsNull() } });
+    if (orphans.length === 0) return;
+
+    const orphanIds = orphans.map(t => t.id);
+    this.logger.log(`🧹 Limpiando ${orphanIds.length} equipos huérfanos de sesiones antiguas...`);
+
+    // Torneos y partidos de esos equipos
+    const orphansTournaments = await this.tournamentRepo.find({ where: { userTeamId: In(orphanIds) } });
+    const orphanTournamentIds = orphansTournaments.map(t => t.id);
+    if (orphanTournamentIds.length) {
+      await this.matchRepo.delete({ tournamentId: In(orphanTournamentIds) });
+      await this.tournamentRepo.delete(orphanTournamentIds);
+    }
+
+    // Equipos
+    await this.teamPlayerRepo.delete({ teamId: In(orphanIds) });
+    await this.teamRepo.delete(orphanIds);
+
+    this.logger.log(`✓ ${orphanIds.length} equipos huérfanos limpiados.`);
   }
 
   private async seedMockPlayers() {
@@ -151,13 +184,21 @@ export class SeedService implements OnModuleInit {
     for (const team of data.equipos) {
       let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
 
+      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
+      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
+        continue;
+      }
+
+
       if (!teamEntity) {
         teamEntity = new TeamEntity();
         teamEntity.id = crypto.randomUUID();
         teamEntity.name = team.nombre;
-        await this.teamRepo.save(teamEntity);
         teamsCreated++;
       }
+
+      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
+      await this.teamRepo.save(teamEntity);
 
       for (const player of team.jugadores) {
         let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
@@ -231,13 +272,20 @@ export class SeedService implements OnModuleInit {
     for (const team of data.equipos) {
       let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
 
+      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
+      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
+        continue;
+      }
+
       if (!teamEntity) {
         teamEntity = new TeamEntity();
         teamEntity.id = crypto.randomUUID();
         teamEntity.name = team.nombre;
-        await this.teamRepo.save(teamEntity);
         teamsCreated++;
       }
+
+      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
+      await this.teamRepo.save(teamEntity);
 
       for (const player of team.jugadores) {
         let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
@@ -303,12 +351,20 @@ export class SeedService implements OnModuleInit {
 
     for (const team of data.equipos) {
       let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
+
+      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
+      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
+        continue;
+      }
+
       if (!teamEntity) {
         teamEntity = new TeamEntity();
         teamEntity.id = crypto.randomUUID();
         teamEntity.name = team.nombre;
-        await this.teamRepo.save(teamEntity);
       }
+
+      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
+      await this.teamRepo.save(teamEntity);
 
       for (const player of team.jugadores) {
         let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
