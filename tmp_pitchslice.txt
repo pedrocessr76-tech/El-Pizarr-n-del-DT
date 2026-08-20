@@ -1,0 +1,135 @@
+          {/* The Pitch */}
+          <div className="pitch-bg rounded-b-xl aspect-[3/4] md:aspect-[4/5] w-full shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] relative flex flex-col justify-around py-8 px-4">
+            <div className="pitch-lines"></div>
+            <div className="pitch-center-circle"></div>
+            <div className="pitch-center-line"></div>
+            <div className="pitch-penalty-area-top"></div>
+            <div className="pitch-penalty-area-bottom"></div>
+
+            {/* Attackers Row */}
+            <div className="flex justify-around items-center w-full px-lg z-10 relative">
+              <button
+                onClick={() => handleSlotClick('EI', 'slot-lw')}
+                className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+              >
+                <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+              </button>
+
+              {(() => {
+                const slot = currentFormation.slots.find(s => s.id === 'slot-st');
+                const player = slot ? getPlayerForSlot('slot-st') : undefined;
+                return player ? (
+                  <div
+                    onClick={() => handleSlotClick('DC', 'slot-st')}
+                    className="w-20 h-28 bg-surface-container-high border border-tertiary rounded-lg shadow-lg flex flex-col items-center justify-between p-xs card-shimmer cursor-pointer hover:scale-105 transition-transform"
+                  >
+                    <div className="text-label-md font-label-md text-tertiary font-bold self-start w-full text-center bg-background/50 rounded-sm">
+                      {Math.round((player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical) / 6)} DC
+                    </div>
+                    <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 mt-1 bg-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-headline-md text-tertiary">person</span>
+                    </div>
+                    <div className="text-[10px] leading-tight font-body-md text-on-background truncate w-full text-center font-bold mt-1 uppercase">{player.name}</div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleSlotClick('DC', 'slot-st')}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+                  </button>
+                );
+              })()}
+
+              <button
+                onClick={() => handleSlotClick('ED', 'slot-rw')}
+                className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+              >
+                <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+              </button>
+            </div>
+
+            {/* Midfielders Row */}
+            <div className="flex justify-around items-center w-full px-md z-10 relative mt-4">
+              {currentFormation.slots.filter(s => ['MI', 'MC', 'MD', 'MCD', 'MCO'].includes(s.position) && s.type === 'starter').map(({ id, position }) => {
+                const player = getPlayerForSlot(id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => handleSlotClick(position, id)}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+                  >
+                    {player ? (
+                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
+                      </div>
+                    ) : (
+                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Defenders Row */}
+            <div className="flex justify-around items-center w-full px-sm z-10 relative mt-4">
+              {currentFormation.slots.filter(s => ['LI', 'DFC', 'LD'].includes(s.position) && s.type === 'starter').map(({ id, position }) => {
+                const player = getPlayerForSlot(id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => handleSlotClick(position, id)}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+                  >
+                    {player ? (
+                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
+                      </div>
+                    ) : (
+                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Goalkeeper Row */}
+            <div className="flex justify-center items-center w-full z-10 relative mt-4">
+              {(() => {
+                const player = getPlayerForSlot('slot-gk');
+                return (
+                  <button
+                    onClick={() => handleSlotClick('POR', 'slot-gk')}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+                  >
+                    {player ? (
+                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-tertiary uppercase">POR</span>
+                      </div>
+                    ) : (
+                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+                    )}
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+        </section>
+
+        {/* Right Column: Substitutes & Action */}
+        <section className="w-full md:w-80 flex flex-col gap-margin">
+          {/* Formation Selection */}
+          <div className="bg-surface-container-high rounded-xl p-md border border-white/5 shadow-lg">
+            <div className="flex justify-between items-center mb-sm">
+              <h2 className="text-label-md font-label-md text-on-background uppercase tracking-wider">SELECCIONA TU ALINEACIÓN</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-sm max-h-48 overflow-y-auto">
+              {Object.keys(FORMATIONS).map((formationName) => (
+                <div
+                  key={formationName}
+                  onClick={() => setActiveFormation(formationName)}
+                  className={`rounded-lg p-sm cursor-pointer transition-colors flex flex-col items-center justify-center h-16 ${
+                    activeFormation === formationName
+                      ? 'bg-primary-container/30 border border-primary/50 text-primary'
+                      : 'bg-surface border border-white/5 text-on-surface-variant opacity-70 hover:bg-surface-variant hover:opacity-100'
+                  }`}

@@ -243,7 +243,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
         <main className="max-w-7xl mx-auto w-full px-gutter mt-lg flex-1">
                     {/* Toolbar: búsqueda, contador y reset */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-xl">
-            <div className="relative w-full sm:max-w-md">
+                      <div className="relative w-full sm:max-w-xl">
               <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 top-1/2 -translate-y-1/2">
                 search
               </span>

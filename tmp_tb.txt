@@ -1,0 +1,22 @@
+              </button>
+
+              {(() => {
+                const slot = currentFormation.slots.find(s => s.id === 'slot-st');
+                const player = slot ? getPlayerForSlot('slot-st') : undefined;
+                                return player ? (
+                  <button
+                    onClick={() => handleSlotClick('DC', 'slot-st')}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-tertiary shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                  >
+                    <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSlotClick('DC', 'slot-st')}
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+                  </button>
+                );

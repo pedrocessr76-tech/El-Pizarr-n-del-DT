@@ -1,0 +1,340 @@
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-cdm1', position: 'MCD', type: 'starter' },
+      { id: 'slot-cdm2', position: 'MCD', type: 'starter' },
+      { id: 'slot-lam', position: 'MI', type: 'starter' },
+      { id: 'slot-cam', position: 'MCO', type: 'starter' },
+      { id: 'slot-ram', position: 'MD', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '4-5-1': {
+    name: '4-5-1',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-lb', position: 'LI', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-lm', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-cm3', position: 'MC', type: 'starter' },
+      { id: 'slot-rm', position: 'MD', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '4-1-2-1-2': {
+    name: '4-1-2-1-2',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-lb', position: 'LI', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-cdm', position: 'MCD', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-cam', position: 'MCO', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'slot-st2', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '3-5-2': {
+    name: '3-5-2',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb3', position: 'DFC', type: 'starter' },
+      { id: 'slot-lwb', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-cm3', position: 'MC', type: 'starter' },
+      { id: 'slot-rwb', position: 'MD', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'slot-st2', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '3-4-3': {
+    name: '3-4-3',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb3', position: 'DFC', type: 'starter' },
+      { id: 'slot-lm', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-rm', position: 'MD', type: 'starter' },
+      { id: 'slot-lw', position: 'EI', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'slot-rw', position: 'ED', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '5-3-2': {
+    name: '5-3-2',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-lb', position: 'LI', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb3', position: 'DFC', type: 'starter' },
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-cm3', position: 'MC', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'slot-st2', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '5-4-1': {
+    name: '5-4-1',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-lb', position: 'LI', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb3', position: 'DFC', type: 'starter' },
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-lm', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-rm', position: 'MD', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '4-1-4-1': {
+    name: '4-1-4-1',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-lb', position: 'LI', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-rb', position: 'LD', type: 'starter' },
+      { id: 'slot-cdm', position: 'MCD', type: 'starter' },
+      { id: 'slot-lm', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-rm', position: 'MD', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+  '3-4-2-1': {
+    name: '3-4-2-1',
+    slots: [
+      { id: 'slot-gk', position: 'POR', type: 'starter' },
+      { id: 'slot-cb1', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb2', position: 'DFC', type: 'starter' },
+      { id: 'slot-cb3', position: 'DFC', type: 'starter' },
+      { id: 'slot-lm', position: 'MI', type: 'starter' },
+      { id: 'slot-cm1', position: 'MC', type: 'starter' },
+      { id: 'slot-cm2', position: 'MC', type: 'starter' },
+      { id: 'slot-rm', position: 'MD', type: 'starter' },
+      { id: 'slot-cam1', position: 'MCO', type: 'starter' },
+      { id: 'slot-cam2', position: 'MCO', type: 'starter' },
+      { id: 'slot-st', position: 'DC', type: 'starter' },
+      { id: 'sub-1', position: 'POR', type: 'substitute' },
+      { id: 'sub-2', position: 'DFC', type: 'substitute' },
+      { id: 'sub-3', position: 'MC', type: 'substitute' },
+      { id: 'sub-4', position: 'ED', type: 'substitute' },
+      { id: 'sub-5', position: 'DC', type: 'substitute' },
+      { id: 'sub-6', position: 'MC', type: 'substitute' },
+      { id: 'sub-7', position: 'DFC', type: 'substitute' },
+    ]
+  },
+};
+
+export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavigate }) => {
+  const [activeFormation, setActiveFormation] = useState<string>('4-3-3 (Plana)');
+  const [showPlayerOverlay, setShowPlayerOverlay] = useState<boolean>(false);
+  const [showMatchPrepOverlay, setShowMatchPrepOverlay] = useState<boolean>(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('Profesional');
+  const [packPlayers, setPackPlayers] = useState<Player[]>([]);
+  const [isLoadingPack, setIsLoadingPack] = useState<boolean>(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<FIFA_POSITION | 'ANY'>('ANY');
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('');
+  const [assignedPlayers, setAssignedPlayers] = useState<SlotAssignment[]>([]);
+  const { user } = useAuthStore();
+  const { teamId, setTeamId } = useDraftStore();
+
+  const currentFormation = FORMATIONS[activeFormation] || FORMATIONS['4-3-3 (Plana)'];
+
+  useEffect(() => {
+    if (showPlayerOverlay && packPlayers.length === 0) {
+      loadPack();
+    }
+  }, [showPlayerOverlay]);
+
+  useEffect(() => {
+    createTeamIfNeeded();
+  }, [user]);
+
+  const createTeamIfNeeded = async () => {
+    try {
+      if (!teamId) {
+        if (user) {
+          const response = await draftService.createTeam(user.id);
+          setTeamId(response.teamId);
+        } else {
+          const { getOrCreateGuestSessionId, setGuestTeamId } = await import('../utils/session');
+          const sessionId = getOrCreateGuestSessionId();
+          const response = await draftService.createTeam(undefined, sessionId);
+          setTeamId(response.teamId);
+          setGuestTeamId(response.teamId);
+        }
+      }
+    } catch (err) {
+      console.error('Error creando equipo:', err);
+    }
+  };
+
+  const loadPack = async () => {
+    setIsLoadingPack(true);
+    setMessage(null);
+    try {
+      const position = selectedPosition === 'ANY' ? undefined : selectedPosition;
+      const data = await draftService.getPack(position);
+      setPackPlayers(data.players);
+    } catch (err) {
+      setMessage('Error al cargar el sobre de jugadores. Verifica que el backend esté corriendo.');
+    } finally {
+      setIsLoadingPack(false);
+    }
+  };
+
+  const handleSelectPlayer = async (player: Player) => {
+    if (!teamId) {
+      setMessage('Primero debes crear un equipo.');
+      return;
+    }
+    
+    // Verificar si el jugador ya está asignado a otro slot
+    const isAlreadyAssigned = assignedPlayers.some(ap => ap.player.id === player.id);
+    if (isAlreadyAssigned) {
+      setMessage('Este jugador ya está asignado en el equipo.');
+      return;
+    }
+    
+    setMessage(null);
+    try {
+      // Determinar si el slot seleccionado es titular o suplente
+      const slot = currentFormation.slots.find(s => s.id === selectedSlotId);
+      const isStarter = slot?.type === 'starter';
+
+      await draftService.addPlayerToTeam(teamId, player.id, isStarter);
+      setAssignedPlayers(prev => {
+        const filtered = prev.filter(p => p.slotId !== selectedSlotId);
+        return [...filtered, { slotId: selectedSlotId, player }];
+      });
+      setShowPlayerOverlay(false);
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || 'Error al agregar jugador.');
+    }
+  };
+
+  const handleSlotClick = (position: FIFA_POSITION, slotId: string) => {
+    setSelectedPosition(position);
+    setSelectedSlotId(slotId);
+    setPackPlayers([]); // Limpiar pack anterior
+    setShowPlayerOverlay(true);
+  };
+
+  const getPlayerForSlot = (slotId: string): Player | undefined => {
+    return assignedPlayers.find(p => p.slotId === slotId)?.player;
+  };
+
+  const startersCount = assignedPlayers.filter(ap => { const slot = currentFormation.slots.find(s => s.id === ap.slotId); return slot?.type === 'starter'; }).length;
+
+  const substitutesCount = assignedPlayers.filter(ap => { const slot = currentFormation.slots.find(s => s.id === ap.slotId); return slot?.type === 'substitute'; }).length;
+
+  const getRandomPlayers = (players: Player[], count: number): Player[] => {
+    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  };
+
+  const filteredPlayers = (() => {
+    if (selectedPosition === 'ANY') {
+      return getRandomPlayers(packPlayers, 5);
+    }
+    
+    // Obtener jugadores ya asignados
+    const assignedPlayerIds = new Set(assignedPlayers.map(ap => ap.player.id));
+    
+    // Filtrar jugadores que pueden jugar EXACTAMENTE en la posición seleccionada
+    // y que no estén ya asignados
+    const exactMatchPlayers = packPlayers.filter(p => {
+      if (assignedPlayerIds.has(p.id)) return false;
+      return p.position.toUpperCase().trim() === selectedPosition;
+    });
+    
+    // Si hay 5 o más jugadores con la posición exacta, tomar 5 aleatorios
+    if (exactMatchPlayers.length >= 5) {
+      return getRandomPlayers(exactMatchPlayers, 5);
+    }
+    
+    // Si hay menos de 5 jugadores con la posición exacta, tomar todos
+    // y completar con jugadores compatibles (pero no asignados)
+    const remainingNeeded = 5 - exactMatchPlayers.length;
+    const compatiblePlayers = packPlayers.filter(p => {
+      if (assignedPlayerIds.has(p.id)) return false;
+      if (exactMatchPlayers.includes(p)) return false;
+      return arePositionsCompatible(selectedPosition, p.position);
+    });
+    const randomOthers = getRandomPlayers(compatiblePlayers, remainingNeeded);

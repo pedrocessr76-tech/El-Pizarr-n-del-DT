@@ -647,19 +647,15 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               {(() => {
                 const slot = currentFormation.slots.find(s => s.id === 'slot-st');
                 const player = slot ? getPlayerForSlot('slot-st') : undefined;
-                return player ? (
-                  <div
+                                return player ? (
+                  <button
                     onClick={() => handleSlotClick('DC', 'slot-st')}
-                    className="w-20 h-28 bg-surface-container-high border border-tertiary rounded-lg shadow-lg flex flex-col items-center justify-between p-xs card-shimmer cursor-pointer hover:scale-105 transition-transform"
+                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-tertiary shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
                   >
-                    <div className="text-label-md font-label-md text-tertiary font-bold self-start w-full text-center bg-background/50 rounded-sm">
-                      {Math.round((player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical) / 6)} DC
+                    <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
                     </div>
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 mt-1 bg-surface flex items-center justify-center">
-                      <span className="material-symbols-outlined text-headline-md text-tertiary">person</span>
-                    </div>
-                    <div className="text-[10px] leading-tight font-body-md text-on-background truncate w-full text-center font-bold mt-1 uppercase">{player.name}</div>
-                  </div>
+                  </button>
                 ) : (
                   <button
                     onClick={() => handleSlotClick('DC', 'slot-st')}

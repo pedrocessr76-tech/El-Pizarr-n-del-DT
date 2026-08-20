@@ -1,0 +1,30 @@
+                    {/* Toolbar: búsqueda, contador y reset */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-xl">
+            <div className="relative w-full sm:max-w-md">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 top-1/2 -translate-y-1/2">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar jugador por nombre..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-on-background placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                {filteredPlayers.length} de {players.length}
+                <span className="text-on-surface-variant/60">
+                  {' '}
+                  (filtrados: {players.length - filteredPlayers.length})
+                </span>
+              </span>
+              <button
+                onClick={clearFilters}
+                className="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-label-md text-label-md transition-colors"
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
