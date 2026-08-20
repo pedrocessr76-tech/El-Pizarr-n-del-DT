@@ -175,6 +175,8 @@ export class SeedService implements OnModuleInit {
     let teamsCreated = 0;
     let linksCreated = 0;
 
+    // Conjunto de IDs que existen en el catálogo de la carpeta (fuente de verdad).
+    const catalogIds = new Set<string>();
     const byNorm = new Map<string, string>();
     const existingTeams = await this.teamRepo.find();
     for (const t of existingTeams) byNorm.set(this.normName(t.name), t.id);
@@ -208,6 +210,7 @@ export class SeedService implements OnModuleInit {
           .sort((a, b) => b.rating - a.rating);
 
         for (const p of normalized) {
+          catalogIds.add(p.id);
           let entity = await this.playerRepo.findOneBy({ id: p.id });
           if (entity) {
             entity.name = p.name;
@@ -261,5 +264,18 @@ export class SeedService implements OnModuleInit {
       `Catálogo sincronizado: ${playersInserted} jugadores creados, ${playersUpdated} actualizados, ` +
         `${teamsCreated} equipos creados, ${linksCreated} enlaces de plantilla.`,
     );
+
+    // Limpieza de jugadores huérfanos: ya no existen en la carpeta del catálogo
+    // ("jugadores seed" de versiones anteriores) y tampoco pertenecen a ningún equipo
+    // (para no romper equipos que hayan armado los usuarios).
+    const linkRows = await this.teamPlayerRepo.find();
+    const linkedPlayerIds = new Set(linkRows.map(l => l.playerId));
+    const allPlayers = (await this.playerRepo.find({ select: ['id'] as any })).map(r => r.id);
+    const orphanIds = allPlayers.filter(id => !catalogIds.has(id) && !linkedPlayerIds.has(id));
+
+    if (orphanIds.length) {
+      await this.playerRepo.delete(orphanIds);
+      this.logger.log(`🧹 Eliminados ${orphanIds.length} jugadores huérfanos que no están en el catálogo actual.`);
+    }
   }
 }
