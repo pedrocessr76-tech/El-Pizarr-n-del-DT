@@ -270,7 +270,7 @@ export class SeedService implements OnModuleInit {
     // (para no romper equipos que hayan armado los usuarios).
     const linkRows = await this.teamPlayerRepo.find();
     const linkedPlayerIds = new Set(linkRows.map(l => l.playerId));
-    const allPlayers = (await this.playerRepo.find({ select: ['id'] as any })).map(r => r.id);
+    const allPlayers = (await this.playerRepo.find({ select: { id: true } })).map(r => r.id);
     const orphanIds = allPlayers.filter(id => !catalogIds.has(id) && !linkedPlayerIds.has(id));
 
     if (orphanIds.length) {
