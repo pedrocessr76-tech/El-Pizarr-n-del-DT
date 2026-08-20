@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface LoginModalProps {
@@ -13,6 +13,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isRegister, setIsRegister] = useState(false);
   const { login, register, isLoading, error, clearError } = useAuthStore();
+
+  // Bloquear el scroll de fondo mientras el modal está abierto.
+  // (El resto de la app ahora scrollea libremente, incluido móvil.)
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollBarGap = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollBarGap > 0) {
+      document.body.style.paddingRight = `${scrollBarGap}px`;
+    }
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -237,6 +237,17 @@
   button {
     @apply bg-transparent border-none text-inherit cursor-pointer;
   }
+  html {
+    min-height: 100%;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  /* Momentum scrolling en contenedores internos (bracket, overlays, tablas, catálogo) */
+  [class*="overflow-y-auto"],
+  [class*="overflow-x-auto"],
+  [class*="overflow-auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 :root {
@@ -247,9 +258,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-on-background);
   font-family: var(--font-body-md);
-  height: 100vh;
+    height: auto;
+  min-height: 100vh;
   width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
   position: relative;
   background: linear-gradient(135deg, #081C15 0%, #1B4332 100%);
 }
