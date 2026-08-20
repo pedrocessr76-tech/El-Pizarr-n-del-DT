@@ -9,79 +9,6 @@ import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from '../match/entities/match.entity';
 import { TournamentEntity } from '../match/entities/tournament.entity';
-import { mockPlayers } from '../../../../packages/shared/types/mockData';
-
-// Nomenclatura FIFA estándar
-type FIFA_POSITION = 
-  | 'POR' | 'LD' | 'LI' | 'DFC' | 'MCD' | 'MC' | 'MCO' | 'MD' | 'MI' | 'ED' | 'EI' | 'SD' | 'DC' | 'ST';
-
-interface PremierPlayer {
-  nombre: string;
-  posicion: string;
-  rating: number;
-  ritmo: number;
-  tiro: number;
-  pase: number;
-  regate: number;
-  defensa: number;
-  fisico: number;
-}
-
-interface PremierTeam {
-  nombre: string;
-  abreviatura: string;
-  jugadores: PremierPlayer[];
-}
-
-interface PremierData {
-  liga: string;
-  temporada: string;
-  equipos: PremierTeam[];
-}
-
-const POSITION_MAP: Record<string, FIFA_POSITION> = {
-  // Portero
-  'GK': 'POR',
-  'POR': 'POR',
-  
-  // Laterales
-  'RB': 'LD',
-  'RWB': 'LD',
-  'LB': 'LI',
-  'LWB': 'LI',
-  
-  // Defensas centrales
-  'CB': 'DFC',
-  'DEF': 'DFC',
-  
-  // Mediocentros
-  'CDM': 'MCD',
-  'CM': 'MC',
-  'CAM': 'MCO',
-  
-  // Extremos y medios
-  'RM': 'MD',
-  'RW': 'ED',
-  'LM': 'MI',
-  'LW': 'EI',
-  
-  // Delanteros
-  'FWD': 'DC',
-  'ST': 'ST',
-  'DC': 'DC',
-  'CF': 'SD',
-  'SS': 'SD',
-  
-  // Posiciones del JSON (formato antiguo) - solo las que no están ya definidas
-  'LD': 'LD',
-  'LI': 'LI',
-  'DFC': 'DFC',
-  'MCD': 'MCD',
-  'MC': 'MC',
-  'MCO': 'MCO',
-  'ED': 'ED',
-  'EI': 'EI',
-};
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -102,10 +29,7 @@ export class SeedService implements OnModuleInit {
 
   async onModuleInit() {
     await this.cleanupOrphanedGuestData();
-    await this.seedMockPlayers();
-    await this.seedPremierTeams();
-    await this.seedLaLigaTeams();
-    await this.seedExtraTeams();
+    await this.syncCatalogFromDisk();
   }
 
   /**
@@ -134,272 +58,208 @@ export class SeedService implements OnModuleInit {
     this.logger.log(`✓ ${orphanIds.length} equipos huérfanos limpiados.`);
   }
 
-  private async seedMockPlayers() {
-    const count = await this.playerRepo.count();
-    if (count > 0) {
-      return;
+  // -------------------------------------------------------------------------
+  // Sincronización del catálogo desde Jugadores_Base_de_Datos (en el repo)
+  // -------------------------------------------------------------------------
+
+  /** Nombre de la carpeta de datos (raíz del repo). */
+  private static readonly DATA_DIR_NAME = 'Jugadores_Base_de_Datos';
+
+  /** Busca la carpeta de datos caminando hacia arriba desde process.cwd(). */
+  private resolveDataDir(): string {
+    if (process.env.DATA_DIR) return process.env.DATA_DIR;
+
+    let dir = process.cwd();
+    for (let i = 0; i < 8; i++) {
+      const candidate = path.join(dir, SeedService.DATA_DIR_NAME);
+      if (fs.existsSync(candidate)) return candidate;
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
     }
-
-    const entities = mockPlayers.map((p) => {
-      const entity = new PlayerEntity();
-      entity.id = p.id;
-      entity.name = p.name;
-      entity.nationality = p.nationality;
-      entity.position = p.position;
-      entity.rating = Math.round(
-        (p.stats.pace + p.stats.shooting + p.stats.passing + p.stats.dribbling + p.stats.defending + p.stats.physical) / 6,
-      );
-      entity.pace = p.stats.pace;
-      entity.shooting = p.stats.shooting;
-      entity.passing = p.stats.passing;
-      entity.dribbling = p.stats.dribbling;
-      entity.defending = p.stats.defending;
-      entity.physical = p.stats.physical;
-      return entity;
-    });
-
-    await this.playerRepo.save(entities);
-    this.logger.log(`Seeded ${entities.length} mock players`);
+    return path.join(process.cwd(), SeedService.DATA_DIR_NAME);
   }
 
-  private async seedPremierTeams() {
-    const possiblePaths = [
-      path.join(__dirname, 'data', 'premier_teams.json'),
-      path.join(__dirname, '..', '..', '..', '..', 'seed', 'data', 'premier_teams.json'),
-      path.join(process.cwd(), 'src', 'seed', 'data', 'premier_teams.json'),
-    ];
-    const filePath = possiblePaths.find(p => fs.existsSync(p));
-    if (!filePath) {
-      this.logger.warn('premier_teams.json not found, skipping Premier League seed');
-      return;
+  /** Recorre todas las subcarpetas y devuelve los archivos .json (cada uno es una plantilla/equipo). */
+  private collectJsonFiles(sourceDir: string): Array<{ league: string; file: string; name: string }> {
+    if (!fs.existsSync(sourceDir)) {
+      this.logger.warn(`No se encontró la carpeta de datos: ${sourceDir}. Se omite la sincronización del catálogo.`);
+      return [];
     }
 
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const data: PremierData = JSON.parse(raw);
+    const files: Array<{ league: string; file: string; name: string }> = [];
+    const walk = (dir: string) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (entry.name.toLowerCase().endsWith?.('.json') || entry.name.toLowerCase().endsWith('.json')) {
+          files.push({
+            league: path.basename(path.dirname(full)),
+            file: full,
+            name: entry.name,
+          });
+        }
+      }
+    };
+    walk(sourceDir);
+    return files.sort((a, b) => a.file.localeCompare(b.file));
+  }
 
-    let teamsCreated = 0;
-    let playersCreated = 0;
+  /** Convierte el nombre del archivo en nombre de equipo (título por palabra). */
+  private deriveTeamName(fileName: string): string {
+    let base = fileName.replace(/\.json$/i, '');
+    if (/^arsenal_premier_league/i.test(base)) return 'Arsenal';
+    return base
+      .split('_')
+      .filter(Boolean)
+      .map(tok => tok.charAt(0).toUpperCase() + tok.slice(1))
+      .join(' ');
+  }
+
+  /** Normaliza un jugador bruto al shape de la entidad. */
+  private normalizePlayer(raw: any) {
+    if (!raw || typeof raw !== 'object') throw new Error('Objeto de jugador inválido');
+    if (!raw.id || typeof raw.id !== 'string') throw new Error(`Jugador sin "id": ${raw.name || 'desconocido'}`);
+    if (!raw.name || typeof raw.name !== 'string') throw new Error(`Jugador sin "name" (id=${raw.id})`);
+
+    const position = String(raw.position || '').trim();
+    if (position.length > 3) throw new Error(`Posición "${position}" (${raw.name}) supera los 3 caracteres`);
+
+    const toInt = (v: any, field: string) => {
+      const n = Math.round(Number(v));
+      return Number.isFinite(n) ? n : 50;
+    };
+
+    return {
+      id: raw.id,
+      name: raw.name,
+      nationality: String(raw.nationality || '').trim() || 'Desconocida',
+      position: position || 'MC',
+      rating: toInt(raw.rating, 'rating'),
+      pace: toInt(raw.pace, 'pace'),
+      shooting: toInt(raw.shooting, 'shooting'),
+      passing: toInt(raw.passing, 'passing'),
+      dribbling: toInt(raw.dribbling, 'dribbling'),
+      defending: toInt(raw.defending, 'defending'),
+      physical: toInt(raw.physical, 'physical'),
+    };
+  }
+
+  /** Nombre normalizado para detectar equipos duplicados: minúsculas, sin acentos, sin FC/CF. */
+  private normName(name: string): string {
+    return (name || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\b(?:fc|cf|club|futbol|fútbol)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * UPSERT idempotente de todos los jugadores/equipos de la carpeta Jugadores_Base_de_Datos.
+   * Se ejecuta en cada arranque: si a futuro se agregan jugadores al repo y se reinicia,
+   * quedan disponibles en la BD.
+   */
+  private async syncCatalogFromDisk() {
+    const sourceDir = this.resolveDataDir();
+    const files = this.collectJsonFiles(sourceDir);
+    if (files.length === 0) return;
+
+    this.logger.log(`🔄 Sincronizando catálogo desde ${sourceDir} (${files.length} plantillas/equipos)...`);
+
+    let playersInserted = 0;
     let playersUpdated = 0;
-
-    for (const team of data.equipos) {
-      let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
-
-      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
-      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
-        continue;
-      }
-
-
-      if (!teamEntity) {
-        teamEntity = new TeamEntity();
-        teamEntity.id = crypto.randomUUID();
-        teamEntity.name = team.nombre;
-        teamsCreated++;
-      }
-
-      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
-      await this.teamRepo.save(teamEntity);
-
-      for (const player of team.jugadores) {
-        let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
-
-        if (playerEntity) {
-          playerEntity.rating = player.rating;
-          playerEntity.pace = player.ritmo;
-          playerEntity.shooting = player.tiro;
-          playerEntity.passing = player.pase;
-          playerEntity.dribbling = player.regate;
-          playerEntity.defending = player.defensa;
-          playerEntity.physical = player.fisico;
-          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
-          await this.playerRepo.save(playerEntity);
-          playersUpdated++;
-        } else {
-          playerEntity = new PlayerEntity();
-          playerEntity.id = crypto.randomUUID();
-          playerEntity.name = player.nombre;
-          playerEntity.nationality = 'Inglaterra';
-          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
-          playerEntity.rating = player.rating;
-          playerEntity.pace = player.ritmo;
-          playerEntity.shooting = player.tiro;
-          playerEntity.passing = player.pase;
-          playerEntity.dribbling = player.regate;
-          playerEntity.defending = player.defensa;
-          playerEntity.physical = player.fisico;
-          await this.playerRepo.save(playerEntity);
-          playersCreated++;
-        }
-
-        const existingLink = await this.teamPlayerRepo.findOneBy({
-          teamId: teamEntity.id,
-          playerId: playerEntity.id,
-        });
-
-        if (!existingLink) {
-          const link = new TeamPlayerEntity();
-          link.id = crypto.randomUUID();
-          link.teamId = teamEntity.id;
-          link.playerId = playerEntity.id;
-          link.isStarter = true;
-          link.slotIndex = team.jugadores.indexOf(player);
-          await this.teamPlayerRepo.save(link);
-        }
-      }
-    }
-
-    this.logger.log(`Premier League seed: ${teamsCreated} teams, ${playersCreated} created, ${playersUpdated} updated`);
-  }
-
-  private async seedLaLigaTeams() {
-    const possiblePaths = [
-      path.join(__dirname, 'data', 'laliga_teams.json'),
-      path.join(process.cwd(), 'src', 'seed', 'data', 'laliga_teams.json'),
-    ];
-    const filePath = possiblePaths.find(p => fs.existsSync(p));
-    if (!filePath) {
-      this.logger.warn('laliga_teams.json not found, skipping La Liga seed');
-      return;
-    }
-
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const data: PremierData = JSON.parse(raw);
-
     let teamsCreated = 0;
-    let playersCreated = 0;
-    let playersUpdated = 0;
+    let linksCreated = 0;
 
-    for (const team of data.equipos) {
-      let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
+    const byNorm = new Map<string, string>();
+    const existingTeams = await this.teamRepo.find();
+    for (const t of existingTeams) byNorm.set(this.normName(t.name), t.id);
 
-      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
-      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
-        continue;
-      }
-
-      if (!teamEntity) {
-        teamEntity = new TeamEntity();
-        teamEntity.id = crypto.randomUUID();
-        teamEntity.name = team.nombre;
-        teamsCreated++;
-      }
-
-      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
-      await this.teamRepo.save(teamEntity);
-
-      for (const player of team.jugadores) {
-        let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
-
-        if (playerEntity) {
-          playerEntity.rating = player.rating;
-          playerEntity.pace = player.ritmo;
-          playerEntity.shooting = player.tiro;
-          playerEntity.passing = player.pase;
-          playerEntity.dribbling = player.regate;
-          playerEntity.defending = player.defensa;
-          playerEntity.physical = player.fisico;
-          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
-          await this.playerRepo.save(playerEntity);
-          playersUpdated++;
-        } else {
-          playerEntity = new PlayerEntity();
-          playerEntity.id = crypto.randomUUID();
-          playerEntity.name = player.nombre;
-          playerEntity.nationality = 'España';
-          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
-          playerEntity.rating = player.rating;
-          playerEntity.pace = player.ritmo;
-          playerEntity.shooting = player.tiro;
-          playerEntity.passing = player.pase;
-          playerEntity.dribbling = player.regate;
-          playerEntity.defending = player.defensa;
-          playerEntity.physical = player.fisico;
-          await this.playerRepo.save(playerEntity);
-          playersCreated++;
+    for (const fileEntry of files) {
+      try {
+        const raw = fs.readFileSync(fileEntry.file, 'utf-8');
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) {
+          this.logger.warn(`Omitido ${fileEntry.name}: no contiene un array de jugadores.`);
+          continue;
         }
 
-        const existingLink = await this.teamPlayerRepo.findOneBy({
-          teamId: teamEntity.id,
-          playerId: playerEntity.id,
-        });
+        const teamName = this.deriveTeamName(fileEntry.name);
+        const normKey = this.normName(teamName);
+        let teamId = byNorm.get(normKey);
 
-        if (!existingLink) {
+        if (!teamId) {
+          const team = new TeamEntity();
+          team.id = crypto.randomUUID();
+          team.name = teamName;
+          team.isReal = true;
+          const saved = await this.teamRepo.save(team);
+          teamId = saved.id;
+          byNorm.set(normKey, teamId);
+          teamsCreated++;
+        }
+
+        const normalized = data
+          .map(rawPlayer => this.normalizePlayer(rawPlayer))
+          .sort((a, b) => b.rating - a.rating);
+
+        for (const p of normalized) {
+          let entity = await this.playerRepo.findOneBy({ id: p.id });
+          if (entity) {
+            entity.name = p.name;
+            entity.nationality = p.nationality;
+            entity.position = p.position;
+            entity.rating = p.rating;
+            entity.pace = p.pace;
+            entity.shooting = p.shooting;
+            entity.passing = p.passing;
+            entity.dribbling = p.dribbling;
+            entity.defending = p.defending;
+            entity.physical = p.physical;
+            await this.playerRepo.save(entity);
+            playersUpdated++;
+          } else {
+            entity = this.playerRepo.create({
+              id: p.id,
+              name: p.name,
+              nationality: p.nationality,
+              position: p.position,
+              rating: p.rating,
+              pace: p.pace,
+              shooting: p.shooting,
+              passing: p.passing,
+              dribbling: p.dribbling,
+              defending: p.defending,
+              physical: p.physical,
+            });
+            await this.playerRepo.save(entity);
+            playersInserted++;
+          }
+        }
+
+        await this.teamPlayerRepo.delete({ teamId });
+        for (let i = 0; i < normalized.length; i++) {
           const link = new TeamPlayerEntity();
           link.id = crypto.randomUUID();
-          link.teamId = teamEntity.id;
-          link.playerId = playerEntity.id;
-          link.isStarter = true;
-          link.slotIndex = team.jugadores.indexOf(player);
+          link.teamId = teamId;
+          link.playerId = normalized[i].id;
+          link.isStarter = i < 11;
+          link.slotIndex = i;
           await this.teamPlayerRepo.save(link);
+          linksCreated++;
         }
+      } catch (err: any) {
+        this.logger.error(`Falló la sincronización de ${fileEntry.name}: ${err.message}`);
       }
     }
 
-    this.logger.log(`La Liga seed: ${teamsCreated} teams, ${playersCreated} created, ${playersUpdated} updated`);
-  }
-
-  private async seedExtraTeams() {
-    const possiblePaths = [
-      path.join(__dirname, 'data', 'extra_teams.json'),
-      path.join(process.cwd(), 'src', 'seed', 'data', 'extra_teams.json'),
-    ];
-    const filePath = possiblePaths.find(p => fs.existsSync(p));
-    if (!filePath) return;
-
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const data: PremierData = JSON.parse(raw);
-
-    for (const team of data.equipos) {
-      let teamEntity = await this.teamRepo.findOneBy({ name: team.nombre });
-
-      // Si un equipo con ese nombre ya pertenece a un usuario, NO convertirlo en oponente IA.
-      if (teamEntity && (teamEntity.userId || teamEntity.sessionId)) {
-        continue;
-      }
-
-      if (!teamEntity) {
-        teamEntity = new TeamEntity();
-        teamEntity.id = crypto.randomUUID();
-        teamEntity.name = team.nombre;
-      }
-
-      teamEntity.isReal = true; // Equipo IA real (Premier/LaLiga/extra) → oponente del torneo
-      await this.teamRepo.save(teamEntity);
-
-      for (const player of team.jugadores) {
-        let playerEntity = await this.playerRepo.findOneBy({ name: player.nombre });
-        if (!playerEntity) {
-          playerEntity = new PlayerEntity();
-          playerEntity.id = crypto.randomUUID();
-          playerEntity.name = player.nombre;
-          playerEntity.nationality = 'International';
-          playerEntity.position = POSITION_MAP[player.posicion] ?? player.posicion;
-          playerEntity.rating = player.rating;
-          playerEntity.pace = player.ritmo;
-          playerEntity.shooting = player.tiro;
-          playerEntity.passing = player.pase;
-          playerEntity.dribbling = player.regate;
-          playerEntity.defending = player.defensa;
-          playerEntity.physical = player.fisico;
-          await this.playerRepo.save(playerEntity);
-        }
-
-        const existingLink = await this.teamPlayerRepo.findOneBy({
-          teamId: teamEntity.id,
-          playerId: playerEntity.id,
-        });
-
-        if (!existingLink) {
-          const link = new TeamPlayerEntity();
-          link.id = crypto.randomUUID();
-          link.teamId = teamEntity.id;
-          link.playerId = playerEntity.id;
-          link.isStarter = true;
-          link.slotIndex = team.jugadores.indexOf(player);
-          await this.teamPlayerRepo.save(link);
-        }
-      }
-    }
-    this.logger.log('Extra teams (Bayern, PSG, City) seeded successfully');
+    this.logger.log(
+      `Catálogo sincronizado: ${playersInserted} jugadores creados, ${playersUpdated} actualizados, ` +
+        `${teamsCreated} equipos creados, ${linksCreated} enlaces de plantilla.`,
+    );
   }
 }

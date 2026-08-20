@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Carga los 40 equipos de la Copa Élite (20 Premier_League + 20 Liga_Española)
- * desde C:\Pedro\MetroDev\Jugadores_Base_de_Datos a la base de datos.
+ * Carga los equipos y sus plantillas desde la carpeta `Jugadores_Base_de_Datos`
+ * (en la raíz del repo, una subcarpeta por liga y un JSON por equipo) a la base.
  *
  * Comportamiento:
  *  - Alinea el esquema de la tabla `teams` (idempotente, igual que las entidades).
@@ -22,8 +22,22 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DEFAULT_SOURCE_DIR = 'C:\\Pedro\\MetroDev\\Jugadores_Base_de_Datos';
-const LEAGUES = ['Premier_League', 'Liga_Española'];
+// La carpeta de datos vive en la raíz del repo. Se resuelve relativo al proyecto.
+function resolveSourceDir() {
+  const argIndex = process.argv.indexOf('--source');
+  if (argIndex !== -1 && process.argv[argIndex + 1]) return process.argv[argIndex + 1];
+  if (process.env.DATA_DIR) return process.env.DATA_DIR;
+
+  let dir = process.cwd();
+  for (let i = 0; i < 8; i++) {
+    const candidate = path.join(dir, 'Jugadores_Base_de_Datos');
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.join(process.cwd(), 'Jugadores_Base_de_Datos');
+}
 
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
@@ -31,13 +45,8 @@ const DB_CONFIG = {
   user: process.env.DB_USER || 'pizarron',
   password: process.env.DB_PASSWORD || 'pizarron',
   database: process.env.DB_NAME || 'pizarron_dt',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
-
-function resolveSourceDir() {
-  const argIndex = process.argv.indexOf('--source');
-  if (argIndex !== -1 && process.argv[argIndex + 1]) return process.argv[argIndex + 1];
-  return DEFAULT_SOURCE_DIR;
-}
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -60,32 +69,30 @@ function normName(name) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b(?:fc|cf)\b/g, ' ')
+    .replace(/\b(?:fc|cf|club|futbol|fútbol)\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+/** Recorre recursivamente todas las ligas (subcarpetas) y recoge los .json. */
 function collectJsonFiles(sourceDir) {
   if (!fs.existsSync(sourceDir)) {
     throw new Error(`Directorio de origen no encontrado: ${sourceDir}`);
   }
 
   const files = [];
-  for (const league of LEAGUES) {
-    const leagueDir = path.join(sourceDir, league);
-    if (!fs.existsSync(leagueDir)) {
-      console.warn(`[WARN] No existe la carpeta ${leagueDir}, se omite.`);
-      continue;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.toLowerCase().endsWith('.json')) {
+        files.push({ league: path.basename(path.dirname(full)), file: full, name: entry.name });
+      }
     }
-    const entries = fs
-      .readdirSync(leagueDir)
-      .filter((f) => f.toLowerCase().endsWith('.json'))
-      .sort();
-    for (const entry of entries) {
-      files.push({ league, file: path.join(leagueDir, entry), name: entry });
-    }
-  }
-  return files;
+  };
+  walk(sourceDir);
+  return files.sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function normalizePlayer(raw) {
@@ -94,9 +101,7 @@ function normalizePlayer(raw) {
   if (!raw.name || typeof raw.name !== 'string') throw new Error(`Jugador sin "name" (id=${raw.id})`);
 
   const position = String(raw.position || '').trim();
-  if (position.length > 3) {
-    throw new Error(`Posición "${position}" (${raw.name}) supera los 3 caracteres`);
-  }
+  if (position.length > 3) throw new Error(`Posición "${position}" (${raw.name}) supera los 3 caracteres`);
 
   const toInt = (v, field) => {
     const n = Math.round(Number(v));
@@ -119,11 +124,14 @@ function normalizePlayer(raw) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Carga (UPSERT de jugadores, creación de equipos y plantillas)
+// ---------------------------------------------------------------------------
+
 const UPSERT_PLAYER_SQL = `
   INSERT INTO players
     (id, name, nationality, position, rating, pace, shooting, passing, dribbling, defending, physical)
-  VALUES
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     nationality = EXCLUDED.nationality,
@@ -157,21 +165,16 @@ const ENSURE_SCHEMA_SQL = [
 async function replaceTeam(client, existingIds, name) {
   if (existingIds.length === 0) return;
 
-  // Jugadores enlazados al viejo equipo (para limpiar huérfanos luego)
   const { rows: linkRows } = await client.query(
     `SELECT "playerId" FROM team_players WHERE "teamId" = ANY($1)`,
     [existingIds],
   );
   const replacedPlayerIds = [...new Set(linkRows.map((r) => r.playerId))];
 
-  // Eliminar partidos que referencian al equipo y torneos creados por él
   await client.query(`DELETE FROM matches WHERE "homeTeamId" = ANY($1) OR "awayTeamId" = ANY($1)`, [existingIds]);
   await client.query(`DELETE FROM tournaments WHERE "userTeamId" = ANY($1)`, [existingIds]);
-
-  // Eliminar plantillas del equipo antiguo
   await client.query(`DELETE FROM team_players WHERE "teamId" = ANY($1)`, [existingIds]);
 
-  // Eliminar jugadores que quedaron sin ningún equipo (evita huérfanos en el catálogo)
   if (replacedPlayerIds.length) {
     const { rows: still } = await client.query(
       `SELECT DISTINCT "playerId" FROM team_players WHERE "playerId" = ANY($1)`,
@@ -184,7 +187,6 @@ async function replaceTeam(client, existingIds, name) {
     }
   }
 
-  // Finalmente eliminar el/los equipos duplicados
   await client.query(`DELETE FROM teams WHERE id = ANY($1)`, [existingIds]);
 }
 
@@ -199,10 +201,8 @@ async function loadTeam(client, fileEntry) {
   const players = data.map(normalizePlayer);
   const teamId = crypto.randomUUID();
 
-  // 1) Crear el equipo (isReal = true)
   await client.query(INSERT_TEAM_SQL, [teamId, name]);
 
-  // 2) Asegurar jugadores (upsert) y enlazar plantilla
   const sorted = [...players].sort((a, b) => b.rating - a.rating);
   for (let i = 0; i < sorted.length; i++) {
     const p = sorted[i];
@@ -216,16 +216,13 @@ async function loadTeam(client, fileEntry) {
 
   return { name, players: players.length, starters: Math.min(11, sorted.length) };
 }
-
 async function main() {
   const sourceDir = resolveSourceDir();
   console.log(`Directorio de origen: ${sourceDir}`);
   console.log(`Base de datos: ${DB_CONFIG.user}@${DB_CONFIG.host}:${DB_CONFIG.port}/${DB_CONFIG.database}\n`);
 
   const files = collectJsonFiles(sourceDir);
-  console.log(`Archivos JSON encontrados: ${files.length}`);
-  console.log(`  Premier_League: ${files.filter((f) => f.league === 'Premier_League').length}`);
-  console.log(`  Liga_Española:  ${files.filter((f) => f.league === 'Liga_Española').length}\n`);
+  console.log(`Archivos JSON encontrados: ${files.length}\n`);
 
   const client = new Client(DB_CONFIG);
   await client.connect();
@@ -247,7 +244,7 @@ async function main() {
 
     await client.query('BEGIN');
 
-    // 3) Cargar los 40 equipos (reemplazando duplicados por nombre normalizado)
+    // 3) Cargar todos los equipos (reemplazando duplicados por nombre normalizado)
     let replaced = 0;
     for (const fileEntry of files) {
       const name = deriveTeamName(fileEntry.name);

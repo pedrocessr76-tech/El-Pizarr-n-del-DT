@@ -2,19 +2,18 @@
 /**
  * Script de migración / carga de datos de jugadores de fútbol.
  *
- * Lee los archivos JSON de las plantillas (un JSON por equipo) ubicados en:
- *   - Premier_League/  (20 archivos)
- *   - Liga_Española/   (20 archivos)
+ * Lee recursivamente TODOS los archivos JSON de la carpeta `Jugadores_Base_de_Datos`
+ * (en la raíz del repo, una subcarpeta por liga y un JSON por equipo) y los importa
+ * (UPSERT) en la tabla `players` de PostgreSQL.
  *
- * y los importa (UPSERT) en la tabla `players` de PostgreSQL.
- * Es idempotente: se puede ejecutar varias veces sin duplicar datos,
- * usando el `id` de cada jugador como clave primaria (ON CONFLICT (id) DO UPDATE).
+ * Es idempotente: se puede ejecutar varias veces sin duplicar datos, usando el `id`
+ * de cada jugador como clave primaria (ON CONFLICT (id) DO UPDATE).
  *
  * Uso:
  *   node apps/server/scripts/import-players.js [--source <ruta>]
  *
- * La conexión a la BD se configura vía variables de entorno (DB_HOST, DB_PORT,
- * DB_USER, DB_PASSWORD, DB_NAME); por defecto usa los valores de docker-compose.
+ * Conexión a BD vía variables de entorno (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD,
+ * DB_NAME). Usa SSL cuando DB_SSL=true (recomendado en Render).
  */
 
 'use strict';
@@ -27,8 +26,23 @@ const path = require('path');
 // Configuración
 // ---------------------------------------------------------------------------
 
-const DEFAULT_SOURCE_DIR = 'C:\\Pedro\\MetroDev\\Jugadores_Base_de_Datos';
-const LEAGUES = ['Premier_League', 'Liga_Española'];
+function resolveSourceDir() {
+  const argIndex = process.argv.indexOf('--source');
+  if (argIndex !== -1 && process.argv[argIndex + 1]) {
+    return process.argv[argIndex + 1];
+  }
+  if (process.env.DATA_DIR) return process.env.DATA_DIR;
+
+  let dir = process.cwd();
+  for (let i = 0; i < 8; i++) {
+    const candidate = path.join(dir, 'Jugadores_Base_de_Datos');
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.join(process.cwd(), 'Jugadores_Base_de_Datos');
+}
 
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
@@ -36,15 +50,8 @@ const DB_CONFIG = {
   user: process.env.DB_USER || 'pizarron',
   password: process.env.DB_PASSWORD || 'pizarron',
   database: process.env.DB_NAME || 'pizarron_dt',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
-
-function resolveSourceDir() {
-  const argIndex = process.argv.indexOf('--source');
-  if (argIndex !== -1 && process.argv[argIndex + 1]) {
-    return process.argv[argIndex + 1];
-  }
-  return DEFAULT_SOURCE_DIR;
-}
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -91,24 +98,28 @@ function normalizePlayer(raw) {
   };
 }
 
+/** Recorre recursivamente todas las ligas (subcarpetas) y recoge los .json. */
 function collectJsonFiles(sourceDir) {
   if (!fs.existsSync(sourceDir)) {
     throw new Error(`Directorio de origen no encontrado: ${sourceDir}`);
   }
 
   const files = [];
-  for (const league of LEAGUES) {
-    const leagueDir = path.join(sourceDir, league);
-    if (!fs.existsSync(leagueDir)) {
-      console.warn(`  [AVISO] No existe el subdirectorio: ${leagueDir}; se omite.`);
-      continue;
-    }
-    for (const entry of fs.readdirSync(leagueDir)) {
-      if (entry.toLowerCase().endsWith('.json')) {
-        files.push({ league, file: path.join(leagueDir, entry), name: entry });
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.toLowerCase().endsWith('.json')) {
+        files.push({
+          league: path.basename(path.dirname(full)),
+          file: full,
+          name: entry.name,
+        });
       }
     }
-  }
+  };
+  walk(sourceDir);
 
   if (files.length === 0) {
     throw new Error(`No se encontraron archivos .json en ${sourceDir}`);
@@ -179,15 +190,12 @@ async function main() {
   console.log(`Base de datos: ${DB_CONFIG.user}@${DB_CONFIG.host}:${DB_CONFIG.port}/${DB_CONFIG.database}\n`);
 
   const files = collectJsonFiles(sourceDir);
-  console.log(`Archivos JSON encontrados: ${files.length}`);
-  console.log(`  Premier_League: ${files.filter((f) => f.league === 'Premier_League').length}`);
-  console.log(`  Liga_Española:  ${files.filter((f) => f.league === 'Liga_Española').length}\n`);
+  console.log(`Archivos JSON encontrados: ${files.length}\n`);
 
   const client = new Client(DB_CONFIG);
   await client.connect();
 
   try {
-    // Enumeramos los IDs ya existentes para diferenciar inserts de updates.
     const { rows } = await client.query('SELECT id FROM players;');
     const existingIds = new Set(rows.map((r) => r.id));
     console.log(`Jugadores existentes en BD al inicio: ${existingIds.size}\n`);

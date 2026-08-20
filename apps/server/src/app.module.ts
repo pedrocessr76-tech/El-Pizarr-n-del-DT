@@ -19,6 +19,11 @@ import { SeedModule } from './seed/seed.module';
       username: process.env.DB_USER || 'pizarron',
       password: process.env.DB_PASSWORD || 'pizarron',
       database: process.env.DB_NAME || 'pizarron_dt',
+      // Render Postgres exige TLS: habilitarlo mediante DB_SSL=true.
+      ssl:
+        process.env.DB_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

@@ -30,6 +30,8 @@ services:
         fromDatabase:
           name: el-pizarron-db
           property: database
+      - key: DB_SSL
+        value: true
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
