@@ -16,7 +16,7 @@ const STAT_LABELS: { key: keyof Player['stats']; label: string }[] = [
 ];
 
 // Determina la rareza de la carta según el rating
-const getRarity = (rating: number) => {
+export const getRarity = (rating: number) => {
   if (rating >= 85) return 'gold';
   if (rating >= 75) return 'silver';
   return 'bronze';

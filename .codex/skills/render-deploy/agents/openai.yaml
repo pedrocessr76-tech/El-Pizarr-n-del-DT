@@ -1,0 +1,4 @@
+interface:
+  display_name: "Despliegue Render"
+  short_description: "Despliega API, web y Postgres en Render"
+  default_prompt: "Usa $render-deploy para preparar y desplegar este proyecto en Render."

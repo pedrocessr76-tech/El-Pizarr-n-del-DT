@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { PlayerCard } from '../components/PlayerCard';
+import React, { useState, useEffect, useMemo } from 'react';
+import { PlayerCard, getRarity } from '../components/PlayerCard';
 import { playerService } from '../services/playerService';
 import { matchService } from '../services/matchService';
 import { useAuthStore } from '../store/useAuthStore';
-import type { Player } from '../../../../packages/shared/types/models';
+import type { Player, Position } from '../../../../packages/shared/types/models';
 import type { HistoryTournamentItem } from '../services/matchService';
 
 interface CatalogHistoryPageProps {
@@ -16,6 +16,45 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // --- Filtros del catálogo ---
+  const [search, setSearch] = useState('');
+  const [positionFilter, setPositionFilter] = useState<Position | ''>('');
+  const [rarityFilter, setRarityFilter] = useState<string>(''); // 'gold' | 'silver' | 'bronze' | ''
+  const [minRating, setMinRating] = useState<number | ''>('');
+
+  // Posiciones presentes en el catálogo (derivadas de los datos reales)
+  const positions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.position))),
+    [players],
+  );
+
+  // Opciones de rareza (Calidad)
+  const RARITIES: { key: string; label: string; dot: string }[] = [
+    { key: '', label: 'Todas', dot: 'bg-outline-variant' },
+    { key: 'gold', label: 'Oro', dot: 'bg-[#FFDF00]' },
+    { key: 'silver', label: 'Plata', dot: 'bg-[#C0C0C0]' },
+    { key: 'bronze', label: 'Bronce', dot: 'bg-[#CD7F32]' },
+  ];
+
+  // Lista filtrada del catálogo completo
+  const filteredPlayers = useMemo(() => {
+    const term = search.toLowerCase().trim();
+    return players.filter((p) => {
+      const nameMatch = !term || p.name.toLowerCase().includes(term);
+      const posMatch = !positionFilter || p.position === positionFilter;
+      const rarityMatch = !rarityFilter || getRarity(p.rating ?? 0) === rarityFilter;
+      const ratingMatch = minRating === '' || (p.rating ?? 0) >= minRating;
+      return nameMatch && posMatch && rarityMatch && ratingMatch;
+    });
+  }, [players, search, positionFilter, rarityFilter, minRating]);
+
+  const clearFilters = () => {
+    setSearch('');
+    setPositionFilter('');
+    setRarityFilter('');
+    setMinRating('');
+  };
 
   // Estado de historial real
   const { user } = useAuthStore();
@@ -202,23 +241,34 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
       {/* Screen 4: Card Catalog */}
       {activeView === 'catalog' && (
         <main className="max-w-7xl mx-auto w-full px-gutter mt-lg flex-1">
-          {/* Filter Bar (Bento Style) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-xl">
-            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
-              <span className="font-label-md text-label-md text-on-surface-variant">Calidad</span>
-              <div className="flex gap-2">
-                <span className="w-4 h-4 rounded bg-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.4)]"></span>
-                <span className="w-4 h-4 rounded bg-[#C0C0C0]"></span>
-                <span className="w-4 h-4 rounded bg-[#CD7F32]"></span>
-              </div>
+                    {/* Toolbar: búsqueda, contador y reset */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-xl">
+            <div className="relative w-full sm:max-w-md">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 top-1/2 -translate-y-1/2">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar jugador por nombre..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-on-background placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+              />
             </div>
-            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
-              <span className="font-label-md text-label-md text-on-surface-variant">Posición</span>
-              <span className="font-headline-sm text-[16px] text-on-surface">DEL, MED...</span>
-            </div>
-            <div className="bg-surface-container p-md rounded-xl light-leak-border border border-outline-variant/30 flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
-              <span className="font-label-md text-label-md text-on-surface-variant">Valoración</span>
-              <span className="font-stat-value text-[18px] text-primary">85+</span>
+            <div className="flex items-center gap-3">
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                {filteredPlayers.length} de {players.length}
+                <span className="text-on-surface-variant/60">
+                  {' '}
+                  (filtrados: {players.length - filteredPlayers.length})
+                </span>
+              </span>
+              <button
+                onClick={clearFilters}
+                className="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-label-md text-label-md transition-colors"
+              >
+                Limpiar
+              </button>
             </div>
           </div>
 
@@ -242,12 +292,99 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
             </div>
           )}
 
-          {/* Card Grid - Dynamic from DB */}
+                    {/* Filters (only when loaded ok) */}
           {!isLoading && !loadError && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-220px)] pb-8">
-              {players.map((player) => (
-                <PlayerCard key={player.id} player={player} />
-              ))}
+            <>
+              {/* Calidad (rarezas) */}
+              <div className="mb-6">
+                <span className="font-label-md text-label-md text-on-surface-variant mb-2 block">
+                  Calidad
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {RARITIES.map((r) => (
+                    <button
+                      key={r.key || 'todas'}
+                      onClick={() => setRarityFilter(r.key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-label-md transition-all ${
+                        rarityFilter === r.key
+                          ? 'bg-primary-container/30 text-primary border border-primary/30'
+                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/30'
+                      }`}
+                    >
+                      <span className={`w-3 h-3 rounded ${r.dot}`}></span>
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Posición */}
+              <div className="mb-6">
+                <span className="font-label-md text-label-md text-on-surface-variant mb-2 block">
+                  Posición
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setPositionFilter('')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-label-md transition-all ${
+                      positionFilter === ''
+                        ? 'bg-primary-container/30 text-primary border border-primary/30'
+                        : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/30'
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  {positions.map((pos) => (
+                    <button
+                      key={pos}
+                      onClick={() => setPositionFilter(pos)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-label-md transition-all ${
+                        positionFilter === pos
+                          ? 'bg-primary-container/30 text-primary border border-primary/30'
+                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/30'
+                    }`}
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Valoración mínima */}
+              <div className="mb-6 max-w-xs">
+                <label className="font-label-md text-label-md text-on-surface-variant mb-2 block">
+                  Valoración mínima
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min={0}
+                    max={99}
+                    step={1}
+                    value={minRating === '' ? 0 : minRating}
+                    onChange={(e) => setMinRating(Number(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <span className="font-stat-value text-primary w-12 text-right">
+                    {minRating === '' ? '—' : minRating}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Card Grid — fluye con el scroll de página (sin recorte) */}
+          {!isLoading && !loadError && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 pb-8">
+              {filteredPlayers.length === 0 ? (
+                <div className="col-span-full text-center py-16 text-on-surface-variant font-body-md text-body-md">
+                  No hay jugadores que coincidan con los filtros seleccionados.
+                </div>
+              ) : (
+                filteredPlayers.map((player) => (
+                  <PlayerCard key={player.id} player={player} />
+                ))
+              )}
             </div>
           )}
         </main>
