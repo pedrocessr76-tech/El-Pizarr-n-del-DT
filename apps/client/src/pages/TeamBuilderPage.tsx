@@ -527,8 +527,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
   const [assignedPlayers, setAssignedPlayers] = useState<SlotAssignment[]>([]);
   // Casilla cuyo jugador está seleccionado para mover/intercambiar
   const [relocatingSlotId, setRelocatingSlotId] = useState<string | null>(null);
-  const { user } = useAuthStore();
-  const { teamId, setTeamId } = useDraftStore();
+  const { teamId } = useDraftStore();
 
   const currentFormation = FORMATIONS[activeFormation] || FORMATIONS['4-3-3 (Plana)'];
 
@@ -539,27 +538,34 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
   }, [showPlayerOverlay]);
 
   useEffect(() => {
-    createTeamIfNeeded();
-  }, [user]);
+    // Al montar el builder iniciar siempre con un equipo fresco. El store global
+    // (zustand) persiste entre navegaciones, así que leemos valores frescos con
+    // getState() para evitar usar un teamId obsoleto (closure). Se crea un equipo
+    // nuevo en backend para que el usuario pueda armar desde cero y no aparezca
+    // "equipo completo" tras una partida anterior.
+    useDraftStore.getState().resetAll();
+    setAssignedPlayers([]);
+    setRelocatingSlotId(null);
+    setMessage(null);
 
-  const createTeamIfNeeded = async () => {
-    try {
-      if (!teamId) {
-        if (user) {
-          const response = await draftService.createTeam(user.id);
-          setTeamId(response.teamId);
+    void (async () => {
+      try {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          const response = await draftService.createTeam(currentUser.id);
+          useDraftStore.getState().setTeamId(response.teamId);
         } else {
           const { getOrCreateGuestSessionId, setGuestTeamId } = await import('../utils/session');
           const sessionId = getOrCreateGuestSessionId();
           const response = await draftService.createTeam(undefined, sessionId);
-          setTeamId(response.teamId);
+          useDraftStore.getState().setTeamId(response.teamId);
           setGuestTeamId(response.teamId);
         }
+      } catch (err) {
+        console.error('Error creando equipo:', err);
       }
-    } catch (err) {
-      console.error('Error creando equipo:', err);
-    }
-  };
+    })();
+  }, []);
 
   const loadPack = async () => {
     setIsLoadingPack(true);
