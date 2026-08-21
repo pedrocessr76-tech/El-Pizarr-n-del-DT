@@ -1,0 +1,14 @@
+npm notice run npx
+npm notice run vite build
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mÔ£ô[39m 104 modules transformed.
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) C:/Pedro/MetroDev/El_Pizarron_del_DT/apps/client/src/utils/session.ts is dynamically imported by C:/Pedro/MetroDev/El_Pizarron_del_DT/apps/client/src/pages/TeamBuilderPage.tsx but also statically imported by C:/Pedro/MetroDev/El_Pizarron_del_DT/apps/client/src/App.tsx, C:/Pedro/MetroDev/El_Pizarron_del_DT/apps/client/src/pages/TournamentBracketPage.tsx, C:/Pedro/MetroDev/El_Pizarron_del_DT/apps/client/src/store/useAuthStore.ts, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  1.02 kB[22m[1m[22m[2m Ôöé gzip:  0.53 kB[22m
+[2mdist/[22m[35massets/index-CODR24h-.css  [39m[1m[2m 69.13 kB[22m[1m[22m[2m Ôöé gzip: 11.35 kB[22m
+[2mdist/[22m[36massets/index-B8us2KKP.js   [39m[1m[2m283.55 kB[22m[1m[22m[2m Ôöé gzip: 83.98 kB[22m
+[32mÔ£ô built in 1.92s[39m

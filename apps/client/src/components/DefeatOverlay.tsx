@@ -54,8 +54,8 @@ export const DefeatOverlay: React.FC<DefeatOverlayProps> = ({ tournament, teamId
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/85 backdrop-blur-xl"></div>
-            <div className="relative w-full max-w-xl bg-surface-container rounded-2xl border border-white/10 shadow-2xl overflow-y-auto max-h-[calc(100vh-2rem)] overflow-x-hidden">
-        <div className="p-8 flex flex-col items-center gap-5 text-center overflow-visible">
+            <div className="relative w-full max-w-2xl md:max-w-3xl bg-surface-container rounded-2xl border border-white/10 shadow-2xl overflow-y-auto max-h-[calc(100vh-2rem)] overflow-x-hidden">
+        <div className="p-8 md:p-10 flex flex-col items-center gap-6 text-center overflow-visible">
           <div className="w-20 h-20 rounded-full bg-error/15 border border-error/40 flex items-center justify-center">
             <span className="material-symbols-outlined text-[40px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>
               flag
@@ -69,7 +69,7 @@ export const DefeatOverlay: React.FC<DefeatOverlayProps> = ({ tournament, teamId
             </p>
           </div>
 
-          <div className="w-full grid grid-cols-2 gap-3">
+          <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-3">
             <Stat label="Partidos jugados" value={stats.played} />
             <Stat label="Victorias" value={stats.wins} />
             <Stat label="Empates" value={stats.draws} />
@@ -78,12 +78,18 @@ export const DefeatOverlay: React.FC<DefeatOverlayProps> = ({ tournament, teamId
             <Stat label="Ronda alcanzada" value={ROUND_LABELS[stats.lastRound] || '-'} />
           </div>
 
-          <button
-            onClick={onHome}
-            className="w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Volver al Inicio
-          </button>
+          <div className="w-full border-t border-white/10 pt-6">
+            <button
+              onClick={onHome}
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>home</span>
+              Volver al Inicio
+            </button>
+            <p className="font-label-md text-label-md text-on-surface-variant mt-3">
+              ¿Quieres intentarlo de nuevo? Arma un nuevo equipo y vuelve a jugar.
+            </p>
+          </div>
         </div>
       </div>
     </div>

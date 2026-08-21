@@ -3,6 +3,7 @@ import type { Player } from '../../../../packages/shared/types/models';
 import { draftService } from '../services/draftService';
 import { useAuthStore } from '../store/useAuthStore';
 import { useDraftStore } from '../store/useDraftStore';
+import { PlayerMiniCard } from '../components/PlayerCard';
 import type { ActiveTab } from '../components/Navbar';
 
 interface TeamBuilderPageProps {
@@ -66,6 +67,32 @@ const GENERIC_TO_FIFA: Record<string, FIFA_POSITION[]> = {
   'FWD': ['DC', 'ST', 'SD', 'ED', 'EI'],
 };
 
+// Rating general de un jugador (promedio de las 6 stats)
+const calcPlayerRating = (p: Player): number =>
+  Math.round(
+    (p.stats.pace + p.stats.shooting + p.stats.passing +
+     p.stats.dribbling + p.stats.defending + p.stats.physical) / 6
+  );
+
+// Zona a la que pertenece cada posición FIFA
+type TeamZone = 'DEF' | 'MID' | 'ATT';
+const ZONE_BY_POSITION: Record<FIFA_POSITION, TeamZone> = {
+  'POR': 'DEF', // el arquero se cuenta dentro de la defensa
+  'LD': 'DEF',
+  'LI': 'DEF',
+  'DFC': 'DEF',
+  'MCD': 'MID',
+  'MC': 'MID',
+  'MCO': 'MID',
+  'MD': 'MID',
+  'MI': 'MID',
+  'ED': 'ATT',
+  'EI': 'ATT',
+  'SD': 'ATT',
+  'DC': 'ATT',
+  'ST': 'ATT',
+};
+
 // Función para verificar compatibilidad de posiciones
 const arePositionsCompatible = (slotPosition: FIFA_POSITION, playerPosition: string): boolean => {
   const normalizedPlayerPosition = playerPosition.toUpperCase().trim();
@@ -93,6 +120,44 @@ const arePositionsCompatible = (slotPosition: FIFA_POSITION, playerPosition: str
   // Verificar si alguna de las posiciones FIFA del jugador es compatible con el slot
   const compatiblePositions = POSITION_COMPATIBILITY[slotPosition] || [slotPosition];
   return playerFIFAPositions.some(pos => compatiblePositions.includes(pos));
+};
+
+// Re-asigna jugadores a las casillas de una alineación de forma automática.
+// Prioriza colocar a cada jugador en una posición compatible; si no hay casilla
+// compatible, lo coloca en la primera casilla libre.
+const autoAssignPlayers = (
+  players: Player[],
+  slots: Array<{ id: string; position: FIFA_POSITION; type: 'starter' | 'substitute' }>,
+): SlotAssignment[] => {
+  const zoneRank = (pos: FIFA_POSITION): number => {
+    if (pos === 'POR') return 0;
+    if (['LD', 'LI', 'DFC'].includes(pos)) return 1;
+    if (['MCD', 'MC', 'MCO', 'MD', 'MI'].includes(pos)) return 2;
+    return 3; // Delanteros
+  };
+
+  // Orden por zonas para llenar primero posiciones "naturales"
+  const sortedSlots = [...slots].sort((a, b) => zoneRank(a.position) - zoneRank(b.position));
+  const assigned: Array<Player | null> = sortedSlots.map(() => null);
+
+  // 1ª pasada: casilla compatible
+  for (const player of players) {
+    const idx = sortedSlots.findIndex(
+      (s, i) => assigned[i] === null && arePositionsCompatible(s.position, player.position),
+    );
+    if (idx !== -1) assigned[idx] = player;
+  }
+
+  // 2ª pasada: si no encontró casilla compatible, ir a una casilla libre
+  for (const player of players) {
+    if (assigned.includes(player)) continue;
+    const idx = assigned.findIndex(a => a === null);
+    if (idx !== -1) assigned[idx] = player;
+  }
+
+  return sortedSlots
+    .map((s, i) => (assigned[i] ? { slotId: s.id, player: assigned[i] as Player } : null))
+    .filter((x): x is SlotAssignment => x !== null);
 };
 
 // Definición de las 15 alineaciones FIFA
@@ -460,6 +525,8 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
   const [selectedPosition, setSelectedPosition] = useState<FIFA_POSITION | 'ANY'>('ANY');
   const [selectedSlotId, setSelectedSlotId] = useState<string>('');
   const [assignedPlayers, setAssignedPlayers] = useState<SlotAssignment[]>([]);
+  // Casilla cuyo jugador está seleccionado para mover/intercambiar
+  const [relocatingSlotId, setRelocatingSlotId] = useState<string | null>(null);
   const { user } = useAuthStore();
   const { teamId, setTeamId } = useDraftStore();
 
@@ -538,11 +605,91 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
     }
   };
 
+  const doRelocatePlayer = async (fromSlotId: string, toSlotId: string) => {
+    const fromPlayer = getPlayerForSlot(fromSlotId);
+    const toPlayer = getPlayerForSlot(toSlotId);
+    if (!fromPlayer) return;
+
+    setAssignedPlayers(prev => {
+      if (toPlayer) {
+        // Intercambiar: el jugador destino ocupa la casilla de origen
+        return prev.map(p =>
+          p.slotId === fromSlotId
+            ? { slotId: fromSlotId, player: toPlayer }
+            : p.slotId === toSlotId
+              ? { slotId: toSlotId, player: fromPlayer }
+              : p,
+        );
+      }
+      // Mover a una casilla vacía
+      return [...prev.filter(p => p.slotId !== fromSlotId), { slotId: toSlotId, player: fromPlayer }];
+    });
+    setRelocatingSlotId(null);
+
+    // Si el cambio cruza titular <-> suplente, sincronizar la clasificación con el backend
+    if (teamId) {
+      const fromSlot = currentFormation.slots.find(s => s.id === fromSlotId);
+      const toSlot = currentFormation.slots.find(s => s.id === toSlotId);
+      const fromIsStarter = fromSlot?.type === 'starter';
+      const toIsStarter = toSlot?.type === 'starter';
+      if (fromIsStarter !== toIsStarter) {
+        try {
+          if (toPlayer) await draftService.removePlayerFromTeam(teamId, toPlayer.id);
+          if (fromPlayer) await draftService.removePlayerFromTeam(teamId, fromPlayer.id);
+          if (fromPlayer) await draftService.addPlayerToTeam(teamId, fromPlayer.id, toIsStarter);
+          if (toPlayer) await draftService.addPlayerToTeam(teamId, toPlayer.id, fromIsStarter);
+        } catch (err) {
+          console.error('Error sincronizando cambio de posición:', err);
+        }
+      }
+    }
+  };
+
   const handleSlotClick = (position: FIFA_POSITION, slotId: string) => {
+    const occupant = getPlayerForSlot(slotId);
+
+    // Si la casilla ya tiene un jugador -> se SELECCIONA para moverlo/intercambiarlo
+    // (no se abre el overlay de elegir jugador).
+    if (occupant) {
+      if (relocatingSlotId) {
+        if (relocatingSlotId === slotId) {
+          // Volver a pulsar la misma casilla cancela la selección
+          setRelocatingSlotId(null);
+        } else {
+          // Intercambiar con el jugador de la casilla seleccionada
+          doRelocatePlayer(relocatingSlotId, slotId);
+        }
+      } else {
+        setRelocatingSlotId(slotId);
+      }
+      return;
+    }
+
+    // Casilla vacía: si hay un jugador seleccionado, moverlo aquí
+    if (relocatingSlotId) {
+      doRelocatePlayer(relocatingSlotId, slotId);
+      return;
+    }
+
+    // Casilla vacía y sin jugador en movimiento -> abrir overlay de selección
     setSelectedPosition(position);
     setSelectedSlotId(slotId);
     setPackPlayers([]); // Limpiar pack anterior
     setShowPlayerOverlay(true);
+  };
+
+  const handleFormationChange = (formationName: string) => {
+    if (formationName === activeFormation) return;
+    const newFormation = FORMATIONS[formationName];
+    if (!newFormation) return;
+
+    // Re-colocar automáticamente a los jugadores en las nuevas casillas
+    const players = assignedPlayers.map(ap => ap.player);
+    const newAssign = autoAssignPlayers(players, newFormation.slots);
+
+    setActiveFormation(formationName);
+    setAssignedPlayers(newAssign);
+    setRelocatingSlotId(null);
   };
 
   const getPlayerForSlot = (slotId: string): Player | undefined => {
@@ -591,6 +738,64 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
     return [...exactMatchPlayers, ...randomOthers];
   })();
 
+  // ---- Estadísticas del equipo (basadas en los titulares asignados) ----
+  // El equipo está completo cuando se llenaron los 18 slots (11 titulares + 7 suplentes)
+  const isTeamComplete = assignedPlayers.length === currentFormation.slots.length;
+  const missingCount = currentFormation.slots.length - assignedPlayers.length;
+
+  const starterSlots = currentFormation.slots.filter(s => s.type === 'starter');
+  const positionedStarters: Array<{ player: Player; zone: TeamZone }> = [];
+  for (const s of starterSlots) {
+    const p = getPlayerForSlot(s.id);
+    if (p) positionedStarters.push({ player: p, zone: ZONE_BY_POSITION[s.position] });
+  }
+
+  const avgRating = (players: Array<{ player: Player }>): number =>
+    players.length
+      ? Math.round(players.reduce((sum, x) => sum + calcPlayerRating(x.player), 0) / players.length)
+      : 0;
+
+  const teamOverall = avgRating(positionedStarters);
+  const teamDefense = avgRating(positionedStarters.filter(x => x.zone === 'DEF')); // incluye al arquero
+  const teamMidfield = avgRating(positionedStarters.filter(x => x.zone === 'MID'));
+  const teamAttack = avgRating(positionedStarters.filter(x => x.zone === 'ATT'));
+
+    const teamStats: Array<{ label: string; value: number }> = [
+    { label: 'OVR', value: teamOverall },
+    { label: 'DEF', value: teamDefense },
+    { label: 'MID', value: teamMidfield },
+    { label: 'ATT', value: teamAttack },
+  ];
+
+  // Renderiza una casilla del campo: mini carta si está ocupada, botón + si está libre.
+  const renderPitchSlot = (id: string, position: FIFA_POSITION) => {
+    const player = getPlayerForSlot(id);
+    const isRelocating = relocatingSlotId === id;
+
+    if (player) {
+      return (
+        <PlayerMiniCard
+          key={id}
+          player={player}
+          rating={calcPlayerRating(player)}
+          isRelocating={isRelocating}
+          onClick={() => handleSlotClick(position, id)}
+          className="w-16"
+        />
+      );
+    }
+
+    return (
+      <button
+        key={id}
+        onClick={() => handleSlotClick(position, id)}
+        className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
+      >
+        <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
+      </button>
+    );
+  };
+
   return (
     <div className="bg-background text-on-background antialiased min-h-screen flex flex-col relative">
       {/* Top Navigation */}
@@ -637,108 +842,38 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
 
             {/* Attackers Row */}
             <div className="flex justify-around items-center w-full px-lg z-10 relative">
-              <button
-                onClick={() => handleSlotClick('EI', 'slot-lw')}
-                className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-              >
-                <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-              </button>
-
-              {(() => {
-                const slot = currentFormation.slots.find(s => s.id === 'slot-st');
-                const player = slot ? getPlayerForSlot('slot-st') : undefined;
-                                return player ? (
-                  <button
-                    onClick={() => handleSlotClick('DC', 'slot-st')}
-                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-tertiary shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-                  >
-                    <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
-                    </div>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleSlotClick('DC', 'slot-st')}
-                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-                  >
-                    <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-                  </button>
-                );
-              })()}
-
-              <button
-                onClick={() => handleSlotClick('ED', 'slot-rw')}
-                className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-              >
-                <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-              </button>
+              {currentFormation.slots.filter(s => ['ED', 'EI', 'SD', 'DC', 'ST'].includes(s.position) && s.type === 'starter').map(({ id, position }) => renderPitchSlot(id, position))}
             </div>
 
             {/* Midfielders Row */}
             <div className="flex justify-around items-center w-full px-md z-10 relative mt-4">
-              {currentFormation.slots.filter(s => ['MI', 'MC', 'MD', 'MCD', 'MCO'].includes(s.position) && s.type === 'starter').map(({ id, position }) => {
-                const player = getPlayerForSlot(id);
-                return (
-                  <button
-                    key={id}
-                    onClick={() => handleSlotClick(position, id)}
-                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-                  >
-                    {player ? (
-                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
-                      </div>
-                    ) : (
-                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-                    )}
-                  </button>
-                );
-              })}
+              {currentFormation.slots.filter(s => ['MI', 'MC', 'MD', 'MCD', 'MCO'].includes(s.position) && s.type === 'starter').map(({ id, position }) => renderPitchSlot(id, position))}
             </div>
 
             {/* Defenders Row */}
             <div className="flex justify-around items-center w-full px-sm z-10 relative mt-4">
-              {currentFormation.slots.filter(s => ['LI', 'DFC', 'LD'].includes(s.position) && s.type === 'starter').map(({ id, position }) => {
-                const player = getPlayerForSlot(id);
-                return (
-                  <button
-                    key={id}
-                    onClick={() => handleSlotClick(position, id)}
-                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-                  >
-                    {player ? (
-                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
-                      </div>
-                    ) : (
-                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-                    )}
-                  </button>
-                );
-              })}
+              {currentFormation.slots.filter(s => ['LI', 'DFC', 'LD'].includes(s.position) && s.type === 'starter').map(({ id, position }) => renderPitchSlot(id, position))}
             </div>
 
             {/* Goalkeeper Row */}
             <div className="flex justify-center items-center w-full z-10 relative mt-4">
-              {(() => {
-                const player = getPlayerForSlot('slot-gk');
-                return (
-                  <button
-                    onClick={() => handleSlotClick('POR', 'slot-gk')}
-                    className="w-16 h-16 rounded-full bg-surface-container-high/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-primary hover:bg-surface-variant transition-colors shadow-lg"
-                  >
-                    {player ? (
-                      <div className="w-full h-full rounded-full bg-surface-container-high border border-tertiary flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-tertiary uppercase">POR</span>
-                      </div>
-                    ) : (
-                      <span className="material-symbols-outlined text-headline-md font-headline-md">add</span>
-                    )}
-                  </button>
-                );
-              })()}
+              {currentFormation.slots.filter(s => s.position === 'POR' && s.type === 'starter').map(({ id, position }) => renderPitchSlot(id, position))}
             </div>
           </div>
+
+          {relocatingSlotId && (
+            <div className="flex items-center justify-between gap-sm bg-tertiary/15 border border-tertiary/40 rounded-lg px-md py-sm mt-2">
+              <span className="text-label-md font-label-md text-tertiary">
+                Jugador seleccionado para mover. Toca otra posición (ocupada = intercambiar, vacía = mover).
+              </span>
+              <button
+                onClick={() => setRelocatingSlotId(null)}
+                className="font-bold uppercase text-xs text-tertiary hover:opacity-80 whitespace-nowrap"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Right Column: Substitutes & Action */}
@@ -752,7 +887,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               {Object.keys(FORMATIONS).map((formationName) => (
                 <div
                   key={formationName}
-                  onClick={() => setActiveFormation(formationName)}
+                  onClick={() => handleFormationChange(formationName)}
                   className={`rounded-lg p-sm cursor-pointer transition-colors flex flex-col items-center justify-center h-16 ${
                     activeFormation === formationName
                       ? 'bg-primary-container/30 border border-primary/50 text-primary'
@@ -772,19 +907,25 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               <div className="text-stat-value font-stat-value text-on-surface-variant">{substitutesCount}/7</div>
             </div>
             <div className="flex flex-wrap gap-sm justify-start">
-              {currentFormation.slots.filter(s => s.type === 'substitute').map(({ id, position }) => {
+                            {currentFormation.slots.filter(s => s.type === 'substitute').map(({ id, position }) => {
                 const player = getPlayerForSlot(id);
-                return (
+                const isRelocating = relocatingSlotId === id;
+                return player ? (
+                  <PlayerMiniCard
+                    key={id}
+                    player={player}
+                    rating={calcPlayerRating(player)}
+                    isRelocating={isRelocating}
+                    onClick={() => handleSlotClick(position, id)}
+                    className="w-11"
+                  />
+                ) : (
                   <button
                     key={id}
                     onClick={() => handleSlotClick(position, id)}
                     className="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner"
                   >
-                    {player ? (
-                      <span className="text-[10px] font-bold text-tertiary uppercase">{player.position}</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-headline-sm">add</span>
-                    )}
+                    <span className="material-symbols-outlined text-headline-sm">add</span>
                   </button>
                 );
               })}
@@ -792,9 +933,19 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
           </div>
 
           {/* Primary Action Button: JUGAR */}
+          {!isTeamComplete && (
+            <p className="text-label-md font-label-md text-on-surface-variant text-center px-sm">
+              Te faltan <strong className="text-tertiary">{missingCount} jugador{missingCount === 1 ? '' : 'es'}</strong> para poder armar el equipo (selecciona los {currentFormation.slots.length} jugadores).
+            </p>
+          )}
           <button
             onClick={() => setShowMatchPrepOverlay(true)}
-            className="w-full py-md px-lg rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center border border-tertiary shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.6)] transition-all uppercase tracking-wider font-bold"
+            disabled={!isTeamComplete}
+            className={`w-full py-md px-lg rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center border border-tertiary shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.6)] transition-all uppercase tracking-wider font-bold ${
+              isTeamComplete
+                ? 'hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
+                : 'opacity-40 cursor-not-allowed'
+            }`}
           >
             JUGAR
           </button>
@@ -906,7 +1057,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-surface/50">
               <div>
                 <h2 className="text-headline-sm font-headline-sm text-primary uppercase tracking-wider">Match Preparation</h2>
-                <p className="text-label-md font-label-md text-on-surface-variant mt-1">Team Rating: 88 OVR</p>
+                <p className="text-label-md font-label-md text-on-surface-variant mt-1">Team Rating: {teamOverall} OVR</p>
               </div>
               <button onClick={() => setShowMatchPrepOverlay(false)} className="text-on-surface-variant hover:text-white transition-colors">
                 <span className="material-symbols-outlined">close</span>
@@ -917,35 +1068,28 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               {/* Team Stats Summary */}
               <div className="space-y-4 mb-6">
                 <h3 className="text-body-md font-body-md text-white font-semibold">Team Stats</h3>
+                <p className="text-[12px] text-on-surface-variant">OVR general, defensa (incluye arquero), mediocampo y ataque de tus titulares.</p>
                 {/* Stat Bars */}
                 <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-label-md font-label-md mb-1">
-                      <span className="text-on-surface-variant">ATT</span>
-                      <span className="text-white">92</span>
-                    </div>
-                    <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                      <div className="h-full bg-tertiary stat-bar-fill" style={{ width: '92%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-label-md font-label-md mb-1">
-                      <span className="text-on-surface-variant">MID</span>
-                      <span className="text-white">86</span>
-                    </div>
-                    <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                      <div className="h-full bg-primary stat-bar-fill" style={{ width: '86%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-label-md font-label-md mb-1">
-                      <span className="text-on-surface-variant">DEF</span>
-                      <span className="text-white">84</span>
-                    </div>
-                    <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                      <div className="h-full bg-primary-fixed-dim stat-bar-fill" style={{ width: '84%' }}></div>
-                    </div>
-                  </div>
+                  {teamStats.map((s) => {
+                    const clamped = Math.min(100, Math.max(0, s.value));
+                    const barColor =
+                      s.label === 'OVR' ? 'bg-tertiary'
+                      : s.label === 'ATT' ? 'bg-tertiary-fixed-dim'
+                      : s.label === 'MID' ? 'bg-primary'
+                      : 'bg-primary-fixed-dim';
+                    return (
+                      <div key={s.label}>
+                        <div className="flex justify-between text-label-md font-label-md mb-1">
+                          <span className="text-on-surface-variant">{s.label}</span>
+                          <span className="text-white">{s.value}</span>
+                        </div>
+                        <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+                          <div className={`h-full ${barColor} stat-bar-fill`} style={{ width: `${clamped}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div className="h-px w-full bg-surface-variant mb-6"></div>
@@ -979,7 +1123,10 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
                   setShowMatchPrepOverlay(false);
                   onNavigate?.('bracket');
                 }}
-                className="w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={!isTeamComplete}
+                className={`w-full py-4 rounded-lg bg-gradient-to-b from-primary to-primary-container text-on-primary font-headline-sm uppercase tracking-wider font-bold border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.5)] transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
+                  isTeamComplete ? '' : 'opacity-40 cursor-not-allowed'
+                }`}
               >
                 CONFIRMAR Y EMPEZAR PARTIDO
               </button>

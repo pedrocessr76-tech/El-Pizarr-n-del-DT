@@ -1,6 +1,67 @@
 import React from 'react';
 import type { Player } from '../../../../packages/shared/types/models';
 
+interface PlayerMiniCardProps {
+  player: Player;
+  rating: number;
+  onClick?: () => void;
+  isRelocating?: boolean;
+  className?: string;
+}
+
+// Mini carta del jugador (mismo estilo que PlayerCard pero compacta).
+// Muestra el OVR, la posición, el icono y el nombre; sin las stats detalladas.
+export const PlayerMiniCard: React.FC<PlayerMiniCardProps> = ({
+  player,
+  rating,
+  onClick,
+  isRelocating,
+  className,
+}) => {
+  const rarity = getRarity(rating);
+  const isGold = rarity === 'gold';
+  const isSilver = rarity === 'silver';
+
+  const textRating = isGold ? 'text-[#FFDF00] drop-shadow-[0_0_6px_rgba(255,223,0,0.8)]' : isSilver ? 'text-on-surface' : 'text-[#CD7F32] drop-shadow-[0_0_6px_rgba(205,127,50,0.8)]';
+  const nameColor = isGold ? 'text-on-surface' : isSilver ? 'text-on-surface-variant' : 'text-[#CD7F32]';
+  const border = isGold ? 'border-[#FFDF00]/50' : isSilver ? 'border-outline-variant/50' : 'border-[#CD7F32]/50';
+  const bg = isGold
+    ? 'bg-gradient-to-br from-[#FFDF00]/15 to-surface-container'
+    : isSilver
+      ? 'bg-surface-container'
+      : 'bg-gradient-to-br from-[#CD7F32]/15 to-surface-container';
+  const iconColor = isGold ? 'text-tertiary' : isSilver ? 'text-on-surface-variant opacity-80' : 'text-[#CD7F32] opacity-80';
+
+  return (
+    <button
+      onClick={onClick}
+      type="button"
+      title={`${player.name} · ${rating} OVR`}
+      className={`relative aspect-[2/3] rounded-lg overflow-hidden ${bg} ${border} shadow-lg flex flex-col items-center px-1 pt-1 pb-1 group cursor-pointer transition-all hover:scale-105 ${
+        isRelocating ? 'ring-2 ring-tertiary' : ''
+      } ${className || 'w-12'}`}
+    >
+      {isGold && <div className="absolute inset-0 metallic-sheen opacity-40 z-0 pointer-events-none"></div>}
+      <div className="relative z-10 flex flex-col items-center w-full">
+        <div className="flex items-baseline gap-1 w-full justify-center">
+          <span className={`font-stat-value text-[16px] leading-none ${textRating}`}>{rating}</span>
+          <span className="font-label-md text-[7px] text-on-surface-variant uppercase">{player.position}</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center py-0.5">
+          <span className={`material-symbols-outlined text-[22px] ${iconColor}`}>person</span>
+        </div>
+        <div className={`w-full text-center border-t ${isGold ? 'border-[#FFDF00]/30' : 'border-outline-variant/30'} pt-0.5 mt-auto`}>
+          <h3
+            className={`font-label-md text-[8px] leading-tight ${nameColor} uppercase truncate w-full`}
+          >
+            {player.name}
+          </h3>
+        </div>
+      </div>
+    </button>
+  );
+};
+
 interface PlayerCardProps {
   player: Player;
 }
