@@ -49,4 +49,9 @@ export const draftService = {
     const { data } = await api.delete<TeamActionResponse>(`/draft/team/${teamId}/player/${playerId}`);
     return data;
   },
+
+  async resetTeam(teamId: string): Promise<TeamActionResponse> {
+    const { data } = await api.post<TeamActionResponse>(`/draft/team/${teamId}/reset`);
+    return data;
+  },
 };

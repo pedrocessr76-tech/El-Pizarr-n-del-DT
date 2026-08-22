@@ -554,12 +554,15 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
         if (currentUser) {
           const response = await draftService.createTeam(currentUser.id);
           useDraftStore.getState().setTeamId(response.teamId);
+          // Vaciar el equipo persistido para poder armarlo de cero tras una partida.
+          await draftService.resetTeam(response.teamId);
         } else {
           const { getOrCreateGuestSessionId, setGuestTeamId } = await import('../utils/session');
           const sessionId = getOrCreateGuestSessionId();
           const response = await draftService.createTeam(undefined, sessionId);
           useDraftStore.getState().setTeamId(response.teamId);
           setGuestTeamId(response.teamId);
+          await draftService.resetTeam(response.teamId);
         }
       } catch (err) {
         console.error('Error creando equipo:', err);

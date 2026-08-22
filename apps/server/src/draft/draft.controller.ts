@@ -76,4 +76,10 @@ export class DraftController {
   removePlayerFromTeam(@Param('teamId') teamId: string, @Param('playerId') playerId: string) {
     return this.draftService.removePlayerFromTeam(teamId, playerId);
   }
+
+  @Post('team/:teamId/reset')
+  @ApiOperation({ summary: 'Reiniciar el equipo eliminando todos sus jugadores (titulares y suplentes)' })
+  resetTeam(@Param('teamId') teamId: string) {
+    return this.draftService.resetTeam(teamId);
+  }
 }

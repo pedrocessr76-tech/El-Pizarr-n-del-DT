@@ -213,4 +213,15 @@ export class DraftService {
     await this.teamPlayerRepo.remove(tp);
     return { success: true, message: 'Jugador eliminado del equipo.' };
   }
+
+  async resetTeam(teamId: string): Promise<{ success: boolean; message: string }> {
+    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    if (!team) {
+      throw new NotFoundException('Equipo no encontrado.');
+    }
+
+    // Vacía el equipo eliminando todos sus jugadores (titulares y suplentes).
+    await this.teamPlayerRepo.delete({ teamId });
+    return { success: true, message: 'Equipo reiniciado.' };
+  }
 }
