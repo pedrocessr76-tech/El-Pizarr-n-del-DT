@@ -144,6 +144,7 @@ interface AnimPlayer {
 }
 interface AnimBall {
   x: number; y: number;
+  vx: number; vy: number; // velocidad residual (rebotes, derrapes)
   mode: 'hold' | 'pass' | 'shot';
   holder: number | null; // índice del jugador que la lleva (0..21)
   target: number | null; // índice del receptor de un pase
@@ -417,7 +418,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     }));
     animRef.current = {
       players,
-      ball: { x: 50, y: 50, mode: 'hold', holder: Math.floor(Math.random() * players.length), target: null, tx: 50, ty: 50, speed: 55, holdUntil: 0 },
+      ball: { x: 50, y: 50, vx: 0, vy: 0, mode: 'hold', holder: Math.floor(Math.random() * players.length), target: null, tx: 50, ty: 50, speed: 55, holdUntil: 0 },
       lastT: 0,
     };
   }, [animBases]);
