@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Match, Player, Team } from '../../../../packages/shared/types/models';
 import { PlayerMiniCard } from './PlayerCard';
+const STADIUM_BG = '/images/stadium_bg.jpg';
 
 interface MatchEvent {
   id: number;
@@ -126,38 +127,41 @@ const PlayerDot: React.FC<{ player: Player; x: number; y: number; isUser: boolea
     className="absolute pointer-events-none transition-all duration-700 ease-out"
     style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
   >
-    {pulse && (
-      <span
-        className={`absolute inset-0 rounded-full animate-ping ${
-          isUser ? 'bg-tertiary/50' : 'bg-primary/40'
-        }`}
-      ></span>
+        {pulse && (
+      <span className="golden-ring"></span>
     )}
     <span
       className={[
-        'relative flex items-center justify-center w-[18px] h-[18px] rounded-full border text-[8px] font-bold shadow-lg',
-        isUser
-          ? 'bg-tertiary text-on-tertiary border-tertiary'
-          : 'bg-surface-variant text-on-surface border-white/40',
-        pulse ? (isUser ? 'ring-2 ring-tertiary' : 'ring-2 ring-primary') : '',
+        'relative flex items-center justify-center w-4 h-4 rounded-full border text-[7px] font-bold shadow-lg dot-user',
+        isUser ? 'dot-user' : 'dot-opp',
       ].join(' ')}
+      style={{ zIndex: 10 }}
     >
       {getInitials(player.name)}
     </span>
   </div>
 );
 
-const TeamScoreBadge: React.FC<{ name: string; score: number; isUser: boolean }> = ({ name, score, isUser }) => (
+const TeamScoreBadge: React.FC<{ name: string; score: number; isUser: boolean; minute: number; finished: boolean }> = ({ name, score, isUser, minute, finished }) => (
   <div className={`flex flex-col items-center gap-2 w-40 ${isUser ? 'scale-105' : 'opacity-80'}`}>
     <div
-      className={`w-16 h-16 rounded-full flex items-center justify-center text-lg font-extrabold border-2 ${
-        isUser ? 'bg-tertiary text-on-tertiary border-tertiary' : 'bg-surface-variant text-on-surface border-white/20'
+      className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-extrabold border-2 ${
+        isUser
+          ? 'bg-tertiary text-on-tertiary border-2 border-tertiary shadow-[0_0_15px_rgba(233,195,73,0.5)]'
+          : 'bg-surface-variant text-on-surface border border-white/20'
       }`}
     >
-      {getInitials(name)}
+      {isUser ? (
+        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+      ) : (
+        <span className="material-symbols-outlined text-[18px]">sports_soccer</span>
+      )}
     </div>
-    <div className={`font-headline-sm text-sm text-center leading-tight ${isUser ? 'text-tertiary' : 'text-on-surface'}`}>{name}</div>
-    <div className="font-display-lg text-3xl font-extrabold text-on-surface tabular-nums">{score}</div>
+    <div className={`font-headline-sm font-headline-sm text-sm text-center leading-tight ${isUser ? 'text-tertiary' : 'text-on-surface'}`}>{name}</div>
+    <div className={`font-display-lg font-display-lg text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r ${isUser ? 'from-tertiary to-yellow-200' : 'from-on-surface to-on-surface-variant'} tabular-nums`}>{score}</div>
+    {!finished && (
+      <div className="font-label-md font-label-md text-[10px] text-on-surface-variant/60 uppercase tracking-widest">{minute}&apos;</div>
+    )}
   </div>
 );
 
@@ -300,47 +304,85 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const userScoredNow = (isHomeUser ? homeGoalMinutes.includes(minute) : awayGoalMinutes.includes(minute)) && minute > 0;
   const oppScoredNow = (isHomeUser ? awayGoalMinutes.includes(minute) : homeGoalMinutes.includes(minute)) && minute > 0;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-background/85 backdrop-blur-xl"></div>
-      <div className="relative w-full max-w-6xl h-[90vh] bg-surface-container rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-surface-container-high border-b border-white/10 p-4 flex items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary animate-pulse">sensors</span>
-            <span className="font-label-md text-primary tracking-widest uppercase">En Vivo</span>
-            <span className="font-display-lg text-3xl font-extrabold text-on-surface tabular-nums w-20">{minute}&apos;</span>
+    return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-lg">
+            {/* Fondo de estadio difuminado */}
+      <div
+        className="absolute inset-0 opacity-30 z-0"
+        style={{
+          backgroundImage: `url(${STADIUM_BG})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(4px)',
+        }}
+        data-alt="Fondo difuminado de un estadio moderno bajo focos nocturnos"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background z-0"></div>
+
+      {/* Modal de cristal (glass-panel) */}
+      <div className="glass-panel relative w-full max-w-[1400px] h-[800px] rounded-[24px] flex flex-col overflow-hidden">
+        {/* Header Section */}
+        <header className="flex flex-col gap-md p-lg border-b border-white/10">
+          <div className="flex justify-between items-center w-full">
+            {/* Live Indicator con live-dot */}
+            <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10">
+              <span className="live-dot"></span>
+              <span className="font-label-md font-label-md text-white font-bold tracking-widest">EN VIVO</span>
+            </div>
+
+            {/* Match Progress Bar (90 minutos) */}
+            <div className="flex-grow max-w-3xl mx-xl flex flex-col gap-2">
+              <div className="flex justify-between font-label-md font-label-md text-on-surface-variant">
+                <span>0&apos;</span>
+                <span>45&apos;</span>
+                <span>90&apos;</span>
+              </div>
+              <div className="h-[6px] bg-white/15 rounded-full w-full relative overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-tertiary rounded-full shadow-[0_0_10px_rgba(233,195,73,0.8)]"
+                  style={{ width: `${Math.min(100, (minute / 90) * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Speed Controls */}
+            <div className="flex bg-surface-container rounded-full p-1 border border-white/10">
+              {([30, 60, 90] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  disabled={finished}
+                  className={`px-4 py-1 font-label-md font-label-md text-sm transition-colors ${
+                    speed === s
+                      ? 'bg-tertiary text-on-tertiary rounded-full font-bold shadow-md'
+                      : 'text-on-surface-variant hover:text-white'
+                  }`}
+                >
+                  x{s}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-1 bg-surface-variant rounded-lg p-1">
-            {([30, 60, 90] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setSpeed(s)}
-                disabled={finished}
-                className={`px-3 py-1 rounded-md font-label-md text-xs transition-colors ${
-                  speed === s ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                x{s}
-              </button>
-            ))}
+
+          {/* Botones de acción */}
+          <div className="flex justify-end gap-2 mt-2">
+            <button
+              onClick={() => setChangesOpen((o) => !o)}
+              disabled={!canChange}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-label-md text-xs uppercase border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                changesOpen ? 'bg-primary text-on-primary border-primary' : 'text-on-surface-variant hover:text-on-surface border-outline/40'
+              }`}
+              title="Cambios disponibles durante el partido"
+            >
+              <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
+              Cambios
+              <span className="font-stat-value opacity-80">{MAX_CHANGES - changesUsed}</span>
+            </button>
+            <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined text-3xl">close</span>
+            </button>
           </div>
-          <button
-            onClick={() => setChangesOpen((o) => !o)}
-            disabled={!canChange}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-label-md text-xs uppercase border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-              changesOpen ? 'bg-primary text-on-primary border-primary' : 'text-on-surface-variant hover:text-on-surface border-outline/40'
-            }`}
-            title="Cambios disponibles durante el partido"
-          >
-            <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
-            Cambios
-            <span className="font-stat-value opacity-80">{MAX_CHANGES - changesUsed}</span>
-          </button>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined text-3xl">close</span>
-          </button>
-        </div>
+        </header>
 
         {/* Panel de cambios (sustituciones en tiempo real) */}
         {changesOpen && !finished && (
@@ -413,7 +455,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
         {/* Marcador */}
         <div className="px-6 pt-4 flex items-center justify-center gap-6 shrink-0">
-          <TeamScoreBadge name={homeName} score={homeScore} isUser={isHomeUser} />
+                  <TeamScoreBadge name={homeName} score={homeScore} isUser={isHomeUser} minute={minute} finished={finished} />
           <div className="text-center">
             <div className="font-display-lg text-5xl font-extrabold text-on-surface tabular-nums">
               {homeScore} - {awayScore}
@@ -422,18 +464,24 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
               <div className="font-label-md text-[10px] text-tertiary uppercase tracking-widest mt-1">Definido por penales</div>
             )}
           </div>
-          <TeamScoreBadge name={awayName} score={awayScore} isUser={!isHomeUser} />
+          <TeamScoreBadge name={awayName} score={awayScore} isUser={!isHomeUser} minute={minute} finished={finished} />
         </div>
 
         {/* Cuerpo */}
         <div className="flex-1 flex overflow-hidden min-h-0">
           <div className="flex-1 p-6 flex flex-col gap-4 border-r border-white/10 min-w-0">
-            <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[220px]">
-              <div className="absolute inset-0 pitch-lines"></div>
+                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[220px] transform-gpu hover:scale-[1.01]" style={{ transformStyle: 'preserve-3d' }}>
+                            <div className="absolute inset-0 pitch-lines"></div>
               <div className="pitch-center-line"></div>
               <div className="pitch-center-circle"></div>
               <div className="pitch-penalty-area-top"></div>
               <div className="pitch-penalty-area-bottom"></div>
+
+              {/* Balón de fútbol blanco */}
+              <span
+                className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                style={{ left: '50%', top: '48%', transform: 'translate(-50%, -50%)', zIndex: 5 }}
+              />
 
               {/* 22 jugadores en movimiento (11 por equipo) */}
               {userStarters.map((p, i) => {
@@ -466,45 +514,45 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
               })}
             </div>
 
-            {/* Estadísticas */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <div>
+                        {/* Estadísticas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-surface-container/50 backdrop-blur rounded-xl p-4 border border-white/5">
+              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5">
                 <div className="flex justify-between font-label-md text-xs text-on-surface-variant mb-1">
                   <span className="truncate pr-2">{homeName}</span>
                   <span>{homePossession}%</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
-                  <div className="h-full bg-tertiary transition-all" style={{ width: `${homePossession}%` }}></div>
+                  <div className="h-full bg-gradient-to-r from-primary to-tertiary transition-all shadow-[0_0_8px_rgba(165,208,185,0.5)]" style={{ width: `${homePossession}%` }}></div>
                 </div>
                 <div className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Posesión</div>
               </div>
-              <div>
+              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5">
                 <div className="flex justify-between font-label-md text-xs text-on-surface-variant mb-1">
                   <span className="truncate pr-2">{awayName}</span>
                   <span>{100 - homePossession}%</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
-                  <div className="h-full bg-primary transition-all" style={{ width: `${100 - homePossession}%` }}></div>
+                  <div className="h-full bg-gradient-to-r from-tertiary to-primary transition-all shadow-[0_0_8px_rgba(233,195,73,0.5)]" style={{ width: `${100 - homePossession}%` }}></div>
                 </div>
                 <div className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Posesión</div>
               </div>
-              <div className="flex justify-between items-center font-label-md text-xs text-on-surface-variant">
-                <span>{homeShots}</span>
-                <span className="uppercase tracking-widest">Tiros</span>
-                <span>{awayShots}</span>
+                            <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5 flex justify-between items-center">
+                <span className="font-stat-value text-xl text-primary">{homeShots}</span>
+                <span className="font-label-md text-xs text-on-surface-variant uppercase tracking-widest">Tiros</span>
+                <span className="font-stat-value text-xl text-on-surface-variant">{awayShots}</span>
               </div>
-              <div className="flex justify-between items-center font-label-md text-xs text-on-surface-variant">
-                <span>{homeOnTarget}</span>
-                <span className="uppercase tracking-widest">A puerta</span>
-                <span>{awayOnTarget}</span>
+              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5 flex justify-between items-center">
+                <span className="font-stat-value text-xl text-primary">{homeOnTarget}</span>
+                <span className="font-label-md text-xs text-on-surface-variant uppercase tracking-widest">A puerta</span>
+                <span className="font-stat-value text-xl text-on-surface-variant">{awayOnTarget}</span>
               </div>
             </div>
           </div>
 
-          {/* Comentarios en vivo */}
-          <div className="w-96 flex flex-col bg-surface-container shrink-0">
+                    {/* Comentarios en vivo */}
+          <div className="w-96 flex flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5">
             <h4 className="font-headline-sm text-on-surface px-4 py-3 border-b border-white/10">Comentarios en vivo</h4>
-            <div ref={commentsRef} className="flex-1 p-4 overflow-y-auto flex flex-col gap-3">
+            <div ref={commentsRef} className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
               {events.length === 0 && <p className="text-on-surface-variant text-sm italic">El árbitro da el silbatazo inicial...</p>}
               {events.map((e) => (
                 <div key={e.id} className={`flex gap-3 ${e.isGoal ? '' : 'opacity-70'}`}>
@@ -525,17 +573,21 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
         </div>
 
         {/* Resultado final + acciones */}
-        {finished && (
-          <div className="bg-surface-container-high border-t border-white/10 p-4 flex items-center justify-between gap-4 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className={`material-symbols-outlined text-3xl ${userWon ? 'text-tertiary' : 'text-error'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                {finished && (
+          <div className="bg-surface-container-high/50 backdrop-blur border-t border-white/5 p-6 flex items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-4 min-w-0">
+              <span className={`material-symbols-outlined text-4xl ${userWon ? 'text-tertiary drop-shadow-[0_0_10px_rgba(233,195,73,0.5)]' : 'text-error'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                 {userWon ? 'emoji_events' : 'flag'}
               </span>
               <div className="min-w-0">
-                <div className={`font-headline-sm ${userWon ? 'text-tertiary' : 'text-error'}`}>
+                <div className={`font-display-lg font-display-lg text-3xl font-extrabold ${
+                  userWon
+                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-tertiary to-yellow-200'
+                    : 'text-error'
+                }`}>
                   {userWon ? championLabel : 'Derrota'}
                 </div>
-                <div className="font-body-md text-sm text-on-surface-variant truncate">
+                <div className="font-body-md font-body-md text-sm text-on-surface-variant truncate">
                   {userWon
                     ? `${winnerName} avanza${isFinal ? ' y levanta la Copa Élite' : ' en la llave'}.`
                     : `${loserName} continúa en el torneo.`}
@@ -545,15 +597,15 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-lg border border-outline text-on-surface hover:bg-surface-variant transition-colors font-label-md uppercase"
+                className="px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase border border-white/20 text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors"
               >
                 CERRAR
               </button>
               <button
                 onClick={userWon ? onContinue : onLose}
-                className={`px-6 py-2 rounded-lg font-label-md uppercase font-bold transition-all transform hover:scale-[1.02] ${
+                className={`px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase font-bold transition-all transform hover:scale-[1.02] ${
                   userWon
-                    ? 'bg-gradient-to-b from-primary to-primary-container text-on-primary border border-primary-fixed shadow-[0_0_15px_rgba(165,208,185,0.3)]'
+                    ? 'bg-gradient-to-r from-tertiary to-amber-500 text-on-tertiary shadow-[0_0_15px_rgba(233,195,73,0.5)] hover:shadow-[0_0_25px_rgba(233,195,73,0.8)]'
                     : 'bg-error text-on-error border border-error'
                 }`}
               >
