@@ -126,30 +126,44 @@ function teamBaseDots(players: Player[], defendsLeft: boolean): DotPos[] {
   return dots;
 }
 
-// Movimiento minuto a minuto (sincronizado con la velocidad del reloj).
-// Pequeña oscilación orgánica individual de cada jugador.
-function dotOffset(seed: number, minute: number): DotPos {
-  const t = minute;
-  return {
-    x: Math.cos(t * 0.11 + seed * 2.3) * 1.2 + Math.sin(t * 0.05 + seed * 3.1) * 0.8,
-    y: Math.sin(t * 0.14 + seed * 1.9) * 1.6,
-  };
-}
-
 // Factor con el que cada zona sigue el desplazamiento del juego:
 // los arqueros casi no se mueven del arco, la defensa acompaña poco,
 // el mediocampo y el ataque se proyectan hacia donde está la pelota.
 const ROLE_FOLLOW: Record<string, number> = { G: 0.06, D: 0.3, M: 0.5, F: 0.42 };
 
-// Posición lógica de un jugador: mantiene su estructura base pero el bloque
-// entero se desplaza hacia la zona donde está la pelota (eje largo del campo),
-// y se estira levemente en el ancho según la altura del balón.
-function playerPos(base: DotPos, role: string, ballX: number, ballY: number, seed: number, minute: number): DotPos {
-  const follow = ROLE_FOLLOW[role] ?? 0.35;
-  const off = dotOffset(seed, minute);
-  const x = Math.min(96, Math.max(4, base.x + (ballX - 50) * follow + off.x));
-  const y = Math.min(94, Math.max(6, base.y + (ballY - 50) * follow * 0.35 + off.y));
-  return { x, y };
+// --- Motor de animación en tiempo real (requestAnimationFrame) ---
+// Cada jugador es un agente independiente con velocidad propia: recibe una
+// aceleración aleatoria (trote orgánico), un resorte hacia su posición táctica
+// lógica (base + desplazamiento del bloque hacia la pelota) y amortiguación.
+interface AnimPlayer {
+  bx: number; by: number; // posición táctica base (%)
+  role: string;
+  x: number; y: number; // posición actual
+  vx: number; vy: number;
+  speed: number; // factor individual 0.75..1.25
+}
+interface AnimBall {
+  x: number; y: number;
+  mode: 'hold' | 'pass' | 'shot';
+  holder: number | null; // índice del jugador que la lleva (0..21)
+  target: number | null; // índice del receptor de un pase
+  tx: number; ty: number; // destino (para disparos)
+  speed: number; // %/s
+  holdUntil: number;
+}
+interface AnimState {
+  players: AnimPlayer[];
+  ball: AnimBall;
+  lastT: number;
+}
+
+const clampPos = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+// Rebote suave contra los límites del campo (líneas de banda y de fondo).
+function softBounce(v: number, min: number, max: number): { pos: number; v: number } {
+  if (v < min) return { pos: min, v: Math.abs(v) * 0.5 };
+  if (v > max) return { pos: max, v: -Math.abs(v) * 0.5 };
+  return { pos: v, v };
 }
 
 // Punto/jugador sobre la cancha.
@@ -161,7 +175,7 @@ const PlayerDot: React.FC<{ player: Player; x: number; y: number; isUser: boolea
   pulse,
 }) => (
   <div
-    className="absolute pointer-events-none transition-all duration-700 ease-out"
+    className="absolute pointer-events-none will-change-transform"
     style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
   >
         {pulse && (
@@ -169,7 +183,7 @@ const PlayerDot: React.FC<{ player: Player; x: number; y: number; isUser: boolea
     )}
     <span
       className={[
-        'relative flex items-center justify-center w-4 h-4 rounded-full border text-[7px] font-bold shadow-lg dot-user',
+        'relative flex items-center justify-center w-5 h-5 rounded-full border text-[8px] font-bold shadow-lg dot-user',
         isUser ? 'dot-user' : 'dot-opp',
       ].join(' ')}
       style={{ zIndex: 10 }}
@@ -367,27 +381,163 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     setChangesOpen(false);
   };
 
-  // --- Cancha: 22 puntos (11 por equipo) con movimiento minuto a minuto ---
+  // --- Cancha: 22 puntos (11 por equipo) con movimiento en tiempo real ---
   const oppStarters = isHomeUser ? match.awayTeam?.starters || [] : match.homeTeam?.starters || [];
   const userDefendsLeft = !isHomeUser;
   const oppDefendsLeft = isHomeUser;
-  const userDots = teamBaseDots(userStarters, userDefendsLeft);
-  const oppDots = teamBaseDots(oppStarters, oppDefendsLeft);
-  // --- Pelota en juego: recorre la cancha con lógica de posesión ---
-  // La pelota se ubica en la zona donde domina el juego: deriva hacia el arco
-  // del equipo con más posesión, con momentum ofensivo que va y viene.
-  const matchSeed = (match.id || 'm').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const ballPos = useMemo(() => {
-    // Momentum: la pelota viaja por carriles y cambia de sector con el tiempo.
-    const swingX = Math.sin(minute * 0.45 + matchSeed * 0.7) * 20 + Math.sin(minute * 0.13 + matchSeed * 1.3) * 12;
-    const possessionTilt = (homePossession - 50) * 0.9;
-    const x = Math.min(92, Math.max(8, 50 + possessionTilt + swingX));
-    // Carril transversal: la pelota cambia de banda y se centra cerca de las áreas.
-    const nearArea = Math.abs(x - 50) > 28 ? 0.55 : 1; // más central cuando ataca un área
-    const swingY = Math.sin(minute * 0.8 + matchSeed * 2.1) * 24 + (seededRand(matchSeed * 3 + minute) - 0.5) * 14;
-    const y = Math.min(88, Math.max(12, 50 + swingY * nearArea));
-    return { x, y };
-  }, [minute, homePossession, matchSeed]);
+  const userDots = useMemo(() => teamBaseDots(userStarters, userDefendsLeft), [userStarters, userDefendsLeft]);
+  const oppDots = useMemo(() => teamBaseDots(oppStarters, oppDefendsLeft), [oppStarters, oppDefendsLeft]);
+
+  // Configuración de los 22 agentes de animación (base táctica + rol).
+  const animBases = useMemo(
+    () => [
+      ...userDots.map((b, i) => ({ bx: b.x, by: b.y, role: (userStarters[i]?.position?.[0] ?? 'M') as string })),
+      ...oppDots.map((b, i) => ({ bx: b.x, by: b.y, role: (oppStarters[i]?.position?.[0] ?? 'M') as string })),
+    ],
+    [userDots, userStarters, oppDots, oppStarters],
+  );
+
+  const animRef = useRef<AnimState | null>(null);
+  const possessionRef = useRef(homePossession);
+  possessionRef.current = homePossession;
+  const [animFrame, setAnimFrame] = useState<{ players: { x: number; y: number }[]; ball: { x: number; y: number } }>({
+    players: [],
+    ball: { x: 50, y: 50 },
+  });
+
+  // (Re)inicializar los agentes cuando cambia la alineación.
+  useEffect(() => {
+    const players: AnimPlayer[] = animBases.map((b) => ({
+      ...b,
+      x: b.bx,
+      y: b.by,
+      vx: 0,
+      vy: 0,
+      speed: 0.75 + Math.random() * 0.5, // velocidad de flotación individual
+    }));
+    animRef.current = {
+      players,
+      ball: { x: 50, y: 50, mode: 'hold', holder: Math.floor(Math.random() * players.length), target: null, tx: 50, ty: 50, speed: 55, holdUntil: 0 },
+      lastT: 0,
+    };
+  }, [animBases]);
+
+  // Motor de animación: movimiento orgánico de jugadores + pases/disparos del balón.
+  useEffect(() => {
+    let raf = 0;
+    let last = performance.now();
+    let lastRender = 0;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const st = animRef.current;
+      if (!st || st.players.length === 0) return;
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      // --- Balón: pases entre jugadores, recepción y disparos ocasionales ---
+      const b = st.ball;
+      if (b.mode === 'hold' && now >= b.holdUntil) {
+        const r = Math.random();
+        if (r < 0.72) {
+          // Pase: elegir receptor distinto del portador.
+          let t = Math.floor(Math.random() * st.players.length);
+          if (t === b.holder) t = (t + 7) % st.players.length;
+          b.target = t;
+          b.mode = 'pass';
+          b.speed = 50 + Math.random() * 25;
+        } else if (r < 0.87) {
+          // Disparo: la pelota viaja rápido hacia un arco.
+          const attackRight = possessionRef.current >= 50;
+          b.tx = attackRight ? 95 : 5;
+          b.ty = 36 + Math.random() * 28;
+          b.mode = 'shot';
+          b.speed = 95 + Math.random() * 30;
+          b.holder = null;
+        } else {
+          b.holdUntil = now + 500;
+        }
+      }
+      if (b.mode === 'pass' && b.target != null && st.players[b.target]) {
+        const rec = st.players[b.target];
+        b.tx = rec.x;
+        b.ty = rec.y;
+      }
+      if (b.mode === 'pass' || b.mode === 'shot') {
+        const dx = b.tx - b.x;
+        const dy = b.ty - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 2.5) {
+          if (b.mode === 'shot') {
+            // Rebote leve tras el disparo y recuperación por una defensa.
+            b.vx = (Math.random() - 0.5) * 26;
+            b.vy = (Math.random() - 0.5) * 26;
+            b.mode = 'hold';
+            b.holder = Math.floor(Math.random() * st.players.length);
+            b.holdUntil = now + 350 + Math.random() * 450;
+          } else {
+            // Recepción: la pelota queda un instante con el receptor.
+            b.mode = 'hold';
+            b.holder = b.target;
+            b.target = null;
+            b.holdUntil = now + 500 + Math.random() * 900;
+          }
+        } else {
+          const step = Math.min(dist, b.speed * dt);
+          b.x += (dx / dist) * step;
+          b.y += (dy / dist) * step;
+        }
+      } else if (b.mode === 'hold' && b.holder != null && st.players[b.holder]) {
+        // Conducción: la pelota acompaña a su portador con pequeño temblor.
+        const h = st.players[b.holder];
+        b.x += (h.x - b.x) * Math.min(1, dt * 6) + (Math.random() - 0.5) * dt * 10;
+        b.y += (h.y - b.y) * Math.min(1, dt * 6) + (Math.random() - 0.5) * dt * 10;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.vx *= 1 - 3 * dt;
+        b.vy *= 1 - 3 * dt;
+      }
+
+      // --- Jugadores: agentes independientes (trote orgánico + resorte táctico) ---
+      st.players.forEach((p) => {
+        // Posición lógica: base + el bloque se desplaza hacia la zona de la pelota.
+        const follow = ROLE_FOLLOW[p.role] ?? 0.35;
+        const homeX = clampPos(p.bx + (b.x - 50) * follow, 4, 96);
+        const homeY = clampPos(p.by + (b.y - 50) * follow * 0.35, 6, 94);
+        // Aceleración aleatoria: evita movimiento lineal/robótico.
+        p.vx += (Math.random() - 0.5) * 16 * dt;
+        p.vy += (Math.random() - 0.5) * 16 * dt;
+        // Resorte hacia la posición táctica (cada jugador con su velocidad).
+        p.vx += (homeX - p.x) * 2.4 * dt * p.speed;
+        p.vy += (homeY - p.y) * 2.4 * dt * p.speed;
+        // Amortiguación.
+        p.vx *= 1 - 2.0 * dt * p.speed;
+        p.vy *= 1 - 2.0 * dt * p.speed;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        // Límites: rebote suave en banda y fondo.
+        const rbx = softBounce(p.x, 4, 96);
+        p.x = rbx.pos;
+        p.vx = rbx.v;
+        const rby = softBounce(p.y, 6, 94);
+        p.y = rby.pos;
+        p.vy = rby.v;
+      });
+      const rbx2 = softBounce(b.x, 3, 97);
+      b.x = rbx2.pos;
+      b.vx = rbx2.v;
+      const rby2 = softBounce(b.y, 4, 96);
+      b.y = rby2.pos;
+      b.vy = rby2.v;
+
+      // Renderizar a ~30fps (fluido y visible sin sobrecargar el render).
+      if (now - lastRender > 33) {
+        lastRender = now;
+        setAnimFrame({ players: st.players.map((p) => ({ x: p.x, y: p.y })), ball: { x: b.x, y: b.y } });
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [animBases]);
   const userScoredNow = (isHomeUser ? homeGoalMinutes.includes(minute) : awayGoalMinutes.includes(minute)) && minute > 0;
   const oppScoredNow = (isHomeUser ? awayGoalMinutes.includes(minute) : homeGoalMinutes.includes(minute)) && minute > 0;
 
@@ -554,10 +704,10 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
           <TeamScoreBadge name={awayName} score={awayScore} isUser={!isHomeUser} minute={minute} finished={finished} />
         </div>
 
-        {/* Cuerpo */}
+        {/* Cuerpo: campo dominante (izquierda) + comentarios y estadísticas (derecha) */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          <div className="flex-1 p-6 flex flex-col gap-4 border-r border-white/10 min-w-0">
-                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[300px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="flex-1 p-6 flex border-r border-white/10 min-w-0">
+                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[420px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
               <div className="absolute inset-0 pitch-lines"></div>
               <div className="pitch-center-line"></div>
               <div className="pitch-center-circle"></div>
@@ -566,8 +716,8 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
               {/* Pelota en juego: se mueve por la cancha según la posesión */}
               <span
-                className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-700 ease-out"
-                style={{ left: `${ballPos.x}%`, top: `${ballPos.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}
+                className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                style={{ left: `${animFrame.ball.x}%`, top: `${animFrame.ball.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}
               >
                 <span className="absolute inset-[3px] rounded-full border border-black/30" />
               </span>
@@ -591,8 +741,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
               {/* 22 jugadores en movimiento (11 por equipo) */}
               {userStarters.map((p, i) => {
-                const base = userDots[i] || { x: 50, y: 50 };
-                const pos = playerPos(base, (p.position?.[0] ?? 'M') as string, ballPos.x, ballPos.y, i, minute);
+                const pos = animFrame.players[i] ?? { x: userDots[i]?.x ?? 50, y: userDots[i]?.y ?? 50 };
                 return (
                   <PlayerDot
                     key={p.id}
@@ -605,8 +754,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
                 );
               })}
               {oppStarters.map((p, i) => {
-                const base = oppDots[i] || { x: 50, y: 50 };
-                const pos = playerPos(base, (p.position?.[0] ?? 'M') as string, ballPos.x, ballPos.y, i + 11, minute);
+                const pos = animFrame.players[i + 11] ?? { x: oppDots[i]?.x ?? 50, y: oppDots[i]?.y ?? 50 };
                 return (
                   <PlayerDot
                     key={p.id}
@@ -619,44 +767,10 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
                 );
               })}
             </div>
-
-                        {/* Estadísticas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-surface-container/50 backdrop-blur rounded-xl p-4 border border-white/5">
-              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5">
-                <div className="flex justify-between font-label-md text-xs text-on-surface-variant mb-1">
-                  <span className="truncate pr-2">{homeName}</span>
-                  <span>{homePossession}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary to-tertiary transition-all shadow-[0_0_8px_rgba(165,208,185,0.5)]" style={{ width: `${homePossession}%` }}></div>
-                </div>
-                <div className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Posesión</div>
-              </div>
-              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5">
-                <div className="flex justify-between font-label-md text-xs text-on-surface-variant mb-1">
-                  <span className="truncate pr-2">{awayName}</span>
-                  <span>{100 - homePossession}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-surface-variant flex overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-tertiary to-primary transition-all shadow-[0_0_8px_rgba(233,195,73,0.5)]" style={{ width: `${100 - homePossession}%` }}></div>
-                </div>
-                <div className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Posesión</div>
-              </div>
-                            <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5 flex justify-between items-center">
-                <span className="font-stat-value text-xl text-primary">{homeShots}</span>
-                <span className="font-label-md text-xs text-on-surface-variant uppercase tracking-widest">Tiros</span>
-                <span className="font-stat-value text-xl text-on-surface-variant">{awayShots}</span>
-              </div>
-              <div className="bg-surface-container-high/40 rounded-lg p-3 border border-white/5 flex justify-between items-center">
-                <span className="font-stat-value text-xl text-primary">{homeOnTarget}</span>
-                <span className="font-label-md text-xs text-on-surface-variant uppercase tracking-widest">A puerta</span>
-                <span className="font-stat-value text-xl text-on-surface-variant">{awayOnTarget}</span>
-              </div>
-            </div>
           </div>
 
-                    {/* Comentarios en vivo */}
-          <div className="w-96 flex flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5">
+                    {/* Columna derecha: comentarios en vivo + estadísticas */}
+          <div className="w-[26rem] flex flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5 min-h-0">
             <h4 className="font-headline-sm text-on-surface px-4 py-3 border-b border-white/10">Comentarios en vivo</h4>
             <div ref={commentsRef} className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
               {events.length === 0 && <p className="text-on-surface-variant text-sm italic">El árbitro da el silbatazo inicial...</p>}
@@ -674,6 +788,52 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Estadísticas en vivo: un panel por equipo, apilados */}
+            <div className="shrink-0 border-t border-white/10 p-4 flex flex-col gap-3 max-h-[46%] overflow-y-auto custom-scrollbar">
+              {/* Panel equipo local */}
+              <div className="bg-surface-container-high/50 rounded-xl p-4 border border-white/10">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="font-headline-sm text-sm font-bold text-on-surface truncate pr-2">{homeName}</span>
+                  <span className="font-display-lg text-2xl font-extrabold text-primary tabular-nums">{homePossession}%</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-surface-variant flex overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary to-tertiary transition-all duration-700 shadow-[0_0_10px_rgba(165,208,185,0.5)]" style={{ width: `${homePossession}%` }}></div>
+                </div>
+                <div className="flex justify-between mt-3">
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="font-stat-value text-2xl text-on-surface tabular-nums">{homeShots}</span>
+                    <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">Tiros</span>
+                  </div>
+                  <div className="w-px bg-white/10 self-stretch"></div>
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="font-stat-value text-2xl text-tertiary tabular-nums">{homeOnTarget}</span>
+                    <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">A puerta</span>
+                  </div>
+                </div>
+              </div>
+              {/* Panel equipo visitante */}
+              <div className="bg-surface-container-high/50 rounded-xl p-4 border border-white/10">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="font-headline-sm text-sm font-bold text-on-surface truncate pr-2">{awayName}</span>
+                  <span className="font-display-lg text-2xl font-extrabold text-on-surface-variant tabular-nums">{100 - homePossession}%</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-surface-variant flex overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-tertiary to-primary transition-all duration-700 shadow-[0_0_10px_rgba(233,195,73,0.5)]" style={{ width: `${100 - homePossession}%` }}></div>
+                </div>
+                <div className="flex justify-between mt-3">
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="font-stat-value text-2xl text-on-surface tabular-nums">{awayShots}</span>
+                    <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">Tiros</span>
+                  </div>
+                  <div className="w-px bg-white/10 self-stretch"></div>
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="font-stat-value text-2xl text-tertiary tabular-nums">{awayOnTarget}</span>
+                    <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">A puerta</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
