@@ -9,6 +9,7 @@ import { DraftModule } from './draft/draft.module';
 import { MatchModule } from './match/match.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { SeedModule } from './seed/seed.module';
     AuthModule,
     DraftModule,
     MatchModule,
+    NotificationsModule,
     SeedModule,
   ],
   controllers: [AppController],

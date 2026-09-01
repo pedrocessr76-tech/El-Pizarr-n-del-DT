@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Match, Team } from '../../../../packages/shared/types/models';
+import type { Match, Player, Team } from '../../../../packages/shared/types/models';
+import { PlayerMiniCard } from './PlayerCard';
 
 interface MatchEvent {
   id: number;
@@ -8,6 +9,9 @@ interface MatchEvent {
   team: 'home' | 'away';
   isGoal: boolean;
 }
+
+// Regla de producto: máximo de sustituciones por partido durante el en vivo.
+const MAX_CHANGES = 5;
 
 interface LiveMatchOverlayProps {
   match: Match;
@@ -63,6 +67,86 @@ const getInitials = (name: string): string => {
   return name.substring(0, 2).toUpperCase();
 };
 
+// --- Layout y movimiento de la cancha (22 puntos) ---
+
+type DotPos = { x: number; y: number }; // posición en % sobre el campo
+
+// Reparte N valores a lo largo de un rango horizontal (para las filas).
+function spreadXs(count: number, min = 18, max = 82): number[] {
+  if (count <= 1) return [(min + max) / 2];
+  const step = (max - min) / (count - 1);
+  return Array.from({ length: count }, (_, i) => min + i * step);
+}
+
+// Posición base (en %) de los 11 titulares según su zona FIFA.
+// `defendsTop`: el equipo defiende el arco superior (ataca hacia abajo).
+function teamBaseDots(players: Player[], defendsTop: boolean): DotPos[] {
+  const groups: Record<string, number[]> = { G: [], D: [], M: [], F: [] };
+  const zoneFromTop: Record<string, number> = { G: 9, D: 30, M: 50, F: 71 }; // avance desde el arco propio (%)
+  players.forEach((p, i) => {
+    const key = (p.position?.[0] ?? 'M') as string; // GK|DEF|MID|FWD -> G|D|M|F
+    (groups[key] ?? groups.M).push(i);
+  });
+  const dots: DotPos[] = new Array(players.length);
+  (Object.keys(zoneFromTop) as string[]).forEach((key) => {
+    const idxs = groups[key];
+    if (!idxs?.length) return;
+    const xs = spreadXs(idxs.length);
+    const d = zoneFromTop[key] / 100;
+    idxs.forEach((playerIdx, j) => {
+      // y es el avance desde el arco hacia el arco rival.
+      const y = defendsTop ? d * 100 : 100 - d * 100;
+      // Deformación escalonada para que no queden todos en la misma línea.
+      const stagger = ((playerIdx % 3) - 1) * 7;
+      dots[playerIdx] = { x: xs[j] + stagger, y: y + (key === 'M' ? stagger * 0.6 : 0) };
+    });
+  });
+  return dots;
+}
+
+// Movimiento minuto a minuto (sincronizado con la velocidad del reloj).
+// `fieldPushY` empuja el juego hacia el arco rival según la posesión.
+function dotOffset(seed: number, minute: number, fieldPushY: number): DotPos {
+  const t = minute;
+  return {
+    x: Math.sin(t * 0.14 + seed * 1.9) * 2,
+    y: Math.cos(t * 0.11 + seed * 2.3) * 1.4 + fieldPushY + Math.sin(t * 0.05 + seed * 3.1) * 0.8,
+  };
+}
+
+// Punto/jugador sobre la cancha.
+const PlayerDot: React.FC<{ player: Player; x: number; y: number; isUser: boolean; pulse: boolean }> = ({
+  player,
+  x,
+  y,
+  isUser,
+  pulse,
+}) => (
+  <div
+    className="absolute pointer-events-none transition-all duration-700 ease-out"
+    style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+  >
+    {pulse && (
+      <span
+        className={`absolute inset-0 rounded-full animate-ping ${
+          isUser ? 'bg-tertiary/50' : 'bg-primary/40'
+        }`}
+      ></span>
+    )}
+    <span
+      className={[
+        'relative flex items-center justify-center w-[18px] h-[18px] rounded-full border text-[8px] font-bold shadow-lg',
+        isUser
+          ? 'bg-tertiary text-on-tertiary border-tertiary'
+          : 'bg-surface-variant text-on-surface border-white/40',
+        pulse ? (isUser ? 'ring-2 ring-tertiary' : 'ring-2 ring-primary') : '',
+      ].join(' ')}
+    >
+      {getInitials(player.name)}
+    </span>
+  </div>
+);
+
 const TeamScoreBadge: React.FC<{ name: string; score: number; isUser: boolean }> = ({ name, score, isUser }) => (
   <div className={`flex flex-col items-center gap-2 w-40 ${isUser ? 'scale-105' : 'opacity-80'}`}>
     <div
@@ -86,6 +170,19 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const commentsRef = useRef<HTMLDivElement | null>(null);
   const eventIdRef = useRef(0);
+
+  // Alineación mutable del usuario: permite sustituciones que se reflejan
+  // en el rating del equipo y, por tanto, en la simulación posterior.
+  const [userStarters, setUserStarters] = useState<Player[]>(
+    () => (match.homeTeam?.id === teamId ? match.homeTeam?.starters : match.awayTeam?.starters) || [],
+  );
+  const [userSubs, setUserSubs] = useState<Player[]>(
+    () => (match.homeTeam?.id === teamId ? match.homeTeam?.substitutes : match.awayTeam?.substitutes) || [],
+  );
+  const [changesOpen, setChangesOpen] = useState(false);
+  const [changesUsed, setChangesUsed] = useState(0);
+  const [selectedOut, setSelectedOut] = useState<Player | null>(null);
+  const [selectedIn, setSelectedIn] = useState<Player | null>(null);
 
   const homeName = match.homeTeam?.name || 'Local';
   const awayName = match.awayTeam?.name || 'Visitante';
@@ -155,8 +252,8 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     }
   }, [events]);
 
-  const homeRating = avgRating(match.homeTeam);
-  const awayRating = avgRating(match.awayTeam);
+  const homeRating = avgRating({ starters: isHomeUser ? userStarters : match.homeTeam?.starters || [] } as Team);
+  const awayRating = avgRating({ starters: isHomeUser ? match.awayTeam?.starters || [] : userStarters } as Team);
   const homePossession = Math.min(68, Math.max(32, Math.round(50 + (homeRating - awayRating) * 1.5)));
   const homeShots = Math.max(1, Math.round((match.homeScore || 0) * 2.5 + (homePossession - 50) / 20));
   const awayShots = Math.max(1, Math.round((match.awayScore || 0) * 2.5 + (50 - homePossession) / 20));
@@ -166,6 +263,42 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const championLabel = isFinal && userWon ? '¡CAMPEÓN!' : '¡Victoria!';
   const winnerName = isHomeUser ? homeName : awayName;
   const loserName = isHomeUser ? awayName : homeName;
+
+  // Aplica un cambio: el titular seleccionado sale, el suplente ingresa,
+  // y se registra en el feed. El nuevo once modifica el rating del equipo.
+  const canChange = !finished && changesUsed < MAX_CHANGES;
+  const applySubstitution = () => {
+    if (!selectedOut || !selectedIn || !canChange) return;
+    setUserStarters((prev) => prev.map((p) => (p.id === selectedOut.id ? selectedIn : p)));
+    setUserSubs((prev) => prev.map((p) => (p.id === selectedIn.id ? selectedOut : p)));
+    setChangesUsed((c) => c + 1);
+    const team: 'home' | 'away' = isHomeUser ? 'home' : 'away';
+    const teamName = isHomeUser ? homeName : awayName;
+    setEvents((prev) => [
+      ...prev,
+      {
+        id: eventIdRef.current++,
+        minute,
+        text: `Cambio en ${teamName}: sale ${selectedOut.name}, entra ${selectedIn.name}.`,
+        team,
+        isGoal: false,
+      },
+    ]);
+    setSelectedOut(null);
+    setSelectedIn(null);
+    setChangesOpen(false);
+  };
+
+  // --- Cancha: 22 puntos (11 por equipo) con movimiento minuto a minuto ---
+  const oppStarters = isHomeUser ? match.awayTeam?.starters || [] : match.homeTeam?.starters || [];
+  const userDefendsTop = !isHomeUser;
+  const oppDefendsTop = isHomeUser;
+  const userDots = teamBaseDots(userStarters, userDefendsTop);
+  const oppDots = teamBaseDots(oppStarters, oppDefendsTop);
+  // El equipo con más posesión ataca: mueve todo el juego hacia su arco rival.
+  const fieldPushY = (homePossession - 50) * 0.12;
+  const userScoredNow = (isHomeUser ? homeGoalMinutes.includes(minute) : awayGoalMinutes.includes(minute)) && minute > 0;
+  const oppScoredNow = (isHomeUser ? awayGoalMinutes.includes(minute) : homeGoalMinutes.includes(minute)) && minute > 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -192,10 +325,91 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setChangesOpen((o) => !o)}
+            disabled={!canChange}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-label-md text-xs uppercase border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+              changesOpen ? 'bg-primary text-on-primary border-primary' : 'text-on-surface-variant hover:text-on-surface border-outline/40'
+            }`}
+            title="Cambios disponibles durante el partido"
+          >
+            <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
+            Cambios
+            <span className="font-stat-value opacity-80">{MAX_CHANGES - changesUsed}</span>
+          </button>
           <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined text-3xl">close</span>
           </button>
         </div>
+
+        {/* Panel de cambios (sustituciones en tiempo real) */}
+        {changesOpen && !finished && (
+          <div className="absolute inset-x-4 top-20 bottom-4 z-20 bg-surface-container-high/95 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>swap_horiz</span>
+                <span className="font-headline-sm text-on-surface">Cambios</span>
+                <span className="font-label-md text-xs text-on-surface-variant">({MAX_CHANGES - changesUsed} disponibles)</span>
+              </div>
+              <button
+                onClick={() => setChangesOpen(false)}
+                className="text-on-surface-variant hover:text-on-surface transition-colors"
+              >
+                <span className="material-symbols-outlined text-2xl">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 sm:grid-cols-2 gap-8 min-h-0">
+              <div>
+                <div className="font-label-md text-xs uppercase tracking-widest text-on-surface-variant mb-3">
+                  En cancha · toca un titular para sacarlo
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {userStarters.map((p) => (
+                    <PlayerMiniCard
+                      key={p.id}
+                      player={p}
+                      rating={p.rating ?? 50}
+                      onClick={() => setSelectedOut(selectedOut?.id === p.id ? null : p)}
+                      isRelocating={selectedOut?.id === p.id}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="font-label-md text-xs uppercase tracking-widest text-on-surface-variant mb-3">
+                  Banca · toca un suplente para ingresarlo
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {userSubs.map((p) => (
+                    <PlayerMiniCard
+                      key={p.id}
+                      player={p}
+                      rating={p.rating ?? 50}
+                      onClick={() => setSelectedIn(selectedIn?.id === p.id ? null : p)}
+                      isRelocating={selectedIn?.id === p.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-white/10 flex items-center justify-between gap-3 shrink-0">
+              <div className="text-xs text-on-surface-variant min-w-0 truncate">
+                {selectedOut && selectedIn
+                  ? `Sale ${selectedOut.name} · entra ${selectedIn.name}`
+                  : 'Selecciona un titular y un suplente para realizar el cambio.'}
+              </div>
+              <button
+                onClick={applySubstitution}
+                disabled={!selectedOut || !selectedIn || !canChange}
+                className="px-6 py-2 rounded-lg font-label-md uppercase font-bold bg-gradient-to-b from-primary to-primary-container text-on-primary border border-primary-fixed disabled:opacity-40 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shrink-0"
+              >
+                Realizar cambio
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Marcador */}
         <div className="px-6 pt-4 flex items-center justify-center gap-6 shrink-0">
@@ -220,6 +434,36 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
               <div className="pitch-center-circle"></div>
               <div className="pitch-penalty-area-top"></div>
               <div className="pitch-penalty-area-bottom"></div>
+
+              {/* 22 jugadores en movimiento (11 por equipo) */}
+              {userStarters.map((p, i) => {
+                const base = userDots[i] || { x: 50, y: 50 };
+                const off = dotOffset(i, minute, fieldPushY);
+                return (
+                  <PlayerDot
+                    key={p.id}
+                    player={p}
+                    x={base.x + off.x}
+                    y={base.y + off.y}
+                    isUser
+                    pulse={userScoredNow}
+                  />
+                );
+              })}
+              {oppStarters.map((p, i) => {
+                const base = oppDots[i] || { x: 50, y: 50 };
+                const off = dotOffset(i, minute, fieldPushY);
+                return (
+                  <PlayerDot
+                    key={p.id}
+                    player={p}
+                    x={base.x + off.x}
+                    y={base.y + off.y}
+                    isUser={false}
+                    pulse={oppScoredNow}
+                  />
+                );
+              })}
             </div>
 
             {/* Estadísticas */}

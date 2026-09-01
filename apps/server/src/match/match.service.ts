@@ -6,10 +6,20 @@ import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from './entities/match.entity';
 import { TournamentEntity } from './entities/tournament.entity';
-import type { Match, Team, Player, Tournament, RoundName, MatchStatus } from '../../../../packages/shared/types/models';
+import { NotificationsService } from '../notifications/notifications.service';
+import type { Match, Team, Player, Tournament, RoundName, MatchStatus, MatchSummary, PlayerMatchStats } from '../../../../packages/shared/types/models';
 import * as crypto from 'crypto';
 
 const ROUND_ORDER: RoundName[] = ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
+
+// Parsea JSON de forma segura ante campos ausentes o corruptos.
+function parseJson<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
 
 @Injectable()
 export class MatchService {
@@ -24,6 +34,7 @@ export class MatchService {
     private readonly matchRepo: Repository<MatchEntity>,
     @InjectRepository(TournamentEntity)
     private readonly tournamentRepo: Repository<TournamentEntity>,
+    private readonly notifications: NotificationsService,
   ) {}
 
 
@@ -93,6 +104,87 @@ export class MatchService {
       }, 0);
     }
 
+    // Distribución de goles: selecciona goleadores de forma ponderada por su disparo
+    // (bonus para delanteros y mediapuntas). Devuelve un mapa playerId -> goles.
+    private assignGoalScorers(players: Player[], totalGoals: number): Record<string, number> {
+      const goals: Record<string, number> = {};
+      if (players.length === 0 || totalGoals <= 0) return goals;
+
+      const weightFor = (p: Player): number =>
+        (p.stats?.shooting ?? 5) +
+        (p.position === 'FWD' ? 15 : p.position === 'MID' ? 8 : 0);
+
+      for (let g = 0; g < totalGoals; g++) {
+        const totalWeight = players.reduce((s, p) => s + weightFor(p), 0);
+        if (totalWeight <= 0) break;
+        let r = Math.random() * totalWeight;
+        for (const p of players) {
+          r -= weightFor(p);
+          if (r <= 0) {
+            goals[p.id] = (goals[p.id] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+      return goals;
+    }
+
+    // Distribución de asistencias (ponderada por pase), sin repetir demasiado al goleador.
+    private assignAssists(players: Player[], total: number, goalScorers: Record<string, number>): Record<string, number> {
+      const assists: Record<string, number> = {};
+      if (players.length === 0 || total <= 0) return assists;
+
+      const weightFor = (p: Player): number =>
+        (p.stats?.passing ?? 5) + (p.position === 'MID' ? 10 : p.position === 'FWD' ? 5 : 0);
+
+      for (let a = 0; a < total; a++) {
+        const options = players.filter((p) => (goalScorers[p.id] ?? 0) === 0);
+        const pool = options.length > 0 ? options : players;
+        const totalWeight = pool.reduce((s, p) => s + weightFor(p), 0);
+        if (totalWeight <= 0) break;
+        let r = Math.random() * totalWeight;
+        for (const p of pool) {
+          r -= weightFor(p);
+          if (r <= 0) {
+            assists[p.id] = (assists[p.id] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+      return assists;
+    }
+
+    // Calcula la calificación (1-10) de cada titular y sus goles/asistencias.
+    private computeMatchSummary(team: Team, goals: number): PlayerMatchStats[] {
+      const starters = team.starters;
+      if (starters.length === 0) return [];
+
+      const goalScorers = this.assignGoalScorers(starters, goals);
+      const totalAssists = Math.min(2, goals);
+      const assistantIds = this.assignAssists(starters, totalAssists, goalScorers);
+
+      return starters.map((p) => {
+        const base = (p.rating ?? 50) / 10; // OVR -> base sobre 10
+        const perf = Math.random() * 1.4 - 0.8; // rendimiento: -0.8 .. +0.6
+        const goalBonus = Math.min(1.5, (goalScorers[p.id] ?? 0) * 0.7);
+        const assistBonus = (assistantIds[p.id] ?? 0) * 0.3;
+        const matchRating = Math.min(
+          10,
+          Math.max(1, Math.round((base + perf + goalBonus + assistBonus) * 10) / 10),
+        );
+
+        return {
+          playerId: p.id,
+          name: p.name,
+          position: p.position,
+          rating: p.rating ?? 50,
+          matchRating,
+          goals: goalScorers[p.id] ?? 0,
+          assists: assistantIds[p.id] ?? 0,
+        };
+      });
+    }
+
     private shuffle<T>(input: T[]): T[] {
       const arr = [...input];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -155,6 +247,14 @@ export class MatchService {
       matchEntity.awayScore = awayScore;
       matchEntity.status = 'FINISHED';
       matchEntity.winnerId = winnerId;
+
+      // Resumen por jugador: calificaciones, goles y asistencias de cada titular.
+      const summary: MatchSummary = {
+        home: this.computeMatchSummary(homeTeam, homeScore),
+        away: this.computeMatchSummary(awayTeam, awayScore),
+      };
+      matchEntity.summaryJson = JSON.stringify(summary);
+
       await this.matchRepo.save(matchEntity);
 
       return {
@@ -165,13 +265,35 @@ export class MatchService {
         awayScore,
         status: 'FINISHED',
         winnerId,
+        summary,
       };
     }
 
     async simulateMatch(matchId: string): Promise<Match> {
       const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
       if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
-      return this.simulateAndPersistMatch(matchEntity);
+      const result = await this.simulateAndPersistMatch(matchEntity);
+
+      // Notificación de fin de partido para el usuario / sesión propietaria del torneo.
+      if (matchEntity.userId || matchEntity.sessionId) {
+
+        const tournament = matchEntity.tournamentId
+          ? await this.tournamentRepo.findOne({ where: { id: matchEntity.tournamentId } })
+          : null;
+        const userTeamId = tournament?.userTeamId;
+        const userWon = !!userTeamId && result.winnerId === userTeamId;
+        const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
+        const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
+        this.notifications.notify(matchEntity.userId, matchEntity.sessionId, {
+          type: 'match_end',
+          severity: userWon ? 'success' : 'error',
+          title: userWon ? '¡Victoria!' : 'Derrota',
+          body: `${homeTeam?.name ?? 'Local'} ${result.homeScore} - ${result.awayScore} ${awayTeam?.name ?? 'Visitante'}`,
+          metadata: { matchId: matchEntity.id },
+        });
+      }
+
+      return result;
     }
 
     async createTournament(userTeamId: string, userId?: string, sessionId?: string): Promise<Tournament> {
@@ -264,6 +386,15 @@ export class MatchService {
         status: 'PENDING',
       });
     }
+
+    // 5) Avisar al usuario / sesión de que el torneo comenzó.
+    this.notifications.notify(userId, sessionId, {
+      type: 'tournament_start',
+      severity: 'info',
+      title: '¡Torneo iniciado!',
+      body: 'Tu Copa Élite ha comenzado. Suerte en la llave.',
+      metadata: { tournamentId },
+    });
 
     return {
       id: tournamentId,
@@ -360,6 +491,13 @@ export class MatchService {
     if (currentRound === 'FINAL') {
       tournamentEntity.status = 'COMPLETED';
       await this.tournamentRepo.save(tournamentEntity);
+this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+        type: 'tournament_end',
+        severity: 'success',
+        title: '¡Campeón de la Copa Élite!',
+        body: 'Tu equipo se coronó campeón del torneo. ¡Felicidades!',
+        metadata: { tournamentId },
+      });
       return this.getTournament(tournamentId);
     }
 
@@ -395,6 +533,13 @@ export class MatchService {
     tournamentEntity.currentRound = nextRound;
     await this.tournamentRepo.save(tournamentEntity);
 
+this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+        type: 'round_advance',
+        severity: 'info',
+        title: 'Avance de ronda: ' + nextRound,
+        body: 'Tu equipo superó ' + currentRound + '. Descubrí tus nuevos rivales.',
+        metadata: { tournamentId, round: nextRound },
+      });
     return this.getTournament(tournamentId);
   }
 
@@ -406,6 +551,13 @@ export class MatchService {
       tournamentEntity.status = 'COMPLETED';
       await this.tournamentRepo.save(tournamentEntity);
     }
+this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+        type: 'tournament_end',
+        severity: 'warning',
+        title: 'Torneo finalizado',
+        body: 'Tu Copa Élite ha terminado. Volvé a intentar cuando quieras.',
+        metadata: { tournamentId },
+      });
     return { success: true };
   }
 
@@ -436,6 +588,7 @@ export class MatchService {
           awayScore: m.awayScore,
           status: m.status,
           winnerId: m.winnerId,
+          summary: m.summaryJson ? (parseJson<MatchSummary>(m.summaryJson) ?? undefined) : undefined,
         };
       }));
 

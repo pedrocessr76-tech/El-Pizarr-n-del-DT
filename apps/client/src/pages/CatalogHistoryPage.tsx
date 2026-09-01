@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { PlayerCard, getRarity } from '../components/PlayerCard';
+import React, { useState, useEffect } from 'react';
+import { PlayerCard } from '../components/PlayerCard';
 import { playerService } from '../services/playerService';
 import { matchService } from '../services/matchService';
 import { useAuthStore } from '../store/useAuthStore';
-import type { Player, Position } from '../../../../packages/shared/types/models';
+import type { Player, Position, PlayerMatchStats } from '../../../../packages/shared/types/models';
 import type { HistoryTournamentItem } from '../services/matchService';
+
+// Posiciones del catálogo para el filtro server-side (posiciones genéricas FIFA compatibles).
+const POSITIONS: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
 
 interface CatalogHistoryPageProps {
   initialView?: 'history' | 'catalog';
@@ -20,34 +23,16 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   // --- Filtros del catálogo ---
   const [search, setSearch] = useState('');
   const [positionFilter, setPositionFilter] = useState<Position | ''>('');
-  const [rarityFilter, setRarityFilter] = useState<string>(''); // 'gold' | 'silver' | 'bronze' | ''
+  const [rarityFilter, setRarityFilter] = useState<'' | 'gold' | 'silver' | 'bronze'>(''); // '' | 'gold' | 'silver' | 'bronze'
   const [minRating, setMinRating] = useState<number | ''>('');
 
-  // Posiciones presentes en el catálogo (derivadas de los datos reales)
-  const positions = useMemo(
-    () => Array.from(new Set(players.map((p) => p.position))),
-    [players],
-  );
-
-  // Opciones de rareza (Calidad)
-  const RARITIES: { key: string; label: string; dot: string }[] = [
+  // Opciones de rareza (Calidad) — los rangos coinciden con el filtro server-side.
+  const RARITIES: { key: '' | 'gold' | 'silver' | 'bronze'; label: string; dot: string }[] = [
     { key: '', label: 'Todas', dot: 'bg-outline-variant' },
     { key: 'gold', label: 'Oro', dot: 'bg-[#FFDF00]' },
     { key: 'silver', label: 'Plata', dot: 'bg-[#C0C0C0]' },
     { key: 'bronze', label: 'Bronce', dot: 'bg-[#CD7F32]' },
   ];
-
-  // Lista filtrada del catálogo completo
-  const filteredPlayers = useMemo(() => {
-    const term = search.toLowerCase().trim();
-    return players.filter((p) => {
-      const nameMatch = !term || p.name.toLowerCase().includes(term);
-      const posMatch = !positionFilter || p.position === positionFilter;
-      const rarityMatch = !rarityFilter || getRarity(p.rating ?? 0) === rarityFilter;
-      const ratingMatch = minRating === '' || (p.rating ?? 0) >= minRating;
-      return nameMatch && posMatch && rarityMatch && ratingMatch;
-    });
-  }, [players, search, positionFilter, rarityFilter, minRating]);
 
   const clearFilters = () => {
     setSearch('');
@@ -61,20 +46,32 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   const [history, setHistory] = useState<HistoryTournamentItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  // Partido cuyo detalle (calificaciones por jugador) está expandido en el historial.
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadPlayers = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    // Debounce corto para la búsqueda por nombre; el resto de filtros dispara al instante.
+    const timer = setTimeout(async () => {
       try {
-        const data = await playerService.getAllPlayers();
+        const data = await playerService.getAllPlayers({
+          name: search || undefined,
+          position: positionFilter || undefined,
+          rarity: rarityFilter || undefined,
+          minRating: minRating === '' ? undefined : Number(minRating),
+        });
         setPlayers(data);
+        setIsLoading(false);
       } catch (err: any) {
         setLoadError(err.response?.data?.message || 'Error al cargar el catálogo de jugadores.');
-      } finally {
         setIsLoading(false);
       }
-    };
-    loadPlayers();
-  }, []);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, positionFilter, rarityFilter, minRating]);
 
   useEffect(() => {
     if (activeView !== 'history') return;
@@ -188,47 +185,58 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
                   </div>
                 ) : (
                   history.map((t) => (
-                    <div
-                      key={t.id}
-                      className="grid grid-cols-6 gap-4 p-md items-center border-b border-white/5 hover:bg-white/5 transition-colors"
-                    >
-                      <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">
-                        {new Date(t.createdAt).toLocaleDateString('es-ES', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </div>
-                      <div className="col-span-1">
-                        <span className={`px-2 py-1 rounded font-label-md text-[10px] uppercase border ${
-                          t.status === 'IN_PROGRESS'
-                            ? 'bg-primary/20 text-primary border-primary/30'
-                            : t.status === 'COMPLETED'
-                            ? 'bg-tertiary/20 text-tertiary border-tertiary/30'
-                            : 'bg-error/20 text-error border-error/30'
-                        }`}>
-                          {t.status === 'IN_PROGRESS' ? 'En curso' : t.status === 'COMPLETED' ? 'Completado' : 'Fallido'}
-                        </span>
-                      </div>
-                      <div className="col-span-2 font-headline-sm text-[16px] text-on-surface">
-                        {t.currentRound}
-                      </div>
-                      <div className="col-span-2 flex flex-col gap-1">
-                        {t.matches.slice(0, 3).map((m) => (
-                          <div key={m.id} className="flex items-center justify-center gap-2 text-xs">
-                            <span className="truncate max-w-[80px] text-on-surface-variant">{m.homeTeamName}</span>
-                            <span className="font-stat-value text-primary">
-                              {m.status === 'FINISHED' ? `${m.homeScore} - ${m.awayScore}` : 'vs'}
-                            </span>
-                            <span className="truncate max-w-[80px] text-on-surface-variant">{m.awayTeamName}</span>
-                          </div>
-                        ))}
-                        {t.matches.length > 3 && (
-                          <span className="text-xs text-on-surface-variant text-center">
-                            +{t.matches.length - 3} partidos más
+                    <div key={t.id} className="border-b border-white/5">
+                      <div className="grid grid-cols-6 gap-4 p-md items-center hover:bg-white/5 transition-colors">
+                        <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">
+                          {new Date(t.createdAt).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        <div className="col-span-1">
+                          <span className={`px-2 py-1 rounded font-label-md text-[10px] uppercase border ${
+                            t.status === 'IN_PROGRESS'
+                              ? 'bg-primary/20 text-primary border-primary/30'
+                              : t.status === 'COMPLETED'
+                              ? 'bg-tertiary/20 text-tertiary border-tertiary/30'
+                              : 'bg-error/20 text-error border-error/30'
+                          }`}>
+                            {t.status === 'IN_PROGRESS' ? 'En curso' : t.status === 'COMPLETED' ? 'Completado' : 'Fallido'}
                           </span>
-                        )}
+                        </div>
+                        <div className="col-span-2 font-headline-sm text-[16px] text-on-surface">
+                          {t.currentRound}
+                        </div>
+                        <div className="col-span-2 flex flex-col gap-1">
+                          {t.matches.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => setExpandedMatch(expandedMatch === m.id ? null : m.id)}
+                              title={m.status === 'FINISHED' ? 'Ver detalle del partido' : undefined}
+                              disabled={m.status !== 'FINISHED'}
+                              className="group flex items-center justify-center gap-2 text-xs disabled:cursor-default disabled:opacity-70"
+                            >
+                              <span className="truncate max-w-[70px] text-on-surface-variant group-hover:text-primary group-disabled:group-hover:text-on-surface-variant">{m.homeTeamName}</span>
+                              <span className="font-stat-value text-primary whitespace-nowrap">
+                                {m.status === 'FINISHED' ? `${m.homeScore} - ${m.awayScore}` : 'vs'}
+                              </span>
+                              <span className="truncate max-w-[70px] text-on-surface-variant group-hover:text-primary group-disabled:group-hover:text-on-surface-variant">{m.awayTeamName}</span>
+                              {m.status === 'FINISHED' && (
+                                <span className="material-symbols-outlined text-[16px] text-on-surface-variant/60 group-hover:text-primary">
+                                  {expandedMatch === m.id ? 'expand_less' : 'expand_more'}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+                      {expandedMatch &&
+                        t.matches.some((m) => m.id === expandedMatch) && (
+                          <MatchSummaryDetail
+                            match={t.matches.find((m) => m.id === expandedMatch)!}
+                          />
+                        )}
                     </div>
                   ))
                 )}
@@ -257,11 +265,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
             </div>
             <div className="flex items-center gap-3">
               <span className="font-label-md text-label-md text-on-surface-variant">
-                {filteredPlayers.length} de {players.length}
-                <span className="text-on-surface-variant/60">
-                  {' '}
-                  (filtrados: {players.length - filteredPlayers.length})
-                </span>
+                {players.length} jugadores
               </span>
               <button
                 onClick={clearFilters}
@@ -334,7 +338,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
                   >
                     Todas
                   </button>
-                  {positions.map((pos) => (
+                  {POSITIONS.map((pos) => (
                     <button
                       key={pos}
                       onClick={() => setPositionFilter(pos)}
@@ -376,12 +380,12 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
           {/* Card Grid — fluye con el scroll de página (sin recorte) */}
           {!isLoading && !loadError && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 pb-8">
-              {filteredPlayers.length === 0 ? (
+              {players.length === 0 ? (
                 <div className="col-span-full text-center py-16 text-on-surface-variant font-body-md text-body-md">
                   No hay jugadores que coincidan con los filtros seleccionados.
                 </div>
               ) : (
-                filteredPlayers.map((player) => (
+                players.map((player) => (
                   <PlayerCard key={player.id} player={player} />
                 ))
               )}
@@ -389,6 +393,73 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
           )}
         </main>
       )}
+    </div>
+  );
+};
+
+// Detalle del partido: calificaciones por jugador (local y visitante) y su aporte.
+const MatchSummaryDetail: React.FC<{ match: HistoryTournamentItem['matches'][number] }> = ({ match }) => {
+  const summary = match.summary;
+  if (!summary || !Array.isArray(summary.home) || !Array.isArray(summary.away)) {
+    return (
+      <div className="px-md pb-md text-center text-sm text-on-surface-variant">
+        Este partido no tiene detalle de calificaciones disponible.
+      </div>
+    );
+  }
+
+  const Side: React.FC<{ label: string; players: PlayerMatchStats[] }> = ({ label, players }) => (
+    <div>
+      <div className="font-label-md text-label-md text-primary uppercase tracking-wider mb-2">{label}</div>
+      <div className="flex flex-col gap-1">
+        {players.map((p) => (
+          <div
+            key={p.playerId}
+            className="flex items-center justify-between gap-2 bg-surface-container-high rounded-lg px-3 py-1.5 text-xs"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-on-surface-variant text-[10px] w-7 shrink-0 opacity-80">{p.position}</span>
+              <span className="truncate text-on-surface">{p.name}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {(p.goals > 0 || p.assists > 0) && (
+                <span className="text-on-surface-variant text-[10px]">
+                  {[p.goals ? `${p.goals} gol${p.goals === 1 ? '' : 's'}` : null, p.assists ? `${p.assists} asist.` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              )}
+              <span
+                className={`font-stat-value text-[13px] ${
+                  p.matchRating >= 8
+                    ? 'text-[#FFDF00]'
+                    : p.matchRating >= 6.5
+                    ? 'text-primary'
+                    : p.matchRating >= 5
+                    ? 'text-on-surface'
+                    : 'text-error'
+                }`}
+              >
+                {p.matchRating.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="px-md pb-md">
+      <div className="bg-surface rounded-xl border border-outline-variant/30 p-4">
+        <div className="text-center text-sm text-on-surface-variant font-body-md mb-3">
+          {match.homeTeamName} <span className="font-stat-value text-primary">{match.homeScore} - {match.awayScore}</span> {match.awayTeamName}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Side label="Local" players={summary.home} />
+          <Side label="Visitante" players={summary.away} />
+        </div>
+      </div>
     </div>
   );
 };

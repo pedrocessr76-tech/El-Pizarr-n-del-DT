@@ -3,17 +3,18 @@ schema: spec-driven
 # Project context
 context: |
   Tech stack:
-    Frontend: TypeScript, React 18, Vite 5, Tailwind CSS 4, Zustand 5, Framer Motion
-    Backend: NestJS 10, TypeORM 1.1, better-sqlite3, JWT (Passport), bcryptjs
+    Frontend: TypeScript, React 18, Vite 5, Tailwind CSS 4, Zustand 5, axios, Material Symbols
+    Backend: NestJS 10, TypeORM, PostgreSQL (driver pg), Swagger (@nestjs/swagger), JWT, bcryptjs
     Monorepo: npm workspaces (apps/server, apps/client, packages/shared)
   Conventions:
     - Entidades TypeORM con decoradores en archivos *.entity.ts
     - Servicios con inyección de dependencias via @Injectable()
-    - Módulos NestJS organizados por feature (auth/, draft/, match/, player/, team/, user/)
-    - Frontend con componentes en apps/client/src/components/
-    - Estado global con Zustand en store/useDraftStore.ts
-    - API client en lib/api.ts con fetch nativo
-    - Seed automático al iniciar servidor via OnModuleInit
+    - Módulos NestJS organizados por feature (auth/, draft/, match/, player/, team/, user/, seed/)
+    - Frontend con páginas en apps/client/src/pages/ y componentes en apps/client/src/components/
+    - Estado global con Zustand en store/ (useAuthStore.ts, useDraftStore.ts)
+    - API client con axios en services/ (authService, playerService, draftService, matchService), con interceptor de JWT
+    - Seed y sincronización del catálogo al iniciar servidor via OnModuleInit
+    - Base de datos: PostgreSQL (local con docker-compose; en producción Render con DB_SSL=true)
   Domain: Juego de gestión futbolística, draft de jugadores, torneos de eliminación directa
 
 # Per-artifact rules

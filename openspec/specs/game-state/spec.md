@@ -1,97 +1,58 @@
-## ADDED Requirements
+# game-state
 
-### Requirement: Pantalla Home Principal con toggle oscuro/claro
-El sistema DEBE mostrar el logo del juego en el centro o parte superior, y 3 botones debajo: "JUGAR" debe ser el más grande y llamativo, "VER HISTORIAL DE PARTIDAS" y "VER TODAS LAS CARTAS" se colocan uno a la izquierda y otro a la derecha con un diseño profesional y estético. Sin menú de navegación. DEBE incluir un botón toggle para cambiar entre modo oscuro y modo claro en la esquina superior derecha junto al icono de login.
+## Purpose
 
-#### Scenario: Home con logo y 3 botones
-- **WHEN** el usuario abre la app o se autentica
-- **THEN** el sistema muestra el logo del juego, un botón JUGAR grande y destacado en el centro, y a sus laterales izquierdo/derecho los botones VER HISTORIAL y VER CARTAS
+Define la visualización del estado del juego: la pantalla principal, el catálogo de cartas, el historial de torneos, el torneo completo con bracket y el partido en vivo, junto con la retroalimentación de preparación del equipo.
 
-#### Scenario: Toggle modo oscuro/claro
-- **WHEN** el usuario presiona el toggle en la esquina superior derecha
-- **THEN** el sistema cambia entre modo oscuro (fondo verde oscuro #1a3a2a, texto blanco) y modo claro (fondo blanco/verde claro, texto oscuro)
+## Requirements
+
+### Requirement: Home principal
+El sistema MUST mostrar una pantalla principal con el logo del juego (FOOTBALL ELITE / El Pizarrón del DT), fondo de cancha con patrón, un botón "Iniciar Sesión" en la esquina superior y los 3 botones de acción (JUGAR, HISTORIAL, CARTAS).
+
+#### Scenario: Ver la Home
+- **WHEN** el usuario abre la app
+- **THEN** se muestra el logo, el botón de login y los botones de acción principales.
 
 ### Requirement: Catálogo de jugadores
-El sistema DEBE mostrar todas las cartas de jugadores disponibles en el juego en formato grilla, con filtro por posición y búsqueda por nombre.
+El sistema MUST mostrar todas las cartas de jugadores del catálogo (obtenidas de `GET /players`) en una grilla, con búsqueda por nombre, filtro por posición, por rareza (Oro/Plata/Bronce) y por rating mínimo.
 
-#### Scenario: Ver todas las cartas
-- **WHEN** el usuario presiona "Ver todas las cartas de jugadores"
-- **THEN** el sistema muestra todos los jugadores del catálogo en una grilla de cartas con foto, nombre, posición y rating
+#### Scenario: Ver y filtrar el catálogo
+- **WHEN** el usuario abre el catálogo y aplica búsqueda/filtros
+- **THEN** la grilla muestra solo los jugadores que cumplen los criterios.
 
-#### Scenario: Filtrar por posición
-- **WHEN** el usuario selecciona un filtro de posición (GK, DEF, MID, FWD)
-- **THEN** el sistema muestra solo los jugadores de esa posición
+### Requirement: Historial de torneos
+El sistema MUST mostrar el historial de torneos del usuario (obtenido de `GET /match/history`), con nombre del equipo, rondas, marcadores y estado; los usuarios sin sesión ven una lista vacía.
 
-#### Scenario: Buscar por nombre
-- **WHEN** el usuario escribe en el campo de búsqueda
-- **THEN** el sistema filtra los jugadores cuyo nombre contenga el texto ingresado
+#### Scenario: Ver historial
+- **WHEN** el usuario consulta su historial
+- **THEN** se muestran sus torneos anteriores con su detalle de rondas.
 
-### Requirement: Historial de equipos creados
-El sistema DEBE mostrar el historial de equipos que el usuario ha armado en partidas anteriores. Cada equipo se muestra con un nombre autogenerado "Equipo 1", "Equipo 2", etc. (incrementando el número) y la alineación utilizada.
+### Requirement: Torneo completo con bracket
+El sistema MUST mostrar el bracket del torneo con las 4 rondas (Octavos → Cuartos → Semis → Final), conectores entre rondas y el ganador de cada partido resaltado; los partidos del usuario se juegan en vivo.
 
-#### Scenario: Ver historial de equipos
-- **WHEN** el usuario presiona "VER HISTORIAL DE PARTIDAS"
-- **THEN** el sistema muestra una lista de los equipos creados anteriormente con su nombre (Equipo 1, Equipo 2...), formación elegida y rating medio
+#### Scenario: Ver el bracket
+- **WHEN** el usuario entra a "Copa Élite" con un torneo activo
+- **THEN** se muestran las 4 rondas con sus cruces, marcadores y ganadores resaltados.
 
-### Requirement: Pantalla de Torneo Completo con bracket moderno
-El sistema DEBE mostrar el bracket completo del torneo con los 16 equipos visibles en su totalidad, sin scroll. Diseño profesional y moderno con 4 rondas (OCTAVOS, CUARTOS, SEMIS, FINAL), líneas conectoras entre rondas, nombres de equipos, escudos y marcadores. Los ganadores DEBEN resaltarse visualmente.
+### Requirement: Partido en vivo
+Al jugar su llave, el sistema MUST abrir un overlay que simule el partido minuto a minuto con velocidad x30/x60/x90, mostrando el tiempo, el marcador dinámico, los goles y comentarios en vivo.
 
-#### Scenario: Ver bracket completo sin scroll
-- **WHEN** el usuario llega a la pantalla de torneo
-- **THEN** el sistema muestra los 16 equipos en el bracket completo de eliminación directa, visible en su totalidad sin necesidad de hacer scroll
-
-#### Scenario: Ver rondas y conexiones
-- **WHEN** el bracket se renderiza
-- **THEN** se ven las 4 rondas (OCTAVOS → CUARTOS → SEMIS → FINAL) con líneas conectoras desde los ganadores hacia la siguiente ronda
-
-#### Scenario: Partido jugado en bracket
-- **WHEN** un partido del bracket se ha completado
-- **THEN** el sistema muestra el marcador (homeScore - awayScore) y resalta al ganador con un estilo visual distintivo (color, borde o badge)
-
-### Requirement: Resumen de partido
-El sistema DEBE mostrar un resumen al completarse un partido con el resultado, las calificaciones de ambos equipos y el ganador.
-
-#### Scenario: Mostrar resultado
-- **WHEN** se completa un partido
-- **THEN** el sistema muestra el resumen del resultado y el ganador
-
-### Requirement: Contenedor de dificultad con stats del equipo
-La dificultad NO DEBE ser una pantalla separada. Al completar el armado del equipo, se DEBE abrir un contenedor vertical sobre la pantalla actual. En la parte superior muestra las estadísticas del equipo (rating medio, química, etc.). En la parte inferior muestra el botón "JUGAR" y un selector de dificultad (Fácil, Normal, Difícil). La dificultad "Normal" DEBE estar seleccionada por defecto.
-
-#### Scenario: Contenedor post-armado
-- **WHEN** el usuario completa los 11 titulares + 7 suplentes
-- **THEN** se abre un contenedor vertical con stats del equipo arriba y botón JUGAR + selector dificultad abajo, con Normal preseleccionado
-
-#### Scenario: Cambiar dificultad
-- **WHEN** el usuario selecciona Fácil o Difícil
-- **THEN** el sistema ajusta los ratings de los equipos IA según la dificultad elegida
-
-#### Scenario: Iniciar torneo
-- **WHEN** el usuario presiona JUGAR en el contenedor
-- **THEN** el contenedor se cierra y comienza la simulación del partido en vivo
-
-### Requirement: Partido en vivo con velocidad acelerada
-Al iniciar un partido, el sistema DEBE abrir un contenedor que simule el desarrollo del partido minuto a minuto a velocidad acelerada (x30, x60 o x90). El contenedor DEBE mostrar el tiempo transcurrido, el marcador actualizado dinámicamente y los goles a medida que ocurren.
-
-#### Scenario: Iniciar partido en vivo
-- **WHEN** el usuario presiona JUGAR en el contenedor de dificultad
-- **THEN** se abre un contenedor de partido en vivo que avanza a velocidad acelerada mostrando el marcador en tiempo real
-
+#### Scenario: Iniciar el partido en vivo
+- **WHEN** el usuario inicia su partido
+- **THEN** se abre el overlay del partido en vivo con el reloj, el marcador y el feed de eventos.
 #### Scenario: Gol durante el partido
-- **WHEN** ocurre un gol en la simulación
-- **THEN** el marcador se actualiza y se muestra una notificación visual del gol (equipo, minuto)
-
+- **WHEN** ocurre un gol
+- **THEN** el marcador se actualiza y se muestra la notificación del gol.
 #### Scenario: Fin del partido
-- **WHEN** la simulación llega al minuto 90
-- **THEN** el contenedor muestra el resultado final y un botón para continuar al bracket del torneo
+- **WHEN** se llega al tiempo final
+- **THEN** se muestra el resultado y las opciones para continuar o ver el resultado.
 
 ### Requirement: Retroalimentación de preparación
-El sistema DEBE informar al usuario si el equipo está listo para el torneo (11 titulares + 7 suplentes asignados).
+El sistema MUST informar si el equipo está listo para el torneo (11 titulares + 7 suplentes) y, si no, cuántos jugadores faltan.
 
-#### Scenario: Equipo completo
+#### Scenario: Equipo listo
 - **WHEN** el equipo tiene 18 jugadores
-- **THEN** el sistema muestra "Equipo listo para el torneo"
-
+- **THEN** el sistema indica que está listo para el torneo.
 #### Scenario: Equipo incompleto
 - **WHEN** faltan jugadores
-- **THEN** el sistema indica cuántos jugadores faltan por posición
+- **THEN** el sistema indica cuántos jugadores faltan por asignar.

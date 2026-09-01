@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>El Pizarrón del DT - Notificaciones</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#a5d0b9",
+                      "primary-container": "#1b4332",
+                      "surface-container": "#171f33",
+                      "primary": "#a5d0b9",
+                      "tertiary-container": "#cba72f",
+                      "surface-container-high": "#222a3d",
+                      "secondary-fixed-dim": "#b5ccc0",
+                      "on-primary-container": "#86af99",
+                      "outline": "#8b938d",
+                      "surface-container-low": "#131b2e",
+                      "on-tertiary-fixed": "#241a00",
+                      "secondary-container": "#374b42",
+                      "on-surface-variant": "#c1c8c2",
+                      "primary-fixed": "#c1ecd4",
+                      "surface": "#0b1326",
+                      "tertiary": "#e9c349",
+                      "on-tertiary": "#3c2f00",
+                      "surface-container-highest": "#2d3449",
+                      "surface-bright": "#31394d",
+                      "outline-variant": "#414844",
+                      "on-surface": "#dae2fd",
+                      "on-secondary": "#21342c",
+                      "on-tertiary-container": "#4e3d00",
+                      "surface-container-lowest": "#060e20",
+                      "surface-dim": "#0b1326",
+                      "secondary-fixed": "#d1e8dc",
+                      "on-secondary-fixed-variant": "#374b42",
+                      "on-primary-fixed": "#002114",
+                      "tertiary-fixed": "#ffe088",
+                      "on-background": "#dae2fd",
+                      "on-secondary-fixed": "#0b1f18",
+                      "surface-variant": "#2d3449",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#574500",
+                      "error": "#ffb4ab",
+                      "inverse-primary": "#3f6653",
+                      "on-secondary-container": "#a4baaf",
+                      "background": "#0b1326",
+                      "on-primary-fixed-variant": "#274e3d",
+                      "tertiary-fixed-dim": "#e9c349",
+                      "inverse-surface": "#dae2fd",
+                      "on-error-container": "#ffdad6",
+                      "secondary": "#b5ccc0",
+                      "primary-fixed-dim": "#a5d0b9",
+                      "inverse-on-surface": "#283044",
+                      "on-error": "#690005",
+                      "on-primary": "#0e3727"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "xs": "4px",
+                      "sm": "8px",
+                      "gutter": "16px",
+                      "md": "16px",
+                      "margin": "24px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Montserrat"],
+                      "headline-lg-mobile": ["Montserrat"],
+                      "stat-value": ["Montserrat"],
+                      "display-lg": ["Montserrat"],
+                      "headline-lg": ["Montserrat"],
+                      "headline-sm": ["Montserrat"],
+                      "body-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "stat-value": ["22px", {"lineHeight": "22px", "fontWeight": "800"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-x-hidden flex flex-col md:flex-row relative font-body-md">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter h-16 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+<div class="flex items-center gap-4">
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary tracking-tighter">FOOTBALL ELITE</h1>
+</div>
+<div class="flex items-center gap-6 relative">
+<button class="relative hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary dark:text-primary" data-icon="notifications" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="absolute -top-1 -right-1 bg-primary text-on-primary text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">3</span>
+</button>
+<button class="hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary dark:text-primary" data-icon="account_circle" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+<button class="hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary dark:text-primary" data-icon="settings" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<!-- Notification Dropdown Panel -->
+<div class="absolute top-full right-0 mt-2 w-80 bg-surface-container/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+<div class="p-4 border-b border-white/10 flex justify-between items-center">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Notificaciones</h3>
+<button class="text-label-md font-label-md text-primary hover:text-tertiary transition-colors">Marcar todas como leídas</button>
+</div>
+<div class="max-h-[400px] overflow-y-auto">
+<!-- Item 1: Unread -->
+<div class="p-4 border-b border-white/5 hover:bg-white/5 transition-colors flex gap-3 relative cursor-pointer bg-primary-container/10">
+<div class="absolute left-2 top-4 w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="sports_soccer">sports_soccer</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">¡GOOOL!</p>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm mt-1">Tu equipo ha marcado el 2-1.</p>
+<p class="text-xs text-on-surface-variant/60 mt-1">Hace 1 min</p>
+</div>
+</div>
+<!-- Item 2: Read -->
+<div class="p-4 border-b border-white/5 hover:bg-white/5 transition-colors flex gap-3 cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary" data-icon="emoji_events">emoji_events</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Partido Finalizado</p>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm mt-1">Victoria 3-1 contra Real Madrid.</p>
+<p class="text-xs text-on-surface-variant/60 mt-1">Hace 10 min</p>
+</div>
+</div>
+<!-- Item 3: Read -->
+<div class="p-4 hover:bg-white/5 transition-colors flex gap-3 cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary" data-icon="military_tech">military_tech</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Logro Desbloqueado</p>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm mt-1">Has ganado 5 partidos seguidos.</p>
+<p class="text-xs text-on-surface-variant/60 mt-1">Hoy</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Real-time Toasts Stack -->
+<div class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-72">
+<!-- Toast 1 -->
+<div class="bg-surface-container/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] overflow-hidden animate-slide-in">
+<div class="p-3 flex items-start gap-3 relative">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="sports_soccer">sports_soccer</span>
+</div>
+<div class="flex-1">
+<p class="text-label-md font-label-md text-on-surface">¡GOOOL!</p>
+<p class="text-body-md font-body-md text-on-surface-variant text-xs mt-0.5">Tu equipo ha marcado el 2-1.</p>
+</div>
+<button class="text-on-surface-variant/50 hover:text-on-surface"><span class="material-symbols-outlined text-sm" data-icon="close">close</span></button>
+</div>
+<div class="h-1 bg-surface-container-highest w-full">
+<div class="h-full bg-primary w-2/3 animate-progress"></div>
+</div>
+</div>
+<!-- Toast 2 -->
+<div class="bg-surface-container/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] overflow-hidden animate-slide-in" style="animation-delay: 200ms;">
+<div class="p-3 flex items-start gap-3 relative">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="info">info</span>
+</div>
+<div class="flex-1">
+<p class="text-label-md font-label-md text-on-surface">Próximo Rival</p>
+<p class="text-body-md font-body-md text-on-surface-variant text-xs mt-0.5">Te enfrentas a FC Barcelona en 5 mins.</p>
+</div>
+<button class="text-on-surface-variant/50 hover:text-on-surface"><span class="material-symbols-outlined text-sm" data-icon="close">close</span></button>
+</div>
+<div class="h-1 bg-surface-container-highest w-full">
+<div class="h-full bg-secondary w-full"></div>
+</div>
+</div>
+</div>
+<!-- SideNavBar (Web) -->
+<nav class="hidden md:flex flex-col h-full py-lg bg-surface-container-high dark:bg-surface-container-high border-r border-white/10 shadow-2xl fixed left-0 w-64 z-40 top-16 pt-8">
+<div class="px-6 mb-8">
+<h2 class="text-headline-lg font-headline-lg font-black text-tertiary">PRO SCOUT</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">Nivel 42 - Élite</p>
+</div>
+<div class="flex flex-col gap-2">
+<a class="text-on-surface-variant hover:bg-surface-variant px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-label-md font-label-md">Mi Perfil</span>
+</a>
+<a class="bg-primary-container text-on-primary-container font-bold rounded-r-full px-6 py-3 flex items-center gap-3 active scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-label-md font-label-md">Historial</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="emoji_events">emoji_events</span>
+<span class="text-label-md font-label-md">Logros</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="text-label-md font-label-md">Clasificación</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-label-md font-label-md">Soporte</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas (Copa Élite Bracket Background) -->
+<main class="flex-1 mt-16 md:ml-64 relative min-h-screen">
+<!-- Pitch Background Simulation -->
+<div class="absolute inset-0 bg-gradient-to-br from-[#081C15] to-[#1B4332] z-0 flex items-center justify-center opacity-80">
+<!-- Simulated Bracket Structure -->
+<div class="w-full max-w-5xl p-8 flex justify-between items-center opacity-40">
+<div class="flex flex-col gap-12">
+<div class="w-48 h-20 bg-surface/50 border border-white/20 rounded-lg"></div>
+<div class="w-48 h-20 bg-surface/50 border border-white/20 rounded-lg"></div>
+</div>
+<div class="flex flex-col gap-12">
+<div class="w-56 h-24 bg-surface/70 border border-tertiary/50 rounded-lg shadow-[0_0_15px_rgba(233,195,73,0.2)]"></div>
+</div>
+<div class="flex flex-col gap-12">
+<div class="w-48 h-20 bg-surface/50 border border-white/20 rounded-lg"></div>
+<div class="w-48 h-20 bg-surface/50 border border-white/20 rounded-lg"></div>
+</div>
+</div>
+</div>
+<div class="relative z-10 p-gutter md:p-margin">
+<h2 class="text-display-lg font-display-lg text-on-surface mb-2">Copa Élite</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mb-8">Cuartos de Final</p>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest/90 dark:bg-surface-container-lowest/90 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_20px_rgba(0,0,0,0.5)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="strategy">strategy</span>
+<span class="text-label-md font-label-md text-[10px]">Plantilla</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="text-label-md font-label-md text-[10px]">Mercado</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary bg-primary-container/30 rounded-xl px-4 py-1 scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="sports_soccer">sports_soccer</span>
+<span class="text-label-md font-label-md text-[10px]">Jugar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+<span class="text-label-md font-label-md text-[10px]">Club</span>
+</a>
+</nav>
+<style>
+        @keyframes slide-in {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .animate-progress {
+            animation: progress 5s linear forwards;
+        }
+    </style>
+</body></html>

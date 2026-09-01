@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Match, Team, Tournament } from '../../../../packages/shared/types/models';
+import type { Match, Team, Tournament, MatchSummary } from '../../../../packages/shared/types/models';
 
 export interface CreateTournamentResponse extends Tournament {}
 
@@ -20,6 +20,7 @@ export interface HistoryMatchItem {
   awayScore: number;
   status: string;
   winnerId?: string;
+  summary?: MatchSummary;
 }
 
 export interface HistoryTournamentItem {

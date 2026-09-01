@@ -35,6 +35,24 @@ export interface Match {
   awayScore: number;
   status: MatchStatus;
   winnerId?: string; // Para torneos, necesitamos saber quién avanza
+  summary?: MatchSummary; // Resumen por jugador (calificaciones/goles) del partido
+}
+
+// Estadísticas individuales de un jugador en un partido concreto (resumen).
+export interface PlayerMatchStats {
+  playerId: string;
+  name: string;
+  position: Position;
+  rating: number; // OVR base del jugador (1-99)
+  matchRating: number; // Calificación del partido (escala 1-10)
+  goals: number;
+  assists: number;
+}
+
+// Resumen por jugador de un partido: calificaciones y goles/asistencias por equipo.
+export interface MatchSummary {
+  home: PlayerMatchStats[];
+  away: PlayerMatchStats[];
 }
 
 export type RoundName = 'OCTAVOS' | 'CUARTOS' | 'SEMIS' | 'FINAL';
@@ -46,4 +64,27 @@ export interface Tournament {
   rounds: Record<RoundName, Match[]>;
   currentRound: RoundName;
   status: 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+}
+
+// --- Notificaciones en tiempo real (WebSocket) ---
+export type NotificationType =
+  | 'goal'
+  | 'match_end'
+  | 'round_advance'
+  | 'user_turn'
+  | 'change_requested'
+  | 'tournament_start'
+  | 'tournament_end'
+  | 'achievement_unlocked'
+  | 'system_maintenance';
+
+export type Severity = 'info' | 'success' | 'warning' | 'error';
+
+export interface NotificationPayload {
+  type: NotificationType;
+  severity: Severity;
+  title: string;
+  body: string;
+  timestamp: number;
+  metadata?: Record<string, any>;
 }

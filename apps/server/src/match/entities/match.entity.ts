@@ -35,4 +35,8 @@ export class MatchEntity {
 
   @Column({ nullable: true })
   winnerId?: string;
+
+  // Resumen por jugador (calificaciones, goles, asistencias) serializado en JSON.
+  @Column({ type: 'text', nullable: true })
+  summaryJson?: string | null;
 }

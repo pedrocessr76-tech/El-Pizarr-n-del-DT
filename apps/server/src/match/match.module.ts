@@ -7,9 +7,10 @@ import { MatchService } from './match.service';
 import { MatchController } from './match.controller';
 import { MatchEntity } from './entities/match.entity';
 import { TournamentEntity } from './entities/tournament.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity])],
+  imports: [TypeOrmModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity]), NotificationsModule],
 
   controllers: [MatchController],
   providers: [MatchService],

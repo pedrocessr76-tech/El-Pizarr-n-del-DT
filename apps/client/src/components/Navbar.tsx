@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { NotificationBell } from './NotificationBell';
 
 export type ActiveTab = 'home' | 'builder' | 'catalog' | 'bracket' | 'history';
 
@@ -62,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLo
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <div className="flex items-center gap-2 px-4 py-2 bg-[#1b4332] border border-[#a5d0b9]/30 rounded-lg text-sm font-montserrat font-semibold text-[#a5d0b9]">
                 <span className="material-symbols-outlined text-lg">account_circle</span>
                 <span className="max-w-[120px] truncate">{user.username}</span>

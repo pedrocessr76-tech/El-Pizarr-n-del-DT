@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { LoginModal } from './components/LoginModal';
+import { NotificationToast } from './components/NotificationToast';
+import { useNotificationSocket } from './services/notificationService';
+import { useNotificationStore } from './store/useNotificationStore';
 import { HomePage } from './pages/HomePage';
 import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { CatalogHistoryPage } from './pages/CatalogHistoryPage';
@@ -10,6 +13,10 @@ import { getGuestSessionId } from './utils/session';
 function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+
+  // Suscripción única a notificaciones WebSocket para toda la app
+  useNotificationSocket();
+  const toasts = useNotificationStore((s) => s.toasts);
 
   // Al cerrar la página/sesión de invitado, limpiar datos en backend via beacon
   useEffect(() => {
@@ -47,19 +54,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] font-sans antialiased selection:bg-[#a5d0b9] selection:text-[#0e3727]">
-      {/* Sticky Glass Navbar */}
+      {/* Sticky Glass Navbar*/}
       <Navbar
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
         onOpenLogin={() => setIsLoginOpen(true)}
       />
 
-      {/* Main Page Content */}
+      {/* Main Page Content*/}
       <main className="w-full">
         {renderActivePage()}
       </main>
 
-      {/* Login Modal Overlay */}
+      {/* Toasts en tiempo real (efímeros, apilados */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="fixed top-20 right-4 z-[70] flex flex-col-reverse gap-3 pointer-events-none"
+      >
+        {toasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto">
+            <NotificationToast item={toast} />
+          </div>
+        ))}
+      </div>
+
+      {/* Login Modal Overlay*/}
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </div>
   );

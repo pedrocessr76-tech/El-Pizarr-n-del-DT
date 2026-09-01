@@ -2,54 +2,28 @@
 
 ## Backend
 
-### Player Catalog
-- GET /players con listado y filtros por nombre/posición
-
-### Draft Mode
-- Validar tamaño máximo de equipo antes de seleccionar (18 jugadores)
-
-### Team Building
-- Validación 18 jugadores (11 titulares + 7 suplentes)
-- Gestión de suplentes (isStarter=false)
-
-### Match Generation
-- Lógica de progresión de bracket (OCTAVOS → CUARTOS → SEMIS → FINAL)
-- Escalado de dificultad según media de rating del oponente
-- Desempate (penales) para partidos empatados
-
-### Game State
-- Endpoint resumen de partido con calificaciones
-- Retroalimentación de preparación del equipo
-- Historial de partidos por usuario
+### Calidad / Infraestructura
+- Tests automatizados para el núcleo de simulación, los flujos de draft y de auth
+- Migraciones versionadas en lugar de `synchronize: true` (riesgo en producción)
 
 ## Frontend
 
-### Infraestructura
-- Store global con Zustand (auth, draft, match state)
-- API client con fetch y manejo de JWT
-- Tema visual: verdes, blancos, grises, estilo futbolístico simple
+### Overlay de partido en vivo — Cancha con jugadores en movimiento ✅ implementado
+- En el **overlay del partido en vivo** se renderiza la **cancha con 22 puntos** (11 por equipo, 1 por jugador de la alineación) que se mueven minuto a minuto.
+  - Posición base por **zona FIFA** del jugador (GK/DEF/MID/FWD) con distribución escalonada por filas (arquero, defensa, medios y ataque), orientada según la cancha vertical del overlay (su equipo defiende un arco, el rival el otro).
+  - **Movimiento continuo** (deriva suave sinusoidal) sincronizado con el reloj de la simulación (avanza según x30/x60/x90) y con transición CSS.
+  - **Empuje por posesión**: el juego completo (ambos equipos) se desplaza hacia el arco rival cuando un equipo domina la posesión.
+  - **Resaltado (pulse)** del equipo que marca en el minuto en curso, y refleja las sustituciones del botón "Cambios" (los puntos usan la alineación mutable).
+  - Renderizado con el estilo visual de la página (dots con iniciales, colores tertiary/neutral) dentro del pitch existente.
 
-### Screens
-- **Home**: logo del juego + 3 botones (JUGAR grande y destacado, los otros dos izquierda/derecha) + icono login top-right
-- **Login overlay**: cartel "Iniciar Sesión" visible, campos simples, se abre sobre la Home
-- **Catálogo de cartas**: grilla de todos los jugadores con filtro por posición y búsqueda
-- **Historial de partidas**: lista de torneos anteriores del usuario
-- **Elección de Formación**: selección visual entre formaciones disponibles
-- **Armado de Equipo**: cancha vertical + panel stats + banca + overlay selección de jugadores
-- **Contenedor dificultad**: vertical con stats equipo arriba + botón JUGAR + selector dificultad abajo (Normal por defecto). No es pantalla separada.
-- **Partido en vivo**: contenedor con simulación minuto a minuto a velocidad x30/x60/x90, marcador dinámico, notificación de goles
-- **Torneo Completo**: bracket moderno y profesional con rondas y ganadores resaltados
+### Overlay de partido en vivo — Botón "Cambios" (sustituciones en tiempo real) ✅ implementado
+- Botón **"Cambios"** en el header del overlay que abre un panel con los **11 titulares** y los **7 suplentes** del equipo del usuario para **intercambiarlos** durante el partido.
+- Restricciones implementadas: máximo **5 cambios** por partido (regla de producto), solo habilitado mientras el partido está en juego (no al terminar), y el reemplazado pasa a suplente mientras el ingresado pasa a titular.
+- El cambio se registra en el feed de eventos y **afecta la simulación posterior**: el rating del nuevo once recalcula posesión/tiros del resto del partido.
+- Pendiente (opcional): persistir el cambio en el modelo de datos del backend y que influya en la simulación del servidor.
 
-### Componentes
-- **Carta de jugador**: estilo FIFA Ultimate Team — fondo degradado con patrón, silueta genérica, bandera, posición, nombre, rating grande, 6 stats con barras
-- **Niveles de carta**: Bronce (<60), Plata (60-80), Oro (>80) con colores distintivos
-- **Overlay de selección**: contenedor con 5 cartas horizontales para elegir jugador/capitán
-- **Cancha vertical**: slots por posición según formación, sin scroll
-- **Panel de stats**: rating medio del equipo, química
-- **Banca**: 7 slots de suplentes
+## Producto (fuera de alcance actual)
 
-### Navegación
-- Sin menú ni barra de navegación
-- Solo botones de acción en el flujo
-- Botón "Atrás" explícito para retroceder un paso
-- Login no obligatorio, icono en top-right
+- Modo de juego más avanzado con puntuaciones y estadísticas por jugador (más allá del bracket)
+- Sistema de ranking/leaderboard global entre usuarios
+- Persistencia y configuración por entorno para el catálogo sincronizado desde disco
