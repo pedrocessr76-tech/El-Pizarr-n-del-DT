@@ -141,17 +141,17 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
 }
 @utility pitch-center-line {
   position: absolute;
-  top: 50%;
-  left: 16px;
-  right: 16px;
-  height: 1px;
+  left: 50%;
+  top: 16px;
+  bottom: 16px;
+  width: 1px;
   background: rgba(255, 255, 255, 0.3);
 }
 @utility pitch-penalty-area-top {
@@ -240,6 +240,20 @@
   }
   &::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+  }
+}
+@keyframes goal-banner-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 @keyframes pulse-ring {

@@ -9,6 +9,7 @@ interface MatchEvent {
   text: string;
   team: 'home' | 'away';
   isGoal: boolean;
+  playerName?: string;
 }
 
 // Regla de producto: máximo de sustituciones por partido durante el en vivo.
@@ -55,6 +56,25 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Pseudo-aleatorio determinista: mismas entradas -> mismo valor (0..1).
+// Permite que las estadísticas evolucionen con el minuto de forma estable.
+function seededRand(seed: number): number {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Elige un goleador con pesos realistas: delanteros 3, mediocampistas 2, defensores 1.
+function pickScorer(players: Player[]): string {
+  const pool: Player[] = [];
+  players.forEach((p) => {
+    const zone = (p.position?.[0] ?? 'M') as string;
+    const weight = zone === 'F' ? 3 : zone === 'M' ? 2 : zone === 'D' ? 1 : 0;
+    for (let i = 0; i < weight; i++) pool.push(p);
+  });
+  if (pool.length === 0) return players[0]?.name ?? '';
+  return pick(pool).name;
+}
+
 function avgRating(team?: Team): number {
   if (!team || !team.starters || team.starters.length === 0) return 50;
   const ratings = team.starters.filter((p) => typeof p.rating === 'number').map((p) => p.rating as number);
@@ -80,39 +100,56 @@ function spreadXs(count: number, min = 18, max = 82): number[] {
 }
 
 // Posición base (en %) de los 11 titulares según su zona FIFA.
-// `defendsTop`: el equipo defiende el arco superior (ataca hacia abajo).
-function teamBaseDots(players: Player[], defendsTop: boolean): DotPos[] {
+// Cancha HORIZONTAL: x = avance a lo largo del campo (arco propio -> rival),
+// y = distribución transversal. `defendsLeft`: el equipo defiende el arco izquierdo.
+function teamBaseDots(players: Player[], defendsLeft: boolean): DotPos[] {
   const groups: Record<string, number[]> = { G: [], D: [], M: [], F: [] };
-  const zoneFromTop: Record<string, number> = { G: 9, D: 30, M: 50, F: 71 }; // avance desde el arco propio (%)
+  const zoneFromGoal: Record<string, number> = { G: 9, D: 30, M: 50, F: 71 }; // avance desde el arco propio (%)
   players.forEach((p, i) => {
     const key = (p.position?.[0] ?? 'M') as string; // GK|DEF|MID|FWD -> G|D|M|F
     (groups[key] ?? groups.M).push(i);
   });
   const dots: DotPos[] = new Array(players.length);
-  (Object.keys(zoneFromTop) as string[]).forEach((key) => {
+  (Object.keys(zoneFromGoal) as string[]).forEach((key) => {
     const idxs = groups[key];
     if (!idxs?.length) return;
-    const xs = spreadXs(idxs.length);
-    const d = zoneFromTop[key] / 100;
+    const ys = spreadXs(idxs.length, 14, 86);
+    const d = zoneFromGoal[key] / 100;
     idxs.forEach((playerIdx, j) => {
-      // y es el avance desde el arco hacia el arco rival.
-      const y = defendsTop ? d * 100 : 100 - d * 100;
+      // x es el avance desde el arco propio hacia el arco rival.
+      const x = defendsLeft ? d * 100 : 100 - d * 100;
       // Deformación escalonada para que no queden todos en la misma línea.
-      const stagger = ((playerIdx % 3) - 1) * 7;
-      dots[playerIdx] = { x: xs[j] + stagger, y: y + (key === 'M' ? stagger * 0.6 : 0) };
+      const stagger = ((playerIdx % 3) - 1) * 6;
+      dots[playerIdx] = { x: x + (key === 'M' ? stagger * 0.6 : 0), y: ys[j] + stagger };
     });
   });
   return dots;
 }
 
 // Movimiento minuto a minuto (sincronizado con la velocidad del reloj).
-// `fieldPushY` empuja el juego hacia el arco rival según la posesión.
-function dotOffset(seed: number, minute: number, fieldPushY: number): DotPos {
+// Pequeña oscilación orgánica individual de cada jugador.
+function dotOffset(seed: number, minute: number): DotPos {
   const t = minute;
   return {
-    x: Math.sin(t * 0.14 + seed * 1.9) * 2,
-    y: Math.cos(t * 0.11 + seed * 2.3) * 1.4 + fieldPushY + Math.sin(t * 0.05 + seed * 3.1) * 0.8,
+    x: Math.cos(t * 0.11 + seed * 2.3) * 1.2 + Math.sin(t * 0.05 + seed * 3.1) * 0.8,
+    y: Math.sin(t * 0.14 + seed * 1.9) * 1.6,
   };
+}
+
+// Factor con el que cada zona sigue el desplazamiento del juego:
+// los arqueros casi no se mueven del arco, la defensa acompaña poco,
+// el mediocampo y el ataque se proyectan hacia donde está la pelota.
+const ROLE_FOLLOW: Record<string, number> = { G: 0.06, D: 0.3, M: 0.5, F: 0.42 };
+
+// Posición lógica de un jugador: mantiene su estructura base pero el bloque
+// entero se desplaza hacia la zona donde está la pelota (eje largo del campo),
+// y se estira levemente en el ancho según la altura del balón.
+function playerPos(base: DotPos, role: string, ballX: number, ballY: number, seed: number, minute: number): DotPos {
+  const follow = ROLE_FOLLOW[role] ?? 0.35;
+  const off = dotOffset(seed, minute);
+  const x = Math.min(96, Math.max(4, base.x + (ballX - 50) * follow + off.x));
+  const y = Math.min(94, Math.max(6, base.y + (ballY - 50) * follow * 0.35 + off.y));
+  return { x, y };
 }
 
 // Punto/jugador sobre la cancha.
@@ -172,6 +209,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const [speed, setSpeed] = useState<30 | 60 | 90>(30);
   const [finished, setFinished] = useState(false);
   const [events, setEvents] = useState<MatchEvent[]>([]);
+  const [goalBanner, setGoalBanner] = useState<{ playerName: string; teamName: string; minute: number; team: 'home' | 'away' } | null>(null);
   const commentsRef = useRef<HTMLDivElement | null>(null);
   const eventIdRef = useRef(0);
 
@@ -193,14 +231,23 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const isHomeUser = match.homeTeam?.id === teamId;
   const userWon = match.winnerId === teamId;
 
-  // Distribuir los goles del marcador final a lo largo de los 90 minutos.
-  const { homeGoalMinutes, awayGoalMinutes } = useMemo(() => {
+  // Distribuir los goles del marcador final a lo largo de los 90 minutos,
+  // asignando un goleador a cada gol (ponderado por posición).
+  const { homeGoalMinutes, awayGoalMinutes, homeScorers, awayScorers } = useMemo(() => {
     const allMinutes = shuffleArray(Array.from({ length: 90 }, (_, i) => i + 1));
     const homeCount = Math.max(0, Math.min(90, match.homeScore || 0));
     const awayCount = Math.max(0, Math.min(90, match.awayScore || 0));
+    const homeStarters = match.homeTeam?.starters || [];
+    const awayStarters = match.awayTeam?.starters || [];
+    const homeScorers: Record<number, string> = {};
+    const awayScorers: Record<number, string> = {};
+    allMinutes.slice(0, homeCount).forEach((m) => (homeScorers[m] = pickScorer(homeStarters)));
+    allMinutes.slice(homeCount, homeCount + awayCount).forEach((m) => (awayScorers[m] = pickScorer(awayStarters)));
     return {
       homeGoalMinutes: allMinutes.slice(0, homeCount).sort((a, b) => a - b),
       awayGoalMinutes: allMinutes.slice(homeCount, homeCount + awayCount).sort((a, b) => a - b),
+      homeScorers,
+      awayScorers,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.id]);
@@ -220,11 +267,13 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     if (minute === 0) return;
     const newEvents: MatchEvent[] = [];
     if (homeGoalMinutes.includes(minute)) {
-      newEvents.push({ id: eventIdRef.current++, minute, text: `¡GOL DE ${homeName.toUpperCase()}! ${pick(GOAL_TEXTS)}`, team: 'home', isGoal: true });
+      const scorer = homeScorers[minute] || homeName;
+      newEvents.push({ id: eventIdRef.current++, minute, text: `¡GOL DE ${homeName.toUpperCase()}! ${scorer} ${pick(GOAL_TEXTS)}`, team: 'home', isGoal: true, playerName: scorer });
       setHomeScore((s) => s + 1);
     }
     if (awayGoalMinutes.includes(minute)) {
-      newEvents.push({ id: eventIdRef.current++, minute, text: `¡GOL DE ${awayName.toUpperCase()}! ${pick(GOAL_TEXTS)}`, team: 'away', isGoal: true });
+      const scorer = awayScorers[minute] || awayName;
+      newEvents.push({ id: eventIdRef.current++, minute, text: `¡GOL DE ${awayName.toUpperCase()}! ${scorer} ${pick(GOAL_TEXTS)}`, team: 'away', isGoal: true, playerName: scorer });
       setAwayScore((s) => s + 1);
     }
     if (newEvents.length === 0 && Math.random() < 0.18) {
@@ -238,8 +287,19 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     }
     if (newEvents.length > 0) {
       setEvents((prev) => [...prev, ...newEvents]);
+      const goal = newEvents.find((e) => e.isGoal);
+      if (goal) {
+        setGoalBanner({ playerName: goal.playerName || '', teamName: goal.team === 'home' ? homeName : awayName, minute, team: goal.team });
+      }
     }
-  }, [minute, homeGoalMinutes, awayGoalMinutes, homeName, awayName]);
+  }, [minute, homeGoalMinutes, awayGoalMinutes, homeScorers, awayScorers, homeName, awayName]);
+
+  // Ocultar el cartel de gol unos segundos después de mostrarse.
+  useEffect(() => {
+    if (!goalBanner) return;
+    const t = setTimeout(() => setGoalBanner(null), 4500);
+    return () => clearTimeout(t);
+  }, [goalBanner]);
 
   // Marcar el partido como finalizado al llegar al minuto 90.
   useEffect(() => {
@@ -258,11 +318,25 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
   const homeRating = avgRating({ starters: isHomeUser ? userStarters : match.homeTeam?.starters || [] } as Team);
   const awayRating = avgRating({ starters: isHomeUser ? match.awayTeam?.starters || [] : userStarters } as Team);
-  const homePossession = Math.min(68, Math.max(32, Math.round(50 + (homeRating - awayRating) * 1.5)));
-  const homeShots = Math.max(1, Math.round((match.homeScore || 0) * 2.5 + (homePossession - 50) / 20));
-  const awayShots = Math.max(1, Math.round((match.awayScore || 0) * 2.5 + (50 - homePossession) / 20));
-  const homeOnTarget = Math.max(0, Math.min(homeShots, Math.round((match.homeScore || 0) * 1.5 + homeShots / 3)));
-  const awayOnTarget = Math.max(0, Math.min(awayShots, Math.round((match.awayScore || 0) * 1.5 + awayShots / 3)));
+
+  // --- Estadísticas en vivo: evolucionan minuto a minuto de forma realista ---
+  // La posesión oscila alrededor de la tendencia (rating) con ruido por minuto;
+  // tiros y tiros a puerta se acumulan con el transcurso del partido.
+  const { homePossession, homeShots, awayShots, homeOnTarget, awayOnTarget } = useMemo(() => {
+    const matchSeed = (match.id || 'm').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const f = minute / 90; // fracción del partido transcurrida
+    // Deriva de la posesión: sin() + ruido determinista por minuto.
+    const drift = Math.sin(minute * 0.35 + matchSeed) * 6 + (seededRand(matchSeed + minute) - 0.5) * 8;
+    const possession = Math.min(68, Math.max(32, Math.round(50 + (homeRating - awayRating) * 1.2 + drift)));
+    // Tiros acumulados: ~14 totales esperados, escalados por posesión y con ruido.
+    const shotsExpected = 14 * f;
+    const homeShots = minute === 0 ? 0 : Math.max(0, Math.round(shotsExpected * (possession / 50) * (0.7 + seededRand(matchSeed + 7) * 0.6)));
+    const awayShots = minute === 0 ? 0 : Math.max(0, Math.round(shotsExpected * ((100 - possession) / 50) * (0.7 + seededRand(matchSeed + 13) * 0.6)));
+    // A puerta: proporción de tiros + los goles reales convertidos.
+    const homeOnTarget = Math.min(homeShots, Math.round(homeShots * 0.42) + homeScore);
+    const awayOnTarget = Math.min(awayShots, Math.round(awayShots * 0.42) + awayScore);
+    return { homePossession: possession, homeShots, awayShots, homeOnTarget, awayOnTarget };
+  }, [minute, homeRating, awayRating, homeScore, awayScore, match.id]);
 
   const championLabel = isFinal && userWon ? '¡CAMPEÓN!' : '¡Victoria!';
   const winnerName = isHomeUser ? homeName : awayName;
@@ -295,12 +369,25 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
   // --- Cancha: 22 puntos (11 por equipo) con movimiento minuto a minuto ---
   const oppStarters = isHomeUser ? match.awayTeam?.starters || [] : match.homeTeam?.starters || [];
-  const userDefendsTop = !isHomeUser;
-  const oppDefendsTop = isHomeUser;
-  const userDots = teamBaseDots(userStarters, userDefendsTop);
-  const oppDots = teamBaseDots(oppStarters, oppDefendsTop);
-  // El equipo con más posesión ataca: mueve todo el juego hacia su arco rival.
-  const fieldPushY = (homePossession - 50) * 0.12;
+  const userDefendsLeft = !isHomeUser;
+  const oppDefendsLeft = isHomeUser;
+  const userDots = teamBaseDots(userStarters, userDefendsLeft);
+  const oppDots = teamBaseDots(oppStarters, oppDefendsLeft);
+  // --- Pelota en juego: recorre la cancha con lógica de posesión ---
+  // La pelota se ubica en la zona donde domina el juego: deriva hacia el arco
+  // del equipo con más posesión, con momentum ofensivo que va y viene.
+  const matchSeed = (match.id || 'm').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const ballPos = useMemo(() => {
+    // Momentum: la pelota viaja por carriles y cambia de sector con el tiempo.
+    const swingX = Math.sin(minute * 0.45 + matchSeed * 0.7) * 20 + Math.sin(minute * 0.13 + matchSeed * 1.3) * 12;
+    const possessionTilt = (homePossession - 50) * 0.9;
+    const x = Math.min(92, Math.max(8, 50 + possessionTilt + swingX));
+    // Carril transversal: la pelota cambia de banda y se centra cerca de las áreas.
+    const nearArea = Math.abs(x - 50) > 28 ? 0.55 : 1; // más central cuando ataca un área
+    const swingY = Math.sin(minute * 0.8 + matchSeed * 2.1) * 24 + (seededRand(matchSeed * 3 + minute) - 0.5) * 14;
+    const y = Math.min(88, Math.max(12, 50 + swingY * nearArea));
+    return { x, y };
+  }, [minute, homePossession, matchSeed]);
   const userScoredNow = (isHomeUser ? homeGoalMinutes.includes(minute) : awayGoalMinutes.includes(minute)) && minute > 0;
   const oppScoredNow = (isHomeUser ? awayGoalMinutes.includes(minute) : homeGoalMinutes.includes(minute)) && minute > 0;
 
@@ -470,29 +557,48 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
         {/* Cuerpo */}
         <div className="flex-1 flex overflow-hidden min-h-0">
           <div className="flex-1 p-6 flex flex-col gap-4 border-r border-white/10 min-w-0">
-                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[220px] transform-gpu hover:scale-[1.01]" style={{ transformStyle: 'preserve-3d' }}>
-                            <div className="absolute inset-0 pitch-lines"></div>
+                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[300px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="absolute inset-0 pitch-lines"></div>
               <div className="pitch-center-line"></div>
               <div className="pitch-center-circle"></div>
-              <div className="pitch-penalty-area-top"></div>
-              <div className="pitch-penalty-area-bottom"></div>
+              <div className="penalty-box-left"></div>
+              <div className="penalty-box-right"></div>
 
-              {/* Balón de fútbol blanco */}
+              {/* Pelota en juego: se mueve por la cancha según la posesión */}
               <span
-                className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                style={{ left: '50%', top: '48%', transform: 'translate(-50%, -50%)', zIndex: 5 }}
-              />
+                className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-700 ease-out"
+                style={{ left: `${ballPos.x}%`, top: `${ballPos.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}
+              >
+                <span className="absolute inset-[3px] rounded-full border border-black/30" />
+              </span>
+
+              {/* Cartel de gol: jugador, equipo y minuto */}
+              {goalBanner && (
+                <div
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none"
+                  style={{ animation: 'goal-banner-in 0.45s ease-out both' }}
+                >
+                  <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-tertiary-container via-tertiary to-tertiary-container border border-tertiary shadow-[0_0_35px_rgba(233,195,73,0.7)]">
+                    <span className="material-symbols-outlined text-3xl text-on-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_soccer</span>
+                    <div className="text-center">
+                      <div className="font-display-lg text-2xl font-extrabold text-on-tertiary tracking-widest leading-none">¡GOL!</div>
+                      <div className="font-headline-sm text-sm font-bold text-on-tertiary mt-0.5 truncate max-w-[220px]">{goalBanner.playerName}</div>
+                      <div className="font-label-md text-[10px] uppercase tracking-widest text-on-tertiary/80 mt-0.5">{goalBanner.teamName} · {goalBanner.minute}&apos;</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 22 jugadores en movimiento (11 por equipo) */}
               {userStarters.map((p, i) => {
                 const base = userDots[i] || { x: 50, y: 50 };
-                const off = dotOffset(i, minute, fieldPushY);
+                const pos = playerPos(base, (p.position?.[0] ?? 'M') as string, ballPos.x, ballPos.y, i, minute);
                 return (
                   <PlayerDot
                     key={p.id}
                     player={p}
-                    x={base.x + off.x}
-                    y={base.y + off.y}
+                    x={pos.x}
+                    y={pos.y}
                     isUser
                     pulse={userScoredNow}
                   />
@@ -500,13 +606,13 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
               })}
               {oppStarters.map((p, i) => {
                 const base = oppDots[i] || { x: 50, y: 50 };
-                const off = dotOffset(i, minute, fieldPushY);
+                const pos = playerPos(base, (p.position?.[0] ?? 'M') as string, ballPos.x, ballPos.y, i + 11, minute);
                 return (
                   <PlayerDot
                     key={p.id}
                     player={p}
-                    x={base.x + off.x}
-                    y={base.y + off.y}
+                    x={pos.x}
+                    y={pos.y}
                     isUser={false}
                     pulse={oppScoredNow}
                   />
