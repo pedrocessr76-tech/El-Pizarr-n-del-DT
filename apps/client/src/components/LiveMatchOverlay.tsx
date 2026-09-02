@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Match, Player, Team } from '../../../../packages/shared/types/models';
 import { PlayerMiniCard } from './PlayerCard';
+import { useNotificationStore } from '../store/useNotificationStore';
 const STADIUM_BG = '/images/stadium_bg.jpg';
 
 interface MatchEvent {
@@ -247,6 +248,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const awayName = match.awayTeam?.name || 'Visitante';
   const isHomeUser = match.homeTeam?.id === teamId;
   const userWon = match.winnerId === teamId;
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   // Distribuir los goles del marcador final a lo largo de los 90 minutos,
   // asignando un goleador a cada gol (ponderado por posición).
@@ -325,6 +327,22 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
       return () => clearTimeout(t);
     }
   }, [minute]);
+
+  // Emitir la notificación de resultado cuando la reproducción del partido
+  // termina (no al simular, para que coincida con el desenlace en vivo).
+  useEffect(() => {
+    if (!finished) return;
+    addNotification({
+      type: 'match_end',
+      severity: userWon ? 'success' : 'error',
+      title: userWon ? '¡Victoria!' : 'Derrota',
+      body: `${homeName} ${match.homeScore} - ${match.awayScore} ${awayName}`,
+      timestamp: Date.now(),
+      metadata: { matchId: match.id },
+    });
+    // Se dispara una única vez al llegar el partido a su fin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   // Auto-scroll de comentarios.
   useEffect(() => {

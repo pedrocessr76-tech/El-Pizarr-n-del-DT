@@ -274,24 +274,9 @@ export class MatchService {
       if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
       const result = await this.simulateAndPersistMatch(matchEntity);
 
-      // Notificación de fin de partido para el usuario / sesión propietaria del torneo.
-      if (matchEntity.userId || matchEntity.sessionId) {
-
-        const tournament = matchEntity.tournamentId
-          ? await this.tournamentRepo.findOne({ where: { id: matchEntity.tournamentId } })
-          : null;
-        const userTeamId = tournament?.userTeamId;
-        const userWon = !!userTeamId && result.winnerId === userTeamId;
-        const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
-        const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
-        this.notifications.notify(matchEntity.userId, matchEntity.sessionId, {
-          type: 'match_end',
-          severity: userWon ? 'success' : 'error',
-          title: userWon ? '¡Victoria!' : 'Derrota',
-          body: `${homeTeam?.name ?? 'Local'} ${result.homeScore} - ${result.awayScore} ${awayTeam?.name ?? 'Visitante'}`,
-          metadata: { matchId: matchEntity.id },
-        });
-      }
+      // La notificación de resultado (match_end) se emite desde el frontend
+      // cuando el usuario termina de reproducir el partido en el LiveMatchOverlay,
+      // no al simular, para que no se adelante al desenlace en vivo.
 
       return result;
     }

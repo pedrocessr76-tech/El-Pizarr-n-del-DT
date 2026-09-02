@@ -60,8 +60,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
       role="dialog"
       aria-label="Centro de notificaciones"
     >
-      {/* Backdrop móvil */}
-      <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop: clic fuera para cerrar (también en desktop) */}
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative h-full md:h-auto max-h-[80vh] flex flex-col bg-[#131b2e]/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
         {/* Header */}
@@ -93,7 +93,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             >
               Marcar todo leído
             </button>
-            <button onClick={onClose} className="md:hidden text-white">
+            <button onClick={onClose} className="text-white hover:text-gray-300 transition-colors" aria-label="Cerrar notificaciones">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
