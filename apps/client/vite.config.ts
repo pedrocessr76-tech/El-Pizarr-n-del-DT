@@ -49,6 +49,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/socket.io': {
+        target,
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     },
   },
 });

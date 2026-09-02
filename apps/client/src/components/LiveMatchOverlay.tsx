@@ -132,15 +132,17 @@ function teamBaseDots(players: Player[], defendsLeft: boolean): DotPos[] {
 const ROLE_FOLLOW: Record<string, number> = { G: 0.06, D: 0.3, M: 0.5, F: 0.42 };
 
 // --- Motor de animación en tiempo real (requestAnimationFrame) ---
-// Cada jugador es un agente independiente con velocidad propia: recibe una
-// aceleración aleatoria (trote orgánico), un resorte hacia su posición táctica
-// lógica (base + desplazamiento del bloque hacia la pelota) y amortiguación.
+// Cada jugador es un agente independiente que se mantiene anclado a su
+// posición táctica lógica (base + desplazamiento del bloque hacia la pelota),
+// con un vaivén orgánico sinusoidal suave. El movimiento es una aproximación
+// exponencial hacia el objetivo: siempre estable, sin derivas que amontonen
+// a los jugadores en los bordes de la cancha.
+// `phase` da a cada jugador un vaivén desfasado para que no se muevan al unísono.
 interface AnimPlayer {
   bx: number; by: number; // posición táctica base (%)
   role: string;
   x: number; y: number; // posición actual
-  vx: number; vy: number;
-  speed: number; // factor individual 0.75..1.25
+  phase: number; // desfase del vaivén orgánico (0..2π aprox.)
 }
 interface AnimBall {
   x: number; y: number;
@@ -408,13 +410,11 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
   // (Re)inicializar los agentes cuando cambia la alineación.
   useEffect(() => {
-    const players: AnimPlayer[] = animBases.map((b) => ({
+    const players: AnimPlayer[] = animBases.map((b, i) => ({
       ...b,
       x: b.bx,
       y: b.by,
-      vx: 0,
-      vy: 0,
-      speed: 0.75 + Math.random() * 0.5, // velocidad de flotación individual
+      phase: i * 1.7, // desfase individual para un vaivén orgánico no sincronizado
     }));
     animRef.current = {
       players,
@@ -498,30 +498,23 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
         b.vy *= 1 - 3 * dt;
       }
 
-      // --- Jugadores: agentes independientes (trote orgánico + resorte táctico) ---
+      // --- Jugadores: se mantienen anclados a su posición táctica (base +
+      // desplazamiento del bloque hacia la pelota) con un vaivén orgánico suave.
+      const tSec = now / 1000;
       st.players.forEach((p) => {
         // Posición lógica: base + el bloque se desplaza hacia la zona de la pelota.
         const follow = ROLE_FOLLOW[p.role] ?? 0.35;
         const homeX = clampPos(p.bx + (b.x - 50) * follow, 4, 96);
         const homeY = clampPos(p.by + (b.y - 50) * follow * 0.35, 6, 94);
-        // Aceleración aleatoria: evita movimiento lineal/robótico.
-        p.vx += (Math.random() - 0.5) * 16 * dt;
-        p.vy += (Math.random() - 0.5) * 16 * dt;
-        // Resorte hacia la posición táctica (cada jugador con su velocidad).
-        p.vx += (homeX - p.x) * 2.4 * dt * p.speed;
-        p.vy += (homeY - p.y) * 2.4 * dt * p.speed;
-        // Amortiguación.
-        p.vx *= 1 - 2.0 * dt * p.speed;
-        p.vy *= 1 - 2.0 * dt * p.speed;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        // Límites: rebote suave en banda y fondo.
-        const rbx = softBounce(p.x, 4, 96);
-        p.x = rbx.pos;
-        p.vx = rbx.v;
-        const rby = softBounce(p.y, 6, 94);
-        p.y = rby.pos;
-        p.vy = rby.v;
+        // Vaivén orgánico sinusoidal, desfasado por jugador (trote natural).
+        const wobX = Math.sin(tSec * 0.55 + p.phase) * 1.5;
+        const wobY = Math.cos(tSec * 0.75 + p.phase * 1.7) * 1.5;
+        const targetX = clampPos(homeX + wobX, 4, 96);
+        const targetY = clampPos(homeY + wobY, 6, 94);
+        // Aproximación exponencial hacia el objetivo: estable y sin derivas.
+        const k = Math.min(1, dt * 3.2);
+        p.x += (targetX - p.x) * k;
+        p.y += (targetY - p.y) * k;
       });
       const rbx2 = softBounce(b.x, 3, 97);
       b.x = rbx2.pos;

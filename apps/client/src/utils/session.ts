@@ -9,6 +9,10 @@ export function getOrCreateGuestSessionId(): string {
   if (!id) {
     id = crypto.randomUUID();
     sessionStorage.setItem(GUEST_SESSION_KEY, id);
+    // Avisar a notificaciones para que (re)conecten con la sesión invitado recién creada.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('epdt:guest-session', { detail: id }));
+    }
   }
   return id;
 }
