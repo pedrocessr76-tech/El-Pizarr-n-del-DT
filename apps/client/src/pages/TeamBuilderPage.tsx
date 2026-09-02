@@ -1003,7 +1003,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               ) : filteredPlayers.length > 0 ? (
                 <div className="flex gap-4 w-max px-2 pb-4">
                   {filteredPlayers.map((player) => {
-                    const rating = Math.round(
+                    const rating = player.rating ?? Math.round(
                       (player.stats.pace + player.stats.shooting + player.stats.passing +
                        player.stats.dribbling + player.stats.defending + player.stats.physical) / 6
                     );
