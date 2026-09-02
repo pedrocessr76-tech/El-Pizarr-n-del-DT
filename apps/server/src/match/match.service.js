@@ -108,6 +108,7 @@ var MatchService = function () {
                 name: entity.name,
                 nationality: entity.nationality,
                 position: entity.position,
+                rating: entity.rating,
                 stats: {
                     pace: entity.pace,
                     shooting: entity.shooting,

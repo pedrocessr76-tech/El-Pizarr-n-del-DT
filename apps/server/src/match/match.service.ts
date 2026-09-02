@@ -44,6 +44,7 @@ export class MatchService {
       name: entity.name,
       nationality: entity.nationality,
       position: entity.position as Player['position'],
+      rating: entity.rating,
       stats: {
         pace: entity.pace,
         shooting: entity.shooting,

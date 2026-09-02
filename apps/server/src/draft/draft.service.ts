@@ -33,6 +33,7 @@ export class DraftService {
       name: entity.name,
       nationality: entity.nationality,
       position: entity.position as Player['position'],
+      rating: entity.rating,
       stats: {
         pace: entity.pace,
         shooting: entity.shooting,
@@ -50,45 +51,69 @@ export class DraftService {
       return { players: [] };
     }
 
-    // Si no hay posición específica, devolver 5 jugadores aleatorios
+    // Pool de candidatos: todos los jugadores, o solo los de la posición exacta elegida.
+    let pool: PlayerEntity[];
     if (!position || position === 'ANY') {
-      const randomPlayers = await this.playerRepo
+      pool = await this.playerRepo.find();
+    } else {
+      // Solo jugadores de la posición exacta (ej. DC → solo DC, sin ST/SD).
+      const exactPosition = position.toUpperCase();
+      pool = await this.playerRepo
         .createQueryBuilder('p')
-        .orderBy('RANDOM()')
-        .take(5)
+        .where('UPPER(p.position) = :position', { position: exactPosition })
         .getMany();
-      return { players: randomPlayers.map((p) => this.toPlayer(p)) };
     }
 
-    // Mapeo de posiciones compatibles
-    const compatiblePositions: Record<string, string[]> = {
-      'POR': ['POR'],
-      'LD': ['LD', 'DFC'],
-      'LI': ['LI', 'DFC'],
-      'DFC': ['DFC', 'LD', 'LI'],
-      'MCD': ['MCD', 'MC', 'MCO'],
-      'MC': ['MC', 'MCD', 'MCO'],
-      'MCO': ['MCO', 'MC', 'MCD'],
-      'MD': ['MD', 'ED', 'MC'],
-      'MI': ['MI', 'EI', 'MC'],
-      'ED': ['ED', 'MD', 'EI', 'SD'],
-      'EI': ['EI', 'MI', 'ED', 'SD'],
-      'SD': ['SD', 'DC', 'ST', 'ED', 'EI'],
-      'DC': ['DC', 'ST', 'SD'],
-      'ST': ['ST', 'DC', 'SD'],
-    };
+    if (pool.length === 0) {
+      return { players: [] };
+    }
 
-    const positionsToSearch = compatiblePositions[position.toUpperCase()] || [position.toUpperCase()];
-    
-    // Obtener jugadores de la posición y posiciones compatibles
-    const players = await this.playerRepo
-      .createQueryBuilder('p')
-      .where('UPPER(p.position) IN (:...positions)', { positions: positionsToSearch })
-      .orderBy('RANDOM()')
-      .take(5)
-      .getMany();
+    // 1) Elección del tipo de sobre por probabilidad.
+    //    - 10%  → Bajo: los 5 jugadores menor a 75
+    //    - 70%  → Medio: los 5 jugadores de 75 a 85 (el más habitual)
+    //    - 20%  → Bueno: los 5 jugadores de 88 para arriba
+    const roll = Math.random();
+    let candidates: PlayerEntity[];
+    if (roll < 0.1) {
+      candidates = pool.filter((p) => p.rating < 75);
+    } else if (roll < 0.8) {
+      candidates = pool.filter((p) => p.rating >= 75 && p.rating <= 85);
+    } else {
+      candidates = pool.filter((p) => p.rating >= 88);
+    }
 
-    return { players: players.map((p) => this.toPlayer(p)) };
+    // Barajar los candidatos del tipo elegido y tomar hasta 5 sin repetir.
+    const result: Player[] = [];
+    const picked = new Set<string>();
+    for (const entity of this.shuffle(candidates)) {
+      if (result.length >= 5) break;
+      if (picked.has(entity.id)) continue;
+      picked.add(entity.id);
+      result.push(this.toPlayer(entity));
+    }
+
+    // Relleno defensivo: si la franja no tenía 5 jugadores disponibles,
+    // completar el sobre con el resto del pool para no romper el flujo.
+    if (result.length < 5) {
+      const remaining = this.shuffle(pool.filter((p) => !picked.has(p.id)));
+      for (const entity of remaining) {
+        if (result.length >= 5) break;
+        picked.add(entity.id);
+        result.push(this.toPlayer(entity));
+      }
+    }
+
+    return { players: result };
+  }
+
+  // Baraja un array sin mutar el original (Fisher-Yates).
+  private shuffle<T>(input: T[]): T[] {
+    const arr = [...input];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
 
   async selectPlayer(playerId: string): Promise<{ success: boolean; player: Player | null; message: string }> {
