@@ -9,10 +9,14 @@ import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { CatalogHistoryPage } from './pages/CatalogHistoryPage';
 import { TournamentBracketPage } from './pages/TournamentBracketPage';
 import { getGuestSessionId } from './utils/session';
+import { B2bApp } from './pages/B2bApp';
 
 function App() {
+  const isB2bRoute = window.location.pathname.startsWith('/canchas');
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+
+  if (isB2bRoute && import.meta.env.VITE_B2B_ENABLED !== 'false') return <B2bApp />;
 
   // Suscripción única a notificaciones WebSocket para toda la app
   useNotificationSocket();

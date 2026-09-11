@@ -61,6 +61,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLo
 
         {/* Action Button */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => { window.location.href = '/canchas'; }}
+            className="hidden lg:flex items-center gap-2 px-3 py-2 bg-[#15803d]/20 border border-[#15803d]/40 rounded-lg text-sm font-montserrat font-semibold text-[#86efac] hover:bg-[#15803d]/30 transition-colors"
+            title="Abrir Sistema Canchas"
+          >
+            <span className="material-symbols-outlined text-lg">stadium</span>
+            Sistema Canchas
+          </button>
           {user ? (
             <div className="flex items-center gap-2">
               <NotificationBell />

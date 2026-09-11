@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Sistema Canchas · Panel de Administración</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed": "#2f1500", "on-surface": "#131b2e", "secondary-fixed": "#d5e4f4", "error": "#ba1a1a", "tertiary-fixed-dim": "#ffb77d", "background": "#faf8ff", "tertiary-container": "#a95b00", "secondary-fixed-dim": "#b9c8d7", "primary-fixed-dim": "#79db8d", "surface-container-lowest": "#ffffff", "surface": "#faf8ff", "secondary-container": "#d5e4f4", "on-background": "#131b2e", "on-surface-variant": "#3f493f", "on-primary-fixed-variant": "#005323", "surface-tint": "#006d30", "surface-dim": "#d2d9f4", "surface-bright": "#faf8ff", "outline-variant": "#becabc", "inverse-primary": "#79db8d", "secondary": "#51606d", "tertiary": "#854600", "surface-container-highest": "#dae2fd", "surface-container-low": "#f2f3ff", "outline": "#6f7a6e", "primary": "#00652c", "inverse-on-surface": "#eef0ff", "on-error-container": "#93000a", "on-primary": "#ffffff", "on-secondary-fixed": "#0e1d28", "primary-container": "#15803d", "surface-container": "#eaedff", "on-secondary-fixed-variant": "#3a4855", "error-container": "#ffdad6", "primary-fixed": "#95f8a7", "tertiary-fixed": "#ffdcc3", "on-secondary": "#ffffff", "on-secondary-container": "#576673", "surface-variant": "#dae2fd", "on-primary-fixed": "#00210a", "surface-container-high": "#e2e7ff", "on-tertiary-fixed-variant": "#6e3900", "on-error": "#ffffff", "on-tertiary-container": "#fff1e9", "inverse-surface": "#283044", "on-primary-container": "#d3ffd5", "on-tertiary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "gutter": "1rem", "margin-mobile": "0.75rem", "margin": "1.25rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "space-lg": "1.25rem", "space-md": "0.75rem", "gutter-compact": "0.5rem" }, "fontFamily": { "body-lg": ["Inter"], "headline-xl": ["Inter"], "body-md": ["Inter"], "label-lg": ["Inter"], "label-sm": ["Inter"], "data-metric": ["Inter"], "headline-sm": ["Inter"], "label-md": ["Inter"], "data-tabular": ["Inter"], "body-sm": ["Inter"], "headline-lg": ["Inter"], "headline-md": ["Inter"] }, "fontSize": { "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "data-metric": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "data-tabular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } }</script></head><body class="bg-[#f8fafc] font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-[#0f1e29] text-white z-50 flex flex-col justify-between select-none shadow-[2px_0_12px_rgba(0,0,0,0.18)]"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-5 flex items-center gap-3 bg-[#0a151d] border-b border-[#1b2d3b]"><img alt="Sistema Canchas Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XqwPSL84_mpVSVW2QZROdSPCxgsHP9Ao4_p52OQGsIIKcFNDXjAx1vC9WFjLAvhL7uMhtpFLFkVlpGEojesxVA5URnVBWvKwNweRW6wPPKG5QCJrx4qP40U3QlESwnr2JlcpGeKourOKkVvC_CFXFIE9c47exlqA9PN7QCkHILyKxD0xQ1btI4Fm1VhX6EkBVgu2aQhzh7oBnGam21qlKKzRe85QBf4b4uQ6YHuEIuFIdVmEigX3QPCOG-"/><div class="flex flex-col"><span class="font-headline-sm text-white font-bold tracking-tight">Sistema Canchas</span><span class="text-[10px] uppercase font-bold tracking-wider text-[#79db8d]">B2B Facility Suite</span></div></div><div class="p-4 border-b border-[#1b2d3b] bg-[#132330]"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Complejo Activo</span><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#15803d]/30 text-[#79db8d] border border-[#15803d]/50">SEDE ACTIVA</span></div><div class="flex items-center justify-between p-2 rounded bg-[#0a151d] border border-[#233847] hover:border-slate-500 cursor-pointer transition-colors"><div class="flex items-center gap-2 overflow-hidden"><span class="material-symbols-outlined text-[#79db8d] text-lg">stadium</span><div class="flex flex-col truncate"><span class="font-label-md text-white font-semibold truncate">Complejo La Cancha</span><span class="text-[11px] text-slate-400 truncate">Sede Central · Palermo</span></div></div><span class="material-symbols-outlined text-slate-400 text-sm">unfold_more</span></div><div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[#1e3241] text-[10px] text-slate-400 font-mono"><span>ID: org_cancha_01</span><span class="text-emerald-400 font-sans font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>Online</span></div></div><div class="px-4 py-3 border-b border-[#1b2d3b]"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vista de Rol B2B</span><span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">PROD</span></div><div class="grid grid-cols-4 gap-1 p-1 bg-[#0a151d] rounded-lg border border-[#233847]"><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Prop</button><button class="px-1 py-1 text-[11px] rounded font-semibold bg-[#15803d] text-white shadow-sm text-center" type="button">Admin</button><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Oper</button><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Clie</button></div></div><div class="px-4 py-3"><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Módulos de Gestión</div><nav class="flex flex-col gap-1" data-active-classes="bg-[#15803d] text-white font-semibold shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="dashboard" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">dashboard</span><span class="font-medium">Dashboard</span></div><span class="text-[11px] px-1.5 py-0.5 rounded bg-[#1c3547] text-slate-300 font-mono">Hoy</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="complejos-y-canchas" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">sports_soccer</span><span class="font-medium">Complejos y Canchas</span></div><span class="text-[11px] px-1.5 py-0.5 rounded bg-[#1c3547] text-slate-300">F5 · F7 · F8</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="disponibilidad" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">calendar_month</span><span class="font-medium">Disponibilidad</span></div><span class="w-2 h-2 rounded-full bg-emerald-400"></span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-all group bg-[#15803d] text-white font-semibold shadow-sm" data-path="reservas" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">receipt_long</span><span class="font-medium">Reservas</span></div><span class="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500 text-[#0f1e29] font-bold">12</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="horarios-y-configuracion" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">tune</span><span class="font-medium">Horarios y Configuración</span></div></a></nav></div></div><div class="flex flex-col p-3 border-t border-[#1b2d3b] bg-[#0c1821] gap-2.5"><a class="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-[#173024] to-[#0f281b] border border-[#215136] hover:border-[#34d399] transition-all group" href="#"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded bg-[#15803d]/30 border border-[#15803d] flex items-center justify-center text-emerald-400"><span class="material-symbols-outlined text-base">tactic</span></div><div class="flex flex-col"><span class="text-xs font-semibold text-white group-hover:text-emerald-300">El Pizarrón del DT</span><span class="text-[10px] text-slate-400">Estrategias & Táctica</span></div></div><span class="material-symbols-outlined text-xs text-slate-400 group-hover:text-white">open_in_new</span></a><div class="flex items-center justify-between p-2 rounded-lg bg-[#132330] border border-[#1e3241]"><div class="flex items-center gap-2.5 overflow-hidden"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col truncate"><span class="font-label-md text-white font-medium truncate">Martín Palermo</span><span class="text-[11px] text-slate-400 truncate">admin@complejolacancha.com.ar</span></div></div><button class="p-1.5 text-slate-400 hover:text-red-400 hover:bg-[#1f374a] rounded transition-colors" title="Cerrar sesión" type="button"><span class="material-symbols-outlined text-base">logout</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-white border-b border-slate-200 z-40 px-6 flex items-center justify-between shadow-[0_1px_4px_rgba(0,0,0,0.03)]"><div class="flex items-center gap-4"><div class="flex items-center gap-2 text-xs text-slate-500"><span class="material-symbols-outlined text-sm text-slate-400">stadium</span><span>Sede Palermo</span><span class="text-slate-300">/</span><span class="font-semibold text-slate-800">Jornada Diaria</span></div><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-[#15803d] border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Abierto · Turnos en curso</span><div class="hidden xl:flex items-center gap-1.5 text-xs text-slate-500 font-mono bg-slate-50 px-2.5 py-1 rounded border border-slate-200"><span class="material-symbols-outlined text-sm text-slate-400">schedule</span><span>Miércoles, 24 de Octubre de 2024 · 17:45 hs (ART)</span></div></div><div class="flex items-center gap-3"><div class="relative hidden md:block w-72"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span><input class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:bg-white focus:border-[#15803d] focus:outline-none transition-all placeholder:text-slate-400 text-slate-800" placeholder="Buscar reserva, DNI o cliente..." type="text"/></div><button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#15803d] hover:bg-[#16a34a] text-white font-label-md font-semibold shadow-sm transition-colors" type="button"><span class="material-symbols-outlined text-sm">add_circle</span><span>+ Nueva Reserva</span></button><button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-label-md font-medium shadow-sm transition-colors" type="button"><span class="material-symbols-outlined text-sm text-amber-600">block</span><span>Bloquear Horario</span></button><button class="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" type="button"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center leading-none">3</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 bg-[#f8fafc] min-h-screen p-6"><div class="flex flex-col w-full gap-5">
+<!-- 1. Encabezado de la Bandeja de Reservas -->
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-surface-container-lowest p-5 rounded-xl shadow-sm">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Gestión de Reservas</h1>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary-container/15 text-primary font-bold">TEMPORADA 2024</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">
+<span class="font-semibold text-on-surface">148 reservas</span> registradas este mes · <span class="text-primary font-semibold">28 para hoy</span> en Complejo La Cancha
+      </p>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-base text-secondary">download</span>
+<span>Exportar Listado (CSV/Excel)</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold transition-colors shadow-sm" onclick="openNewModal()" type="button">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span>+ Nueva Reserva Manual</span>
+</button>
+</div>
+</div>
+<!-- Tabs de Filtrado Rápido -->
+<div class="flex items-center gap-1 overflow-x-auto pb-1 text-label-md font-label-md border-b-0">
+<button class="px-3.5 py-1.5 rounded bg-primary text-on-primary font-semibold shadow-sm flex items-center gap-2 whitespace-nowrap" type="button">
+<span>Todas</span>
+<span class="px-1.5 py-0.2 rounded-full bg-on-primary/20 text-[11px]">148</span>
+</button>
+<button class="px-3.5 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container text-secondary hover:text-on-surface font-medium transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm" type="button">
+<span>Confirmadas</span>
+<span class="px-1.5 py-0.2 rounded-full bg-primary-container/20 text-primary text-[11px] font-bold">112</span>
+</button>
+<button class="px-3.5 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container text-secondary hover:text-on-surface font-medium transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm" type="button">
+<span>Pendientes</span>
+<span class="px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[11px] font-bold">14</span>
+</button>
+<button class="px-3.5 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container text-secondary hover:text-on-surface font-medium transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm" type="button">
+<span>Completadas</span>
+<span class="px-1.5 py-0.2 rounded-full bg-secondary-container text-on-secondary-fixed-variant text-[11px] font-bold">18</span>
+</button>
+<button class="px-3.5 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container text-secondary hover:text-on-surface font-medium transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm" type="button">
+<span>Canceladas</span>
+<span class="px-1.5 py-0.2 rounded-full bg-error-container text-on-error-container text-[11px] font-bold">3</span>
+</button>
+<button class="px-3.5 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container text-secondary hover:text-on-surface font-medium transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm" type="button">
+<span>No Show</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-highest text-secondary text-[11px]">1</span>
+</button>
+</div>
+<!-- 2. Barra de Filtros y Búsqueda Operativa -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+<div class="md:col-span-4 relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm">search</span>
+<input class="w-full pl-8 pr-3 py-1.5 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:bg-surface-container-lowest focus:outline-none placeholder:text-secondary shadow-inner" placeholder="Buscar por Cliente, Teléfono o ID (#BK-9423)..." type="text"/>
+</div>
+<div class="md:col-span-3">
+<div class="flex items-center gap-2 bg-surface-container-low px-2 py-1.5 rounded">
+<span class="material-symbols-outlined text-secondary text-sm">sports_soccer</span>
+<select class="bg-transparent text-label-md font-label-md text-on-surface w-full focus:outline-none">
+<option value="all">Todas las Canchas</option>
+<option value="c1">Cancha 1 · Fútbol 5 (Sintético)</option>
+<option value="c2">Cancha 2 · Fútbol 7 (Techada)</option>
+<option value="c3">Cancha 3 · Fútbol 8 (Natural PRO)</option>
+</select>
+</div>
+</div>
+<div class="md:col-span-3">
+<div class="flex items-center gap-2 bg-surface-container-low px-2 py-1.5 rounded">
+<span class="material-symbols-outlined text-secondary text-sm">calendar_today</span>
+<select class="bg-transparent text-label-md font-label-md text-on-surface w-full focus:outline-none">
+<option selected="" value="today">Hoy (Mié 24 Oct)</option>
+<option value="tomorrow">Mañana (Jue 25 Oct)</option>
+<option value="week">Esta Semana</option>
+<option value="month">Este Mes (Octubre)</option>
+</select>
+</div>
+</div>
+<div class="md:col-span-2 flex items-center justify-between gap-1">
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded w-full">
+<button class="flex-1 py-1 text-[11px] font-label-sm font-semibold rounded bg-surface-container-lowest text-on-surface shadow-xs text-center" type="button">1h</button>
+<button class="flex-1 py-1 text-[11px] font-label-sm font-semibold rounded text-secondary hover:text-on-surface text-center" type="button">2h</button>
+<button class="flex-1 py-1 text-[11px] font-label-sm font-semibold rounded text-secondary hover:text-on-surface text-center" type="button">Todas</button>
+</div>
+<button class="p-1.5 text-secondary hover:text-on-surface rounded hover:bg-surface-container transition-colors" title="Limpiar filtros" type="button">
+<span class="material-symbols-outlined text-base">filter_alt_off</span>
+</button>
+</div>
+</div>
+<!-- Vista Principal con Grid de Tabla y Panel Lateral -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+<!-- 3. Tabla de Reservas Operativa -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300" id="tableContainer">
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-base">table_chart</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Planilla de Turnos Operativos</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-secondary">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary"></span> 6 confirmados</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span> 1 pendiente</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-secondary font-label-sm text-label-sm tracking-wider uppercase">
+<th class="py-2.5 px-3 font-semibold">ID Reserva</th>
+<th class="py-2.5 px-3 font-semibold">Fecha y Turno</th>
+<th class="py-2.5 px-3 font-semibold">Cancha & Tipo</th>
+<th class="py-2.5 px-3 font-semibold">Cliente</th>
+<th class="py-2.5 px-3 font-semibold">Monto ARS</th>
+<th class="py-2.5 px-3 font-semibold">Estado</th>
+<th class="py-2.5 px-3 font-semibold text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low text-body-md font-body-md">
+<!-- Fila #BK-9421 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors group" onclick="selectBooking('BK-9421', 'Julián Álvarez', '+54 9 11 5544-3322', 'julian.alvarez@gmail.com', 'Hoy 19:00 a 20:00 hs', 'Cancha 1 (Fútbol 5 Sintético)', '$ 18.000 ARS', 'CONFIRMED')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-bold text-on-surface">
+                #BK-9421
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-primary">schedule</span> 19:00 - 20:00
+                  </span>
+<span class="text-[11px] text-secondary font-label-sm">Hoy · Duración: 1h</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Cancha 1</span>
+<span class="text-[11px] text-secondary">Fútbol 5 · Sintético</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-on-surface">Julián Álvarez</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-secondary-container text-on-secondary-fixed-variant">HABITUAL</span>
+</div>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 5544-3322</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular font-bold text-on-surface">$ 18.000 ARS</span>
+<span class="text-[10px] text-primary font-semibold">100% Abonado</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-primary-container/20 text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> CONFIRMED
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+<button class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded" onclick="openRescheduleModal('BK-9421', 'Julián Álvarez', 'Cancha 1 (F5)')" title="Reprogramar" type="button">
+<span class="material-symbols-outlined text-base">edit_calendar</span>
+</button>
+<button class="p-1 text-secondary hover:text-primary hover:bg-surface-container rounded" title="Completar jornada" type="button">
+<span class="material-symbols-outlined text-base">check_circle</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila #BK-9422 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors group" onclick="selectBooking('BK-9422', 'Enzo Fernández', '+54 9 11 6655-4433', 'enzo.fer@gmail.com', 'Hoy 19:00 a 21:00 hs', 'Cancha 2 (Fútbol 7 Techada)', '$ 42.000 ARS', 'CONFIRMED')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-bold text-on-surface">
+                #BK-9422
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-primary">schedule</span> 19:00 - 21:00
+                  </span>
+<span class="text-[11px] text-secondary font-label-sm">Hoy · Duración: 2h</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Cancha 2</span>
+<span class="text-[11px] text-secondary">Fútbol 7 · Techada</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-on-surface">Enzo Fernández</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-secondary-container text-on-secondary-fixed-variant">HABITUAL</span>
+</div>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 6655-4433</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular font-bold text-on-surface">$ 42.000 ARS</span>
+<span class="text-[10px] text-primary font-semibold">100% Abonado</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-primary-container/20 text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> CONFIRMED
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+<button class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded" onclick="openRescheduleModal('BK-9422', 'Enzo Fernández', 'Cancha 2 (F7)')" title="Reprogramar" type="button">
+<span class="material-symbols-outlined text-base">edit_calendar</span>
+</button>
+<button class="p-1 text-secondary hover:text-primary hover:bg-surface-container rounded" title="Completar jornada" type="button">
+<span class="material-symbols-outlined text-base">check_circle</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila #BK-9423 (SELECCIONADA / PENDIENTE) -->
+<tr class="bg-tertiary-fixed/20 hover:bg-tertiary-fixed/30 cursor-pointer transition-colors shadow-xs" id="row-BK-9423" onclick="selectBooking('BK-9423', 'Cristian Romero', '+54 9 11 7766-5544', 'cuti.romero@hotmail.com', 'Hoy 20:00 a 21:00 hs', 'Cancha 3 (Fútbol 8 Césped Natural Iluminado)', '$ 28.000 ARS', 'PENDING')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-sm animate-pulse">priority_high</span>
+                #BK-9423
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-tertiary">schedule</span> 20:00 - 21:00
+                  </span>
+<span class="text-[11px] text-tertiary font-label-sm font-semibold">Hoy · Duración: 1h</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Cancha 3</span>
+<span class="text-[11px] text-secondary">Fútbol 8 · Césped Natural</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-on-surface">Cristian Romero</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-secondary-container text-on-secondary-fixed-variant">HABITUAL</span>
+</div>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 7766-5544</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular font-bold text-on-surface">$ 28.000 ARS</span>
+<span class="text-[10px] text-tertiary font-semibold">Seña Pendiente</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-bold bg-tertiary-fixed text-on-tertiary-fixed-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span> PENDING
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+<button class="p-1 text-primary hover:bg-primary-container/20 rounded" onclick="confirmDirect('BK-9423')" title="Confirmar Reserva" type="button">
+<span class="material-symbols-outlined text-base">check</span>
+</button>
+<button class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded" onclick="openRescheduleModal('BK-9423', 'Cristian Romero', 'Cancha 3 (F8)')" title="Reprogramar" type="button">
+<span class="material-symbols-outlined text-base">edit_calendar</span>
+</button>
+<button class="p-1 text-error hover:bg-error-container/40 rounded" onclick="triggerCancelDialog('BK-9423')" title="Cancelar" type="button">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila #BK-9424 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors group" onclick="selectBooking('BK-9424', 'Alexis Mac Allister', '+54 9 11 8877-6655', 'alexis.mac@outlook.com', 'Hoy 21:00 a 22:00 hs', 'Cancha 1 (Fútbol 5 Sintético)', '$ 18.000 ARS', 'CONFIRMED')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-bold text-on-surface">
+                #BK-9424
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-primary">schedule</span> 21:00 - 22:00
+                  </span>
+<span class="text-[11px] text-secondary font-label-sm">Hoy · Duración: 1h</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Cancha 1</span>
+<span class="text-[11px] text-secondary">Fútbol 5 · Sintético</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-on-surface">Alexis Mac Allister</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-surface-container-highest text-secondary">NUEVO</span>
+</div>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 8877-6655</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular font-bold text-on-surface">$ 18.000 ARS</span>
+<span class="text-[10px] text-primary font-semibold">Seña: $ 10.000 ARS</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-primary-container/20 text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> CONFIRMED
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+<button class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded" onclick="openRescheduleModal('BK-9424', 'Alexis Mac Allister', 'Cancha 1 (F5)')" title="Reprogramar" type="button">
+<span class="material-symbols-outlined text-base">edit_calendar</span>
+</button>
+<button class="p-1 text-secondary hover:text-primary hover:bg-surface-container rounded" title="Completar jornada" type="button">
+<span class="material-symbols-outlined text-base">check_circle</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila #BK-9419 (COMPLETED) -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors group opacity-85" onclick="selectBooking('BK-9419', 'Nicolás Otamendi', '+54 9 11 2233-4455', 'nico.otamendi@gmail.com', 'Hoy 16:00 a 17:00 hs', 'Cancha 1 (Fútbol 5 Sintético)', '$ 18.000 ARS', 'COMPLETED')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-bold text-secondary">
+                #BK-9419
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-medium text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary">schedule</span> 16:00 - 17:00
+                  </span>
+<span class="text-[11px] text-secondary font-label-sm">Hoy · Turno Finalizado</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<div class="flex flex-col">
+<span class="font-medium text-secondary">Cancha 1</span>
+<span class="text-[11px] text-secondary">Fútbol 5 · Sintético</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-medium text-secondary">Nicolás Otamendi</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-secondary-container text-on-secondary-fixed-variant">HABITUAL</span>
+</div>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 2233-4455</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular font-semibold text-secondary">$ 18.000 ARS</span>
+<span class="text-[10px] text-secondary">Cobrado en Efectivo</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-medium bg-secondary-container text-on-secondary-fixed-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> COMPLETED
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+<button class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded" title="Ver Recibo de Caja" type="button">
+<span class="material-symbols-outlined text-base">receipt</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila #BK-9418 (CANCELLED) -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors group opacity-70 bg-error-container/10" onclick="selectBooking('BK-9418', 'Nahuel Molina', '+54 9 11 9988-7766', 'nahuel.molina@gmail.com', 'Hoy 15:00 a 16:00 hs', 'Cancha 2 (Fútbol 7 Techada)', '$ 24.000 ARS', 'CANCELLED')">
+<td class="py-3 px-3 font-data-tabular text-data-tabular font-semibold text-error line-through">
+                #BK-9418
+              </td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-medium text-secondary line-through">15:00 - 16:00</span>
+<span class="text-[10px] text-error font-semibold">Aviso con 6hs de antelación</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-medium text-secondary line-through">Cancha 2</span>
+<span class="text-[11px] text-secondary">Fútbol 7</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-medium text-secondary line-through">Nahuel Molina</span>
+<span class="text-[11px] text-secondary font-mono">+54 9 11 9988-7766</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-data-tabular text-data-tabular text-secondary line-through">$ 24.000 ARS</span>
+<span class="text-[10px] text-error font-semibold">Seña devuelta a saldo</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-error-container text-on-error-container">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> CANCELLED
+                </span>
+</td>
+<td class="py-3 px-3 text-right">
+<span class="text-[11px] text-secondary font-mono italic">Archivada</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 bg-surface-container-low/50 flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>Mostrando 6 de 28 reservas programadas para hoy</span>
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 rounded bg-surface-container-lowest text-secondary disabled:opacity-50" type="button">Anterior</button>
+<span class="px-2 text-on-surface font-bold">1</span>
+<button class="px-2 py-1 rounded bg-surface-container-lowest text-secondary" type="button">Siguiente</button>
+</div>
+</div>
+</div>
+<!-- 4. Panel Lateral de Detalle de Reserva (BookingDetailPanel) -->
+<div class="lg:col-span-4 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col transition-all" id="bookingDetailPanel">
+<!-- Cabecera Panel -->
+<div class="p-4 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center font-bold font-mono text-sm">
+            #
+          </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="detailBookingId">BK-9423</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-tertiary-fixed text-on-tertiary-fixed-variant" id="detailBadge">
+                PENDING
+              </span>
+</div>
+<span class="text-[11px] text-secondary font-label-sm">Creado vía Portal Web · Hoy 14:15 hs</span>
+</div>
+</div>
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" onclick="closeDetailPanel()" type="button">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<!-- Cliente Card -->
+<div class="p-3 bg-surface-container-low/70 rounded-lg flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-label-sm uppercase font-bold tracking-wider text-secondary">Titular de Reserva</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-primary-container/20 text-primary">100% ASISTENCIA</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold font-headline-sm text-sm shrink-0">
+              CR
+            </div>
+<div class="flex flex-col truncate">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate" id="detailClientName">Cristian Romero</span>
+<span class="text-body-sm font-body-sm text-secondary truncate" id="detailClientEmail">cuti.romero@hotmail.com</span>
+<span class="text-body-sm font-body-sm text-primary font-mono font-medium truncate" id="detailClientPhone">+54 9 11 7766-5544</span>
+</div>
+</div>
+<div class="pt-2 mt-1 flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>Historial en el complejo:</span>
+<span class="font-semibold text-on-surface">12 reservas anteriores</span>
+</div>
+</div>
+<!-- Detalle del Turno & Cancha -->
+<div class="flex flex-col gap-2.5">
+<span class="text-[10px] font-label-sm uppercase font-bold tracking-wider text-secondary">Detalle de la Cancha y Turno</span>
+<div class="p-3 bg-surface-container rounded-lg flex flex-col gap-2">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-primary text-xl mt-0.5">stadium</span>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg font-bold text-on-surface" id="detailPitchName">Cancha 3 (Fútbol 8)</span>
+<span class="text-body-sm font-body-sm text-secondary">Césped Natural Iluminado · Vestuario 3</span>
+</div>
+</div>
+<div class="p-2 bg-surface-container-lowest rounded flex items-center justify-between text-body-md font-body-md">
+<div class="flex items-center gap-1.5 text-on-surface font-medium">
+<span class="material-symbols-outlined text-sm text-secondary">calendar_today</span>
+<span id="detailDate">Miércoles, 24 de Octubre de 2024</span>
+</div>
+<span class="font-semibold text-primary font-mono">20:00 - 21:00 hs</span>
+</div>
+</div>
+</div>
+<!-- Tarifa y Cobro en ARS -->
+<div class="p-3.5 bg-surface-container-low rounded-lg flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-label-sm uppercase tracking-wider text-secondary font-bold">Liquidación ARS</span>
+<span class="text-[11px] text-tertiary font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span> Seña Pendiente
+            </span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="font-body-md text-body-md text-secondary">Precio Total Turno (1h):</span>
+<span class="font-data-metric text-data-metric font-bold text-on-surface" id="detailPrice">$ 28.000 ARS</span>
+</div>
+<div class="text-[11px] text-secondary flex justify-between">
+<span>Monto mínimo de seña requerida:</span>
+<span class="font-semibold text-on-surface font-mono">$ 10.000 ARS</span>
+</div>
+</div>
+<!-- Historial de Auditoría / Registro -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-label-sm uppercase font-bold tracking-wider text-secondary">Registro de Actividad</span>
+<div class="flex flex-col gap-2 p-2.5 bg-surface-container-low/50 rounded-lg text-body-sm font-body-sm">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-xs text-primary mt-0.5">language</span>
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Reserva registrada por cliente vía Web</span>
+<span class="text-[10px] text-secondary font-mono">Hoy 14:15 hs · IP: 181.44.12.90</span>
+</div>
+</div>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-xs text-primary mt-0.5">chat</span>
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Recordatorio de Seña enviado por WhatsApp</span>
+<span class="text-[10px] text-secondary font-mono">Hoy 14:16 hs · Bot Automatizado</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Acciones Operativas Principales -->
+<div class="flex flex-col gap-2 pt-2">
+<button class="w-full py-2.5 px-4 rounded bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-bold transition-colors shadow-sm flex items-center justify-center gap-2" onclick="confirmDirect('BK-9423')" type="button">
+<span class="material-symbols-outlined text-lg">verified</span>
+<span>Confirmar Reserva</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<button class="w-full py-2 px-3 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm" onclick="openRescheduleModal('BK-9423', 'Cristian Romero', 'Cancha 3 (Fútbol 8)')" type="button">
+<span class="material-symbols-outlined text-base text-secondary">update</span>
+<span>Reprogramar</span>
+</button>
+<button class="w-full py-2 px-3 rounded bg-error-container/30 hover:bg-error-container text-on-error-container font-label-md text-label-md font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm" onclick="triggerCancelDialog('BK-9423')" type="button">
+<span class="material-symbols-outlined text-base text-error">cancel</span>
+<span>Cancelar Turno</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 5. Modal de Reprogramación de Turno (Interactivo) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-xs hidden items-center justify-center p-4" id="rescheduleModal">
+<div class="bg-surface-container-lowest w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+<div class="p-4 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">event_repeat</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Reprogramar Turno de Reserva</span>
+<span class="text-body-sm font-body-sm text-secondary font-mono" id="modalRescheduleSubtitle">Reserva #BK-9423 · Cristian Romero</span>
+</div>
+</div>
+<button class="p-1 text-secondary hover:text-on-surface rounded hover:bg-surface-container" onclick="closeRescheduleModal()" type="button">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div class="p-3 bg-secondary-container/30 rounded-lg text-body-sm font-body-sm text-on-secondary-fixed-variant flex items-center gap-2.5">
+<span class="material-symbols-outlined text-secondary text-lg">info</span>
+<span>El motor de disponibilidad validará solapamientos en tiempo real antes de mover el turno.</span>
+</div>
+<!-- Selección de Nueva Fecha -->
+<div class="flex flex-col gap-1.5">
+<label class="text-label-sm font-label-sm uppercase font-bold text-secondary">Nueva Fecha Solicitada</label>
+<div class="flex items-center gap-2 bg-surface-container-low p-2 rounded">
+<span class="material-symbols-outlined text-secondary text-base">event</span>
+<input class="bg-transparent text-label-md font-label-md text-on-surface w-full focus:outline-none" type="date" value="2024-10-25"/>
+</div>
+</div>
+<!-- Selección de Cancha -->
+<div class="flex flex-col gap-1.5">
+<label class="text-label-sm font-label-sm uppercase font-bold text-secondary">Cancha Receptora</label>
+<div class="flex items-center gap-2 bg-surface-container-low p-2 rounded">
+<span class="material-symbols-outlined text-secondary text-base">stadium</span>
+<select class="bg-transparent text-label-md font-label-md text-on-surface w-full focus:outline-none" id="modalPitchSelect">
+<option value="c3">Cancha 3 · Fútbol 8 Césped Natural ($ 28.000 / h)</option>
+<option value="c2">Cancha 2 · Fútbol 7 Techada ($ 24.000 / h)</option>
+<option value="c1">Cancha 1 · Fútbol 5 Sintético ($ 18.000 / h)</option>
+</select>
+</div>
+</div>
+<!-- Horarios Disponibles sin Solapamiento -->
+<div class="flex flex-col gap-1.5">
+<label class="text-label-sm font-label-sm uppercase font-bold text-secondary">Turnos Libres Disponibles (Viernes 25 Octubre)</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="p-2 rounded text-center bg-surface-container text-secondary hover:bg-surface-container-high text-label-md font-label-md font-medium transition-colors" onclick="selectTimeSlot(this)" type="button">
+              18:00 - 19:00
+            </button>
+<button class="p-2 rounded text-center bg-primary text-on-primary text-label-md font-label-md font-bold shadow-xs" onclick="selectTimeSlot(this)" type="button">
+              20:00 - 21:00
+            </button>
+<button class="p-2 rounded text-center bg-surface-container text-secondary hover:bg-surface-container-high text-label-md font-label-md font-medium transition-colors" onclick="selectTimeSlot(this)" type="button">
+              21:00 - 22:00
+            </button>
+<button class="p-2 rounded text-center bg-surface-container text-secondary hover:bg-surface-container-high text-label-md font-label-md font-medium transition-colors" onclick="selectTimeSlot(this)" type="button">
+              22:00 - 23:00
+            </button>
+<button class="p-2 rounded text-center bg-error-container/20 text-error line-through cursor-not-allowed text-label-md font-label-md" title="Turno ocupado por Torneo Clausura" type="button">
+              19:00 - 20:00
+            </button>
+<button class="p-2 rounded text-center bg-surface-container text-secondary hover:bg-surface-container-high text-label-md font-label-md font-medium transition-colors" onclick="selectTimeSlot(this)" type="button">
+              23:00 - 00:00
+            </button>
+</div>
+</div>
+<!-- Alerta de Validación Dinámica -->
+<div class="p-2.5 rounded bg-primary-container/15 text-primary text-body-sm font-body-sm flex items-center gap-2" id="validationAlert">
+<span class="material-symbols-outlined text-base">check_circle</span>
+<span>Turno libre verificado: Cancha 3 el 25/10 de 20:00 a 21:00 hs sin solapamientos.</span>
+</div>
+</div>
+<div class="p-4 bg-surface-container-low flex items-center justify-end gap-2">
+<button class="px-3.5 py-2 rounded bg-surface-container hover:bg-surface-container-high text-secondary font-label-md text-label-md font-medium" onclick="closeRescheduleModal()" type="button">
+          Cancelar
+        </button>
+<button class="px-4 py-2 rounded bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-bold shadow-sm flex items-center gap-1.5" onclick="confirmReschedule()" type="button">
+<span class="material-symbols-outlined text-sm">check</span>
+<span>Confirmar Nueva Fecha</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Diálogo de Confirmación de Cancelación -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-xs hidden items-center justify-center p-4" id="cancelDialog">
+<div class="bg-surface-container-lowest w-full max-w-md rounded-xl shadow-xl overflow-hidden flex flex-col p-5 gap-4">
+<div class="w-12 h-12 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">warning</span>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">¿Cancelar Turno Seleccionado?</h3>
+<p class="font-body-md text-body-md text-secondary">
+          Vas a cancelar la reserva <span class="font-bold text-on-surface" id="cancelBookingId">#BK-9423</span>. La franja horaria volverá a quedar habilitada para reserva pública inmediatamente.
+        </p>
+</div>
+<div class="flex items-center justify-end gap-2 pt-2">
+<button class="px-3.5 py-2 rounded bg-surface-container hover:bg-surface-container-high text-secondary font-label-md text-label-md" onclick="closeCancelDialog()" type="button">
+          Volver atrás
+        </button>
+<button class="px-4 py-2 rounded bg-error hover:bg-error/90 text-on-error font-label-md text-label-md font-bold shadow-sm" onclick="executeCancel()" type="button">
+          Sí, cancelar turno
+        </button>
+</div>
+</div>
+</div>
+<!-- Modal Rápido: Nueva Reserva Manual -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-xs hidden items-center justify-center p-4" id="newModal">
+<div class="bg-surface-container-lowest w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col">
+<div class="p-4 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">add_circle</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Nueva Reserva Manual en Mostrador</span>
+</div>
+<button class="p-1 text-secondary hover:text-on-surface rounded hover:bg-surface-container" onclick="closeNewModal()" type="button">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-3.5">
+<div class="flex flex-col gap-1">
+<label class="text-label-sm font-label-sm font-semibold text-secondary">Nombre y Apellido del Cliente</label>
+<input class="p-2 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:outline-none" placeholder="Ej: Lionel Messi" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="flex flex-col gap-1">
+<label class="text-label-sm font-label-sm font-semibold text-secondary">Teléfono de Contacto</label>
+<input class="p-2 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:outline-none" placeholder="+54 9 11 ..." type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-label-sm font-label-sm font-semibold text-secondary">Cancha</label>
+<select class="p-2 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:outline-none">
+<option>Cancha 1 (F5)</option>
+<option>Cancha 2 (F7)</option>
+<option>Cancha 3 (F8)</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="flex flex-col gap-1">
+<label class="text-label-sm font-label-sm font-semibold text-secondary">Horario</label>
+<input class="p-2 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:outline-none" type="time" value="20:00"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-label-sm font-label-sm font-semibold text-secondary">Seña Inicial ARS</label>
+<input class="p-2 text-body-md font-body-md bg-surface-container-low text-on-surface rounded focus:outline-none" placeholder="$ 10.000" type="text"/>
+</div>
+</div>
+</div>
+<div class="p-4 bg-surface-container-low flex justify-end gap-2">
+<button class="px-3 py-1.5 rounded bg-surface-container text-secondary font-label-md text-label-md" onclick="closeNewModal()" type="button">Cancelar</button>
+<button class="px-4 py-1.5 rounded bg-primary text-on-primary font-label-md text-label-md font-bold" onclick="closeNewModal()" type="button">Crear Turno</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let activeTargetId = 'BK-9423';
+
+  function selectBooking(id, name, phone, email, time, pitch, price, status) {
+    activeTargetId = id;
+    const panel = document.getElementById('bookingDetailPanel');
+    const table = document.getElementById('tableContainer');
+    
+    panel.classList.remove('hidden');
+    table.classList.remove('lg:col-span-12');
+    table.classList.add('lg:col-span-8');
+
+    document.getElementById('detailBookingId').textContent = id;
+    document.getElementById('detailClientName').textContent = name;
+    document.getElementById('detailClientPhone').textContent = phone;
+    document.getElementById('detailClientEmail').textContent = email;
+    document.getElementById('detailDate').textContent = time;
+    document.getElementById('detailPitchName').textContent = pitch;
+    document.getElementById('detailPrice').textContent = price;
+
+    const badge = document.getElementById('detailBadge');
+    badge.textContent = status;
+    if(status === 'CONFIRMED') {
+      badge.className = 'inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-primary-container/20 text-primary';
+    } else if(status === 'PENDING') {
+      badge.className = 'inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-tertiary-fixed text-on-tertiary-fixed-variant';
+    } else if(status === 'CANCELLED') {
+      badge.className = 'inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-error-container text-on-error-container';
+    } else {
+      badge.className = 'inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-secondary-container text-on-secondary-fixed-variant';
+    }
+  }
+
+  function closeDetailPanel() {
+    const panel = document.getElementById('bookingDetailPanel');
+    const table = document.getElementById('tableContainer');
+    panel.classList.add('hidden');
+    table.classList.remove('lg:col-span-8');
+    table.classList.add('lg:col-span-12');
+  }
+
+  function openRescheduleModal(id, client, pitch) {
+    activeTargetId = id;
+    document.getElementById('modalRescheduleSubtitle').textContent = `Reserva #${id} · ${client}`;
+    document.getElementById('rescheduleModal').classList.remove('hidden');
+    document.getElementById('rescheduleModal').classList.add('flex');
+  }
+
+  function closeRescheduleModal() {
+    document.getElementById('rescheduleModal').classList.add('hidden');
+    document.getElementById('rescheduleModal').classList.remove('flex');
+  }
+
+  function selectTimeSlot(btn) {
+    const parent = btn.parentElement;
+    Array.from(parent.children).forEach(child => {
+      if(!child.classList.contains('cursor-not-allowed')) {
+        child.className = 'p-2 rounded text-center bg-surface-container text-secondary hover:bg-surface-container-high text-label-md font-label-md font-medium transition-colors';
+      }
+    });
+    btn.className = 'p-2 rounded text-center bg-primary text-on-primary text-label-md font-label-md font-bold shadow-xs';
+  }
+
+  function confirmReschedule() {
+    alert(`Turno de la reserva #${activeTargetId} reprogramado con éxito al 25 de Octubre.`);
+    closeRescheduleModal();
+  }
+
+  function confirmDirect(id) {
+    alert(`La reserva #${id} ha sido CONFIRMADA. Se envió notificación al cliente por WhatsApp.`);
+    const badge = document.getElementById('detailBadge');
+    badge.textContent = 'CONFIRMED';
+    badge.className = 'inline-flex items-center gap-1 px-2 py-0.2 rounded text-[10px] font-label-sm font-bold bg-primary-container/20 text-primary';
+  }
+
+  function triggerCancelDialog(id) {
+    activeTargetId = id;
+    document.getElementById('cancelBookingId').textContent = '#' + id;
+    document.getElementById('cancelDialog').classList.remove('hidden');
+    document.getElementById('cancelDialog').classList.add('flex');
+  }
+
+  function closeCancelDialog() {
+    document.getElementById('cancelDialog').classList.add('hidden');
+    document.getElementById('cancelDialog').classList.remove('flex');
+  }
+
+  function executeCancel() {
+    alert(`Reserva #${activeTargetId} cancelada. Horario liberado en el cuadrante.`);
+    closeCancelDialog();
+    closeDetailPanel();
+  }
+
+  function openNewModal() {
+    document.getElementById('newModal').classList.remove('hidden');
+    document.getElementById('newModal').classList.add('flex');
+  }
+
+  function closeNewModal() {
+    document.getElementById('newModal').classList.add('hidden');
+    document.getElementById('newModal').classList.remove('flex');
+  }
+</script></main></div></body></html>

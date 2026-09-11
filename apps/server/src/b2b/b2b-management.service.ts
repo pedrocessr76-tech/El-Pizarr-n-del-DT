@@ -1,0 +1,233 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Between, In, Repository } from 'typeorm';
+import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
+import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
+import { B2bBookingEventEntity } from './entities/booking-event.entity';
+import { B2bBookingEntity } from './entities/booking.entity';
+import { B2bCourtEntity } from './entities/court.entity';
+import { B2bFacilityEntity } from './entities/facility.entity';
+import { B2bOrganizationEntity } from './entities/organization.entity';
+import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
+import { B2bShiftEntity } from './entities/shift.entity';
+import { B2bJwtUser } from './auth/b2b-auth.types';
+
+@Injectable()
+export class B2bManagementService {
+  constructor(
+    @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
+    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
+    @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
+    @InjectRepository(B2bShiftRuleEntity, 'b2b') private readonly shiftRules: Repository<B2bShiftRuleEntity>,
+    @InjectRepository(B2bShiftEntity, 'b2b') private readonly shifts: Repository<B2bShiftEntity>,
+    @InjectRepository(B2bAvailabilityBlockEntity, 'b2b') private readonly blocks: Repository<B2bAvailabilityBlockEntity>,
+    @InjectRepository(B2bBookingEntity, 'b2b') private readonly bookings: Repository<B2bBookingEntity>,
+    @InjectRepository(B2bBookingEventEntity, 'b2b') private readonly bookingEvents: Repository<B2bBookingEventEntity>,
+  ) {}
+
+  async getOrganization(user: B2bJwtUser) {
+    return this.organizations.findOneByOrFail({ id: user.organizationId });
+  }
+
+  async updateOrganization(user: B2bJwtUser, input: { name?: string; address?: string }) {
+    const organization = await this.getOrganization(user);
+    if (input.name) organization.name = input.name;
+    return this.organizations.save(organization);
+  }
+
+  listFacilities(user: B2bJwtUser) {
+    return this.facilities.find({ where: { organizationId: user.organizationId }, order: { name: 'ASC' } });
+  }
+
+  async createFacility(user: B2bJwtUser, input: { name: string; address?: string }) {
+    return this.facilities.save(this.facilities.create({
+      organizationId: user.organizationId,
+      name: input.name,
+      address: input.address || null,
+    }));
+  }
+
+  async updateFacility(user: B2bJwtUser, id: string, input: { name?: string; address?: string; status?: string }) {
+    const facility = await this.facilities.findOneBy({ id, organizationId: user.organizationId });
+    if (!facility) throw new NotFoundException('Complejo no encontrado');
+    Object.assign(facility, input);
+    return this.facilities.save(facility);
+  }
+
+  async archiveFacility(user: B2bJwtUser, id: string) {
+    return this.updateFacility(user, id, { status: 'INACTIVE' });
+  }
+
+  async createCourt(user: B2bJwtUser, facilityId: string, input: { name: string; sportType?: string; capacity?: number; defaultPriceCentsArs: number }) {
+    const facility = await this.facilities.findOneBy({ id: facilityId, organizationId: user.organizationId });
+    if (!facility) throw new NotFoundException('Complejo no encontrado');
+    return this.courts.save(this.courts.create({
+      organizationId: user.organizationId,
+      facilityId,
+      name: input.name,
+      sportType: input.sportType || 'FUTBOL',
+      capacity: input.capacity || 10,
+      defaultPriceCentsArs: input.defaultPriceCentsArs,
+    }));
+  }
+
+  listCourts(user: B2bJwtUser) {
+    return this.courts.find({ where: { organizationId: user.organizationId }, order: { name: 'ASC' } });
+  }
+
+  async updateCourt(user: B2bJwtUser, id: string, input: { name?: string; sportType?: string; capacity?: number; defaultPriceCentsArs?: number; status?: string }) {
+    const court = await this.courts.findOneBy({ id, organizationId: user.organizationId });
+    if (!court) throw new NotFoundException('Cancha no encontrada');
+    Object.assign(court, input);
+    return this.courts.save(court);
+  }
+
+  async archiveCourt(user: B2bJwtUser, id: string) {
+    return this.updateCourt(user, id, { status: 'INACTIVE' });
+  }
+
+  async createShiftRule(user: B2bJwtUser, courtId: string, input: { weekday: number; startTime: string; endTime: string; durationHours: 1 | 2; priceCentsArs: number }) {
+    if (![1, 2].includes(input.durationHours)) throw new BadRequestException('La duración debe ser 1 o 2 horas');
+    await this.getCourt(user, courtId);
+    return this.shiftRules.save(this.shiftRules.create({ courtId, ...input }));
+  }
+
+  listShiftRules(user: B2bJwtUser, courtId: string) {
+    return this.assertCourt(user, courtId).then(() => this.shiftRules.find({ where: { courtId }, order: { weekday: 'ASC', startTime: 'ASC' } }));
+  }
+
+  async createBlock(user: B2bJwtUser, courtId: string, input: { startsAt: string; endsAt: string; reason: string }) {
+    await this.getCourt(user, courtId);
+    const startsAt = new Date(input.startsAt);
+    const endsAt = new Date(input.endsAt);
+    if (startsAt >= endsAt) throw new BadRequestException('El bloqueo tiene un rango inválido');
+    return this.blocks.save(this.blocks.create({ organizationId: user.organizationId, courtId, startsAt, endsAt, reason: input.reason, createdBy: user.userId }));
+  }
+
+  async generateShifts(user: B2bJwtUser, courtId: string, input: { from: string; to: string }) {
+    await this.getCourt(user, courtId);
+    const from = new Date(input.from);
+    const to = new Date(input.to);
+    if (Number.isNaN(from.valueOf()) || Number.isNaN(to.valueOf()) || from >= to) {
+      throw new BadRequestException('El rango de generación es inválido');
+    }
+    const rules = await this.shiftRules.find({ where: { courtId, active: true } });
+    const generated: B2bShiftEntity[] = [];
+    for (const rule of rules) {
+      const cursor = new Date(from);
+      while (cursor < to) {
+        if (cursor.getDay() === rule.weekday) {
+          const [startHour, startMinute] = rule.startTime.split(':').map(Number);
+          const startsAt = new Date(cursor);
+          startsAt.setHours(startHour, startMinute, 0, 0);
+          const endsAt = new Date(startsAt);
+          endsAt.setHours(endsAt.getHours() + rule.durationHours);
+          if (startsAt >= from && endsAt <= to) {
+            const existing = await this.shifts.findOne({ where: { courtId, startsAt } });
+            if (!existing) {
+              generated.push(this.shifts.create({
+                organizationId: user.organizationId,
+                courtId,
+                startsAt,
+                endsAt,
+                priceCentsArs: rule.priceCentsArs,
+                status: ShiftStatus.AVAILABLE,
+              }));
+            }
+          }
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    return this.shifts.save(generated);
+  }
+
+  async availability(user: B2bJwtUser, courtId: string, from: string, to: string) {
+    await this.getCourt(user, courtId);
+    const startsAt = new Date(from);
+    const endsAt = new Date(to);
+    return this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: Between(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } });
+  }
+
+  async listBookings(user: B2bJwtUser) {
+    const where = user.roles.includes(B2bRoleCode.CLIENT) && !user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role))
+      ? { organizationId: user.organizationId, clientUserId: user.userId }
+      : { organizationId: user.organizationId };
+    return this.bookings.find({ where, order: { createdAt: 'DESC' } });
+  }
+
+  async createBooking(user: B2bJwtUser, input: { courtId: string; shiftId: string; notes?: string }) {
+    await this.getCourt(user, input.courtId);
+    const shift = await this.shifts.findOne({ where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId } });
+    if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
+    const existing = await this.bookings.findOne({ where: { shiftId: shift.id, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } });
+    if (existing) throw new ConflictException('El turno ya fue reservado');
+    const booking = await this.bookings.save(this.bookings.create({
+      organizationId: user.organizationId,
+      courtId: input.courtId,
+      shiftId: input.shiftId,
+      clientUserId: user.userId,
+      status: BookingStatus.PENDING,
+      priceCentsArs: shift.priceCentsArs,
+      notes: input.notes || null,
+    }));
+    shift.status = ShiftStatus.BOOKED;
+    await this.shifts.save(shift);
+    await this.recordEvent(booking.id, user.userId, null, BookingStatus.PENDING);
+    return booking;
+  }
+
+  async transitionBooking(user: B2bJwtUser, id: string, status: BookingStatus) {
+    const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
+    if (!booking) throw new NotFoundException('Reserva no encontrada');
+    const isStaff = user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role));
+    if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
+    if (status === BookingStatus.CONFIRMED && !isStaff) throw new ForbiddenException('Solo un operador puede confirmar reservas');
+    const previous = booking.status;
+    booking.status = status;
+    const saved = await this.bookings.save(booking);
+    if (status === BookingStatus.CANCELLED) {
+      await this.shifts.update({ id: booking.shiftId }, { status: ShiftStatus.AVAILABLE });
+    }
+    await this.recordEvent(booking.id, user.userId, previous, status);
+    return saved;
+  }
+
+  async rescheduleBooking(user: B2bJwtUser, id: string, shiftId: string) {
+    const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
+    if (!booking) throw new NotFoundException('Reserva no encontrada');
+    const isStaff = user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role));
+    if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
+    const shift = await this.shifts.findOne({ where: { id: shiftId, organizationId: user.organizationId, status: ShiftStatus.AVAILABLE } });
+    if (!shift) throw new ConflictException('El nuevo turno no está disponible');
+    const previousShiftId = booking.shiftId;
+    booking.shiftId = shift.id;
+    booking.courtId = shift.courtId;
+    booking.priceCentsArs = shift.priceCentsArs;
+    await this.shifts.update({ id: previousShiftId }, { status: ShiftStatus.AVAILABLE });
+    await this.shifts.update({ id: shift.id }, { status: ShiftStatus.BOOKED });
+    const saved = await this.bookings.save(booking);
+    await this.recordEvent(booking.id, user.userId, booking.status, booking.status);
+    return saved;
+  }
+
+  private async recordEvent(bookingId: string, actorUserId: string, fromStatus: string | null, toStatus: string) {
+    return this.bookingEvents.save(this.bookingEvents.create({ bookingId, actorUserId, fromStatus, toStatus, metadata: {} }));
+  }
+
+  private async assertCourt(user: B2bJwtUser, courtId: string) {
+    const court = await this.courts.findOneBy({ id: courtId, organizationId: user.organizationId });
+    if (!court) throw new NotFoundException('Cancha no encontrada');
+    return court;
+  }
+
+  private getCourt(user: B2bJwtUser, courtId: string) {
+    return this.assertCourt(user, courtId);
+  }
+}

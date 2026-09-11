@@ -39,6 +39,43 @@ services:
           type: web
           name: el-pizarron-web
           envVarKey: RENDER_EXTERNAL_URL
+      # B2B: misma instancia Render durante el MVP, base lógica independiente.
+      - key: B2B_DB_HOST
+        fromDatabase:
+          name: el-pizarron-db
+          property: host
+      - key: B2B_DB_PORT
+        fromDatabase:
+          name: el-pizarron-db
+          property: port
+      - key: B2B_DB_USER
+        fromDatabase:
+          name: el-pizarron-db
+          property: user
+      - key: B2B_DB_PASSWORD
+        fromDatabase:
+          name: el-pizarron-db
+          property: password
+      - key: B2B_DB_NAME
+        value: sistema_canchas
+      - key: B2B_DB_SSL
+        value: true
+      - key: B2B_DB_SYNCHRONIZE
+        value: false
+      - key: B2B_DB_MIGRATIONS
+        value: true
+      - key: B2B_SEED
+        value: true
+      - key: B2B_SEED_EMAIL
+        value: admin@lacancha.com.ar
+      - key: B2B_SEED_PASSWORD
+        generateValue: true
+      - key: B2B_SEED_CLIENT_EMAIL
+        value: cliente@lacancha.com.ar
+      - key: B2B_SEED_CLIENT_PASSWORD
+        generateValue: true
+      - key: B2B_JWT_SECRET
+        generateValue: true
 
   - type: web
     name: el-pizarron-web
@@ -59,6 +96,8 @@ services:
           type: web
           name: el-pizarron-api
           envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_B2B_ENABLED
+        value: true
 
 databases:
   - name: el-pizarron-db

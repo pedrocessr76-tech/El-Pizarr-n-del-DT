@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 10
 
+  b2b-db:
+    image: postgres:16-alpine
+    container_name: sistema_canchas_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=sistema_canchas
+      - POSTGRES_USER=canchas
+      - POSTGRES_PASSWORD=canchas
+    ports:
+      - "5433:5432"
+    volumes:
+      - b2b_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canchas -d sistema_canchas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   server:
     build:
       context: .
@@ -32,8 +50,21 @@ services:
       - DB_USER=pizarron
       - DB_PASSWORD=pizarron
       - DB_NAME=pizarron_dt
+      - B2B_DB_HOST=b2b-db
+      - B2B_DB_PORT=5432
+      - B2B_DB_USER=canchas
+      - B2B_DB_PASSWORD=canchas
+      - B2B_DB_NAME=sistema_canchas
+      - B2B_DB_SYNCHRONIZE=true
+      - B2B_SEED=true
+      - B2B_SEED_EMAIL=admin@lacancha.com.ar
+      - B2B_SEED_PASSWORD=canchas-demo
+      - B2B_SEED_CLIENT_EMAIL=cliente@lacancha.com.ar
+      - B2B_SEED_CLIENT_PASSWORD=canchas-client
     depends_on:
       db:
+        condition: service_healthy
+      b2b-db:
         condition: service_healthy
     restart: unless-stopped
 
@@ -53,3 +84,4 @@ services:
 
 volumes:
   pg_data:
+  b2b_pg_data:

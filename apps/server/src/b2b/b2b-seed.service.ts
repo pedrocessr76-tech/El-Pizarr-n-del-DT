@@ -1,0 +1,67 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcryptjs';
+import { Repository } from 'typeorm';
+import { B2bRoleCode } from './entities/b2b.enums';
+import { B2bCourtEntity } from './entities/court.entity';
+import { B2bFacilityEntity } from './entities/facility.entity';
+import { B2bOrganizationEntity } from './entities/organization.entity';
+import { B2bRoleEntity } from './entities/role.entity';
+import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
+import { B2bShiftEntity } from './entities/shift.entity';
+import { ShiftStatus } from './entities/b2b.enums';
+import { B2bUserRoleEntity } from './entities/user-role.entity';
+import { B2bUserEntity } from './entities/user.entity';
+
+@Injectable()
+export class B2bSeedService implements OnModuleInit {
+  private readonly logger = new Logger(B2bSeedService.name);
+
+  constructor(
+    @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
+    @InjectRepository(B2bRoleEntity, 'b2b') private readonly roles: Repository<B2bRoleEntity>,
+    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
+    @InjectRepository(B2bUserRoleEntity, 'b2b') private readonly userRoles: Repository<B2bUserRoleEntity>,
+    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
+    @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
+    @InjectRepository(B2bShiftRuleEntity, 'b2b') private readonly rules: Repository<B2bShiftRuleEntity>,
+    @InjectRepository(B2bShiftEntity, 'b2b') private readonly shifts: Repository<B2bShiftEntity>,
+  ) {}
+
+  async onModuleInit() {
+    if (process.env.B2B_SEED !== 'true') return;
+    const roleNames: Record<B2bRoleCode, string> = { OWNER: 'Propietario', ADMIN: 'Administrador', OPERATOR: 'Operador', CLIENT: 'Cliente' };
+    await Promise.all(Object.entries(roleNames).map(([id, name]) => this.roles.upsert({ id: id as B2bRoleCode, name }, ['id'])));
+    let organization = await this.organizations.findOne({ where: { slug: 'complejo-la-cancha' } });
+    if (!organization) organization = await this.organizations.save(this.organizations.create({ name: 'Complejo La Cancha', slug: 'complejo-la-cancha' }));
+    const email = process.env.B2B_SEED_EMAIL || 'admin@lacancha.com.ar';
+    let user = await this.users.findOne({ where: { email, organizationId: organization.id } });
+    if (!user) user = await this.users.save(this.users.create({ organizationId: organization.id, email, fullName: 'Martín Palermo', passwordHash: await bcrypt.hash(process.env.B2B_SEED_PASSWORD || 'canchas-demo', 12) }));
+    await this.userRoles.upsert({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.ADMIN }, ['userId', 'organizationId', 'roleId']);
+    const clientEmail = process.env.B2B_SEED_CLIENT_EMAIL || 'cliente@lacancha.com.ar';
+    let client = await this.users.findOne({ where: { email: clientEmail, organizationId: organization.id } });
+    if (!client) client = await this.users.save(this.users.create({ organizationId: organization.id, email: clientEmail, fullName: 'Cliente Demo', passwordHash: await bcrypt.hash(process.env.B2B_SEED_CLIENT_PASSWORD || 'canchas-client', 12) }));
+    await this.userRoles.upsert({ userId: client.id, organizationId: organization.id, roleId: B2bRoleCode.CLIENT }, ['userId', 'organizationId', 'roleId']);
+    let facility = await this.facilities.findOne({ where: { organizationId: organization.id, name: 'Sede Central Palermo' } });
+    if (!facility) facility = await this.facilities.save(this.facilities.create({ organizationId: organization.id, name: 'Sede Central Palermo', address: 'Buenos Aires, Argentina' }));
+    const courts = [['Cancha 1', 'FUTBOL 5', 1800000], ['Cancha 2', 'FUTBOL 7', 2400000], ['Cancha 3', 'FUTBOL 8', 3200000]] as const;
+    for (const [name, sportType, price] of courts) {
+      let court = await this.courts.findOne({ where: { facilityId: facility.id, name } });
+      if (!court) court = await this.courts.save(this.courts.create({ organizationId: organization.id, facilityId: facility.id, name, sportType, capacity: 10, defaultPriceCentsArs: price }));
+      const count = await this.rules.count({ where: { courtId: court.id } });
+      if (!count) await this.rules.save(this.rules.create({ courtId: court.id, weekday: 3, startTime: '18:00', endTime: '23:00', durationHours: 1, priceCentsArs: price }));
+      for (let day = 0; day < 7; day += 1) {
+        for (let hour = 18; hour < 23; hour += 1) {
+          const startsAt = new Date();
+          startsAt.setDate(startsAt.getDate() + day);
+          startsAt.setHours(hour, 0, 0, 0);
+          const endsAt = new Date(startsAt);
+          endsAt.setHours(hour + 1, 0, 0, 0);
+          const existingShift = await this.shifts.findOne({ where: { courtId: court.id, startsAt } });
+          if (!existingShift) await this.shifts.save(this.shifts.create({ organizationId: organization.id, courtId: court.id, startsAt, endsAt, priceCentsArs: price, status: ShiftStatus.AVAILABLE }));
+        }
+      }
+    }
+    this.logger.log(`Seed B2B listo: ${organization.slug} / ${email} / cliente: ${clientEmail}`);
+  }
+}

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Sistema Canchas · Panel de Administración</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed": "#2f1500", "on-surface": "#131b2e", "secondary-fixed": "#d5e4f4", "error": "#ba1a1a", "tertiary-fixed-dim": "#ffb77d", "background": "#faf8ff", "tertiary-container": "#a95b00", "secondary-fixed-dim": "#b9c8d7", "primary-fixed-dim": "#79db8d", "surface-container-lowest": "#ffffff", "surface": "#faf8ff", "secondary-container": "#d5e4f4", "on-background": "#131b2e", "on-surface-variant": "#3f493f", "on-primary-fixed-variant": "#005323", "surface-tint": "#006d30", "surface-dim": "#d2d9f4", "surface-bright": "#faf8ff", "outline-variant": "#becabc", "inverse-primary": "#79db8d", "secondary": "#51606d", "tertiary": "#854600", "surface-container-highest": "#dae2fd", "surface-container-low": "#f2f3ff", "outline": "#6f7a6e", "primary": "#00652c", "inverse-on-surface": "#eef0ff", "on-error-container": "#93000a", "on-primary": "#ffffff", "on-secondary-fixed": "#0e1d28", "primary-container": "#15803d", "surface-container": "#eaedff", "on-secondary-fixed-variant": "#3a4855", "error-container": "#ffdad6", "primary-fixed": "#95f8a7", "tertiary-fixed": "#ffdcc3", "on-secondary": "#ffffff", "on-secondary-container": "#576673", "surface-variant": "#dae2fd", "on-primary-fixed": "#00210a", "surface-container-high": "#e2e7ff", "on-tertiary-fixed-variant": "#6e3900", "on-error": "#ffffff", "on-tertiary-container": "#fff1e9", "inverse-surface": "#283044", "on-primary-container": "#d3ffd5", "on-tertiary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "gutter": "1rem", "margin-mobile": "0.75rem", "margin": "1.25rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "space-lg": "1.25rem", "space-md": "0.75rem", "gutter-compact": "0.5rem" }, "fontFamily": { "body-lg": ["Inter"], "headline-xl": ["Inter"], "body-md": ["Inter"], "label-lg": ["Inter"], "label-sm": ["Inter"], "data-metric": ["Inter"], "headline-sm": ["Inter"], "label-md": ["Inter"], "data-tabular": ["Inter"], "body-sm": ["Inter"], "headline-lg": ["Inter"], "headline-md": ["Inter"] }, "fontSize": { "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "data-metric": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "data-tabular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } }</script></head><body class="bg-[#f8fafc] font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-[#0f1e29] text-white z-50 flex flex-col justify-between select-none shadow-[2px_0_12px_rgba(0,0,0,0.18)]"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-5 flex items-center gap-3 bg-[#0a151d] border-b border-[#1b2d3b]"><img alt="Sistema Canchas Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XqwPSL84_mpVSVW2QZROdSPCxgsHP9Ao4_p52OQGsIIKcFNDXjAx1vC9WFjLAvhL7uMhtpFLFkVlpGEojesxVA5URnVBWvKwNweRW6wPPKG5QCJrx4qP40U3QlESwnr2JlcpGeKourOKkVvC_CFXFIE9c47exlqA9PN7QCkHILyKxD0xQ1btI4Fm1VhX6EkBVgu2aQhzh7oBnGam21qlKKzRe85QBf4b4uQ6YHuEIuFIdVmEigX3QPCOG-"/><div class="flex flex-col"><span class="font-headline-sm text-white font-bold tracking-tight">Sistema Canchas</span><span class="text-[10px] uppercase font-bold tracking-wider text-[#79db8d]">B2B Facility Suite</span></div></div><div class="p-4 border-b border-[#1b2d3b] bg-[#132330]"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Complejo Activo</span><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#15803d]/30 text-[#79db8d] border border-[#15803d]/50">SEDE ACTIVA</span></div><div class="flex items-center justify-between p-2 rounded bg-[#0a151d] border border-[#233847] hover:border-slate-500 cursor-pointer transition-colors"><div class="flex items-center gap-2 overflow-hidden"><span class="material-symbols-outlined text-[#79db8d] text-lg">stadium</span><div class="flex flex-col truncate"><span class="font-label-md text-white font-semibold truncate">Complejo La Cancha</span><span class="text-[11px] text-slate-400 truncate">Sede Central · Palermo</span></div></div><span class="material-symbols-outlined text-slate-400 text-sm">unfold_more</span></div><div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[#1e3241] text-[10px] text-slate-400 font-mono"><span>ID: org_cancha_01</span><span class="text-emerald-400 font-sans font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>Online</span></div></div><div class="px-4 py-3 border-b border-[#1b2d3b]"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vista de Rol B2B</span><span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">PROD</span></div><div class="grid grid-cols-4 gap-1 p-1 bg-[#0a151d] rounded-lg border border-[#233847]"><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Prop</button><button class="px-1 py-1 text-[11px] rounded font-semibold bg-[#15803d] text-white shadow-sm text-center" type="button">Admin</button><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Oper</button><button class="px-1 py-1 text-[11px] rounded font-medium text-slate-400 hover:text-white transition-all text-center" type="button">Clie</button></div></div><div class="px-4 py-3"><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Módulos de Gestión</div><nav class="flex flex-col gap-1" data-active-classes="bg-[#15803d] text-white font-semibold shadow-sm"><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-all group bg-[#15803d] text-white font-semibold shadow-sm" data-path="dashboard" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">dashboard</span><span class="font-medium">Dashboard</span></div><span class="text-[11px] px-1.5 py-0.5 rounded bg-[#1c3547] text-slate-300 font-mono">Hoy</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="complejos-y-canchas" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">sports_soccer</span><span class="font-medium">Complejos y Canchas</span></div><span class="text-[11px] px-1.5 py-0.5 rounded bg-[#1c3547] text-slate-300">F5 · F7 · F8</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="disponibilidad" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">calendar_month</span><span class="font-medium">Disponibilidad</span></div><span class="w-2 h-2 rounded-full bg-emerald-400"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="reservas" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">receipt_long</span><span class="font-medium">Reservas</span></div><span class="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500 text-[#0f1e29] font-bold">12</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:bg-[#162a38] hover:text-white transition-all text-sm group" data-path="horarios-y-configuracion" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-slate-400 group-hover:text-white text-lg">tune</span><span class="font-medium">Horarios y Configuración</span></div></a></nav></div></div><div class="flex flex-col p-3 border-t border-[#1b2d3b] bg-[#0c1821] gap-2.5"><a class="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-[#173024] to-[#0f281b] border border-[#215136] hover:border-[#34d399] transition-all group" href="#"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded bg-[#15803d]/30 border border-[#15803d] flex items-center justify-center text-emerald-400"><span class="material-symbols-outlined text-base">tactic</span></div><div class="flex flex-col"><span class="text-xs font-semibold text-white group-hover:text-emerald-300">El Pizarrón del DT</span><span class="text-[10px] text-slate-400">Estrategias & Táctica</span></div></div><span class="material-symbols-outlined text-xs text-slate-400 group-hover:text-white">open_in_new</span></a><div class="flex items-center justify-between p-2 rounded-lg bg-[#132330] border border-[#1e3241]"><div class="flex items-center gap-2.5 overflow-hidden"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col truncate"><span class="font-label-md text-white font-medium truncate">Martín Palermo</span><span class="text-[11px] text-slate-400 truncate">admin@complejolacancha.com.ar</span></div></div><button class="p-1.5 text-slate-400 hover:text-red-400 hover:bg-[#1f374a] rounded transition-colors" title="Cerrar sesión" type="button"><span class="material-symbols-outlined text-base">logout</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-white border-b border-slate-200 z-40 px-6 flex items-center justify-between shadow-[0_1px_4px_rgba(0,0,0,0.03)]"><div class="flex items-center gap-4"><div class="flex items-center gap-2 text-xs text-slate-500"><span class="material-symbols-outlined text-sm text-slate-400">stadium</span><span>Sede Palermo</span><span class="text-slate-300">/</span><span class="font-semibold text-slate-800">Jornada Diaria</span></div><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-[#15803d] border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Abierto · Turnos en curso</span><div class="hidden xl:flex items-center gap-1.5 text-xs text-slate-500 font-mono bg-slate-50 px-2.5 py-1 rounded border border-slate-200"><span class="material-symbols-outlined text-sm text-slate-400">schedule</span><span>Miércoles, 24 de Octubre de 2024 · 17:45 hs (ART)</span></div></div><div class="flex items-center gap-3"><div class="relative hidden md:block w-72"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span><input class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:bg-white focus:border-[#15803d] focus:outline-none transition-all placeholder:text-slate-400 text-slate-800" placeholder="Buscar reserva, DNI o cliente..." type="text"/></div><button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#15803d] hover:bg-[#16a34a] text-white font-label-md font-semibold shadow-sm transition-colors" type="button"><span class="material-symbols-outlined text-sm">add_circle</span><span>+ Nueva Reserva</span></button><button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-label-md font-medium shadow-sm transition-colors" type="button"><span class="material-symbols-outlined text-sm text-amber-600">block</span><span>Bloquear Horario</span></button><button class="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" type="button"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center leading-none">3</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 bg-[#f8fafc] min-h-screen p-6"><div class="flex flex-col w-full gap-6">
+<!-- Encabezado Operativo B2B -->
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-surface-container-lowest p-5 rounded-xl shadow-sm">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary-container/10 text-primary-container text-label-sm uppercase font-label-sm font-semibold">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+          Operación en Vivo
+        </span>
+<span class="text-secondary text-label-sm font-label-sm">• Sede Palermo (CABA)</span>
+</div>
+<h1 class="text-headline-xl font-headline-xl text-on-surface">Dashboard Operativo</h1>
+<p class="text-body-md font-body-md text-secondary">
+        Jornada en curso · Miércoles 24 de Octubre de 2024 <span class="font-data-tabular">(Buenos Aires, ART · GMT-3)</span>
+</p>
+</div>
+<!-- Acciones Primarias -->
+<div class="flex flex-wrap items-center gap-2.5">
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-lg">tune</span>
+<span>Administrar Canchas</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-container hover:bg-surface-container-high text-tertiary-container font-label-md text-label-md transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-lg">lock_clock</span>
+<span>Bloquear Horario</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-semibold shadow-md transition-all" type="button">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+<span>+ Nueva Reserva</span>
+</button>
+</div>
+</div>
+<!-- Barra de Filtros Rápidos y Navegación de Fecha -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl">
+<div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" id="pitch-filter-tabs">
+<button class="px-3 py-1.5 rounded-lg text-label-md font-label-md font-semibold bg-surface-container-lowest text-on-surface shadow-sm transition-colors whitespace-nowrap">
+        Todas las canchas (3)
+      </button>
+<button class="px-3 py-1.5 rounded-lg text-label-md font-label-md text-secondary hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors whitespace-nowrap">
+        Cancha 1 (F5)
+      </button>
+<button class="px-3 py-1.5 rounded-lg text-label-md font-label-md text-secondary hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors whitespace-nowrap">
+        Cancha 2 (F7)
+      </button>
+<button class="px-3 py-1.5 rounded-lg text-label-md font-label-md text-secondary hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors whitespace-nowrap">
+        Cancha 3 (F8)
+      </button>
+</div>
+<!-- Selector de fecha operativo -->
+<div class="flex items-center gap-2 self-end sm:self-auto">
+<div class="flex items-center bg-surface-container-lowest rounded-lg p-1 shadow-sm">
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Día anterior" type="button">
+<span class="material-symbols-outlined text-base">chevron_left</span>
+</button>
+<span class="px-3 text-label-md font-label-md font-semibold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary-container text-base">calendar_today</span>
+          Hoy · 24 Oct 2024
+        </span>
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Día siguiente" type="button">
+<span class="material-symbols-outlined text-base">chevron_right</span>
+</button>
+</div>
+<button class="px-2.5 py-1 text-label-sm font-label-sm text-secondary bg-surface-container hover:bg-surface-container-high rounded transition-colors" id="btn-toggle-loading" title="Simular recarga REST de disponibilidad">
+<span class="material-symbols-outlined text-sm inline-block align-middle">refresh</span> Recargar
+      </button>
+</div>
+</div>
+<!-- Métricas Operativas (4 Columnas Bento) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Métrica 1: Facturación Estimada -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-secondary">Ingresos Estimados Hoy</span>
+<div class="w-8 h-8 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-lg">payments</span>
+</div>
+</div>
+<div class="mt-2">
+<div class="text-data-metric font-data-metric text-on-surface tracking-tight">$ 248.000 <span class="text-label-sm font-label-sm font-normal text-secondary">ARS</span></div>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="inline-flex items-center text-label-sm font-label-sm font-semibold text-primary-container">
+<span class="material-symbols-outlined text-sm">trending_up</span> +18%
+          </span>
+<span class="text-body-sm font-body-sm text-secondary">vs miércoles pasado</span>
+</div>
+</div>
+<div class="mt-3 pt-2 text-body-sm font-body-sm text-secondary flex items-center justify-between bg-surface-container-low px-2 py-1 rounded">
+<span>14 turnos facturados</span>
+<span class="font-semibold text-on-surface">$ 17.714 prom.</span>
+</div>
+</div>
+<!-- Métrica 2: Ocupación de Canchas -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-secondary">Ocupación de Canchas</span>
+<div class="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-lg">pie_chart</span>
+</div>
+</div>
+<div class="mt-2">
+<div class="flex items-baseline gap-2">
+<span class="text-data-metric font-data-metric text-on-surface">82%</span>
+<span class="text-body-sm font-body-sm text-secondary">de capacidad diurna</span>
+</div>
+<!-- Progress bar césped -->
+<div class="w-full bg-surface-container h-2 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary-container h-full rounded-full transition-all duration-500" style="width: 82%;"></div>
+</div>
+</div>
+<div class="mt-3 pt-2 text-body-sm font-body-sm text-secondary flex items-center justify-between bg-surface-container-low px-2 py-1 rounded">
+<span>Turnos cubiertos</span>
+<span class="font-semibold text-on-surface">23 de 28 slots</span>
+</div>
+</div>
+<!-- Métrica 3: Estado de Turnos del Día (Pills con conteo) -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-secondary">Estado de Turnos del Día</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-lg">checklist</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#dcfce7] text-[#15803d]">
+<span class="text-label-sm font-label-sm font-semibold uppercase">Confirmados</span>
+<span class="text-headline-sm font-headline-sm font-bold">18</span>
+</div>
+<div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#fef3c7] text-[#b45309]">
+<span class="text-label-sm font-label-sm font-semibold uppercase">Pendientes</span>
+<span class="text-headline-sm font-headline-sm font-bold">3</span>
+</div>
+<div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#fee2e2] text-[#b91c1c]">
+<span class="text-label-sm font-label-sm font-semibold uppercase">Cancelados</span>
+<span class="text-headline-sm font-headline-sm font-bold">2</span>
+</div>
+<div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container text-secondary">
+<span class="text-label-sm font-label-sm font-semibold uppercase">Libres</span>
+<span class="text-headline-sm font-headline-sm font-bold">5</span>
+</div>
+</div>
+<div class="mt-2 text-right">
+<span class="text-[11px] font-label-sm text-secondary">Total programa: 28 turnos</span>
+</div>
+</div>
+<!-- Métrica 4: Próximo Turno en Cancha -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary-container/5 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-ping"></span>
+<span class="text-label-md font-label-md font-semibold text-primary-container">Próximo Turno Inminente</span>
+</div>
+<span class="text-label-sm font-label-sm text-secondary font-mono">18:00 hs</span>
+</div>
+<div class="mt-2">
+<div class="text-headline-sm font-headline-sm text-on-surface line-clamp-1">Los Amigos FC vs La Scaloneta</div>
+<div class="text-body-sm font-body-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-sm text-primary-container">sports_soccer</span>
+          Cancha 1 · Fútbol 5 (Sintético)
+        </div>
+</div>
+<div class="mt-3 flex items-center justify-between bg-primary-fixed/20 p-2 rounded text-on-primary-fixed-variant">
+<span class="text-label-sm font-label-sm font-semibold">Comienza en 15 minutos</span>
+<button class="text-label-sm font-label-sm font-bold underline hover:text-primary transition-colors" type="button">Dar Entrada</button>
+</div>
+</div>
+</div>
+<!-- Contenedor Principal: 70% Agenda Interactiva / 30% Panel Lateral -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Agenda en Tiempo Real (Columna Izquierda 8/12) -->
+<section class="lg:col-span-8 flex flex-col gap-3">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Header de la tabla -->
+<div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">event_available</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Agenda de Turnos · Jornada Hoy</h2>
+<span class="px-2 py-0.5 text-label-sm font-label-sm font-semibold rounded bg-surface-container text-secondary">
+              6 turnos visibles
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-body-sm font-body-sm text-secondary">Vista:</span>
+<span class="text-label-sm font-label-sm font-semibold px-2 py-1 bg-surface-container-lowest rounded text-primary-container shadow-xs">Cronológica</span>
+</div>
+</div>
+<!-- Tabla / Timeline interactivo denso -->
+<div class="overflow-x-auto" id="schedule-table-container">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-secondary text-label-sm font-label-sm uppercase tracking-wider">
+<th class="py-2.5 px-3">Horario</th>
+<th class="py-2.5 px-3">Cancha / Formato</th>
+<th class="py-2.5 px-3">Cliente / Reserva</th>
+<th class="py-2.5 px-3">Contacto</th>
+<th class="py-2.5 px-2 text-center">Duración</th>
+<th class="py-2.5 px-3 text-right">Monto (ARS)</th>
+<th class="py-2.5 px-3 text-center">Estado</th>
+<th class="py-2.5 px-3 text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="text-body-md font-body-md divide-y divide-surface-container-low text-on-surface" id="booking-rows">
+<!-- Fila 1 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-on-surface leading-none">18:00 - 19:00</div>
+<div class="text-[11px] text-primary-container font-medium mt-0.5">Inicia en breve</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface">Cancha 1</div>
+<div class="text-body-sm font-body-sm text-secondary">F5 · Sintético Pro</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Gonzalo Higuaín</div>
+<span class="inline-block text-[10px] px-1.5 rounded bg-surface-container text-secondary">Titular frecuente</span>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<a class="text-secondary hover:text-primary-container flex items-center gap-1 font-data-tabular" href="tel:+5491144556677">
+<span class="material-symbols-outlined text-xs">call</span> +54 9 11 4455-6677
+                  </a>
+</td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">1 hora</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap font-data-tabular font-semibold">
+                  $ 18.000
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#dcfce7] text-[#15803d] text-label-sm font-label-sm font-semibold uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803d]"></span> CONFIRMADO
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Ver Detalle" type="button">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="px-2 py-1 rounded bg-primary-container hover:bg-primary text-on-primary text-label-sm font-label-sm font-medium transition-colors shadow-xs" title="Cobrar Saldo" type="button">
+                      Cobrar
+                    </button>
+<button class="p-1 rounded text-error hover:bg-error-container/40 transition-colors" title="Cancelar" type="button">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila 2 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group bg-tertiary-fixed/10">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-on-surface leading-none">18:00 - 20:00</div>
+<div class="text-[11px] text-tertiary font-medium mt-0.5">Turno 120 min</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface">Cancha 2</div>
+<div class="text-body-sm font-body-sm text-secondary">F7 · Caucho AFA</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Agustín Marchesín</div>
+<span class="text-body-sm font-body-sm text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">hourglass_empty</span> Esperando confirmación
+                  </span>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<a class="text-secondary hover:text-primary-container flex items-center gap-1 font-data-tabular" href="tel:+5491155667788">
+<span class="material-symbols-outlined text-xs">call</span> +54 9 11 5566-7788
+                  </a>
+</td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">2 horas</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap font-data-tabular font-semibold">
+                  $ 42.000
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#fef3c7] text-[#b45309] text-label-sm font-label-sm font-semibold uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-[#b45309] animate-pulse"></span> PENDIENTE
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-[#15803d] text-white hover:bg-[#16a34a] text-label-sm font-label-sm font-semibold shadow-xs transition-colors" type="button">
+                      Confirmar
+                    </button>
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Reprogramar horario" type="button">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Fila 3 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-on-surface leading-none">19:00 - 20:00</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface">Cancha 1</div>
+<div class="text-body-sm font-body-sm text-secondary">F5 · Sintético Pro</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Matias Kranevitter</div>
+<span class="text-body-sm font-body-sm text-secondary">Abonó seña 50%</span>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<a class="text-secondary hover:text-primary-container flex items-center gap-1 font-data-tabular" href="tel:+5491133221100">
+<span class="material-symbols-outlined text-xs">call</span> +54 9 11 3322-1100
+                  </a>
+</td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">1 hora</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap font-data-tabular font-semibold">
+                  $ 18.000
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#dcfce7] text-[#15803d] text-label-sm font-label-sm font-semibold uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803d]"></span> CONFIRMADO
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Ver Detalle" type="button">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Fila 4 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-on-surface leading-none">20:00 - 22:00</div>
+<div class="text-[11px] text-secondary font-medium mt-0.5">Turno Central</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface">Cancha 3</div>
+<div class="text-body-sm font-body-sm text-secondary">Fútbol 8 Profesional</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Rodrigo De Paul</div>
+<span class="inline-block text-[10px] px-1.5 rounded bg-secondary-container text-on-secondary-container">Torneo Nocturno</span>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<a class="text-secondary hover:text-primary-container flex items-center gap-1 font-data-tabular" href="tel:+5491188990011">
+<span class="material-symbols-outlined text-xs">call</span> +54 9 11 8899-0011
+                  </a>
+</td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">2 horas</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap font-data-tabular font-semibold">
+                  $ 56.000
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#dcfce7] text-[#15803d] text-label-sm font-label-sm font-semibold uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803d]"></span> CONFIRMADO
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<button class="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" title="Ver Detalle" type="button">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Fila 5: Bloqueado -->
+<tr class="bg-surface-container-high/30 hover:bg-surface-container-high/50 transition-colors">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-secondary leading-none">21:00 - 22:00</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-secondary">Cancha 2</div>
+<div class="text-body-sm font-body-sm text-secondary">F7 · Iluminación</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">build</span> Mantenimiento / Luces
+                  </div>
+<span class="text-body-sm font-body-sm text-secondary">Uso técnico interno</span>
+</td>
+<td class="py-3 px-3 text-secondary text-body-sm font-body-sm">
+                  Personal de Planta
+                </td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">1 hora</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap text-secondary font-mono">
+                  —
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#334155] text-white text-label-sm font-label-sm font-semibold uppercase">
+<span class="material-symbols-outlined text-xs">lock</span> BLOQUEADO
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<button class="px-2.5 py-1 rounded bg-surface-container-highest hover:bg-surface-container text-on-surface text-label-sm font-label-sm font-medium transition-colors" type="button">
+                    Desbloquear
+                  </button>
+</td>
+</tr>
+<!-- Fila 6: Disponible -->
+<tr class="bg-primary-fixed/5 hover:bg-primary-fixed/15 transition-colors">
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-headline-sm font-headline-sm text-primary-container leading-none">22:00 - 23:00</div>
+<div class="text-[11px] text-secondary mt-0.5">Último turno</div>
+</td>
+<td class="py-3 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface">Cancha 1</div>
+<div class="text-body-sm font-body-sm text-secondary">F5 Sintético</div>
+</td>
+<td class="py-3 px-3" colspan="2">
+<span class="inline-flex items-center gap-1.5 text-label-md font-label-md font-semibold text-primary-container">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span> HORARIO LIBRE DISPONIBLE
+                  </span>
+</td>
+<td class="py-3 px-2 text-center whitespace-nowrap">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm">1 hora</span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap font-data-tabular font-semibold text-on-surface">
+                  $ 18.000
+                </td>
+<td class="py-3 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary-container/40 text-primary-container text-label-sm font-label-sm font-semibold">
+                    DISPONIBLE
+                  </span>
+</td>
+<td class="py-3 px-3 text-right whitespace-nowrap">
+<button class="px-3 py-1 rounded bg-primary-container text-on-primary hover:bg-primary font-label-sm text-label-sm font-semibold shadow-xs transition-colors" type="button">
+                    + Reservar aquí
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Skeleton loader toggleable (Demostración de componente técnico) -->
+<div class="hidden p-4 space-y-3" id="skeleton-loader-view">
+<div class="h-10 bg-surface-container rounded animate-pulse"></div>
+<div class="h-12 bg-surface-container-low rounded animate-pulse"></div>
+<div class="h-12 bg-surface-container-low rounded animate-pulse"></div>
+<div class="h-12 bg-surface-container-low rounded animate-pulse"></div>
+</div>
+<!-- Footer operativo de tabla con telemetría REST -->
+<div class="px-4 py-2.5 bg-surface-container-low text-secondary text-body-sm font-body-sm flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="flex items-center gap-2 font-mono text-[11px]">
+<span class="inline-block w-2 h-2 rounded-full bg-[#15803d]"></span>
+<span>GET /api/v1/availability?venue_id=cancha_01&date=2024-10-24</span>
+<span class="text-primary-container font-semibold">HTTP 200 OK (38ms)</span>
+</div>
+<div class="flex items-center gap-3">
+<span>Slots ocupados: <strong class="text-on-surface">5</strong></span>
+<span>Libres: <strong class="text-on-surface">1</strong></span>
+</div>
+</div>
+</div>
+<!-- Quick Banner Fotográfico de Instalaciones -->
+<div class="relative bg-surface-container-lowest rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 overflow-hidden">
+<div class="flex items-center gap-4">
+<img class="w-20 h-20 rounded-lg object-cover shadow-sm shrink-0" data-alt="High quality floodlit synthetic grass football turf pitch at night in Palermo Buenos Aires, freshly combed green turf with clear white lines under professional sports lighting, B2B sports facility management style, ultra clean, high contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8W7TM08A5Z5wG8PSDPmLq9teoZ-vwRSRXQ6JnMD66flEac5N76ym0oJIzlANwYlGjTXBDvf1UdiWbNwuhqPB4EAQa6uu8BKxnFZX466c9Tx6IuTbLieWQsNuUnqMcXl48s8w7Hv5CJqvzuJ6_1cDqU3lcCcmmPc7uBKM5Wmxp2Ub58wHXbK5U9v1eCf7dwovq_3o87AS7toXtTFrczqoyCYN2v8T9MaDOJ_bi4wcW5HWLy5EDSlRyjQ"/>
+<div>
+<div class="text-headline-sm font-headline-sm text-on-surface">Estado Técnico de Superficies</div>
+<p class="text-body-sm font-body-sm text-secondary">
+              Último peinado de caucho realizado: Hoy 14:30 hs. Luces LED calibradas a 500 Lux para turnos nocturnos.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="px-3 py-1.5 rounded bg-surface-container text-on-surface text-label-md font-label-md hover:bg-surface-container-high transition-colors" type="button">
+            Bitácora de Mantenimiento
+          </button>
+</div>
+</div>
+</section>
+<!-- Panel Lateral: Alertas Rápidas & Estado en Vivo (Columna Derecha 4/12) -->
+<aside class="lg:col-span-4 flex flex-col gap-4">
+<!-- Widget: Estado en Tiempo Real de las 3 Canchas -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-lg">sensors</span>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Estado Actual en Vivo</h3>
+</div>
+<span class="text-label-sm font-label-sm text-secondary font-mono">17:45 hs</span>
+</div>
+<div class="space-y-2.5">
+<!-- Cancha 1 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-[#15803d]/15 text-[#15803d] flex items-center justify-center font-bold text-label-sm">
+                C1
+              </div>
+<div class="flex flex-col">
+<span class="text-label-md font-label-md font-semibold text-on-surface">Cancha 1 (F5)</span>
+<span class="text-body-sm font-body-sm text-secondary">Ocupada hasta las 19:00</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm font-semibold text-primary-container bg-[#dcfce7] px-2 py-0.5 rounded">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+              En Juego
+            </span>
+</div>
+<!-- Cancha 2 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-tertiary-fixed text-tertiary flex items-center justify-center font-bold text-label-sm">
+                C2
+              </div>
+<div class="flex flex-col">
+<span class="text-label-md font-label-md font-semibold text-on-surface">Cancha 2 (F7)</span>
+<span class="text-body-sm font-body-sm text-secondary">Próximo inicio 18:00 hs</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm font-semibold text-[#b45309] bg-[#fef3c7] px-2 py-0.5 rounded">
+              Por Iniciar
+            </span>
+</div>
+<!-- Cancha 3 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-surface-container text-secondary flex items-center justify-center font-bold text-label-sm">
+                C3
+              </div>
+<div class="flex flex-col">
+<span class="text-label-md font-label-md font-semibold text-on-surface">Cancha 3 (F8)</span>
+<span class="text-body-sm font-body-sm text-secondary">Libre hasta las 20:00 hs</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm font-semibold text-secondary bg-surface-container-high px-2 py-0.5 rounded">
+              Libre
+            </span>
+</div>
+</div>
+</div>
+<!-- Widget: Turnos Pendientes de Confirmación (3 items con Aprobar/Rechazar) -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container text-lg">pending_actions</span>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Pendientes de Confirmación</h3>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#b45309] text-label-sm font-label-sm font-bold">
+            3
+          </span>
+</div>
+<div class="space-y-3" id="pending-reservations-list">
+<!-- Solicitud 1 -->
+<div class="p-3 rounded-lg bg-surface-container-low/70 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm font-headline-sm text-on-surface text-label-md">Lautaro Martínez</span>
+<div class="text-body-sm font-body-sm text-secondary">Cancha 1 (F5) · 21:00 hs (Hoy)</div>
+</div>
+<span class="text-label-sm font-label-sm font-mono font-semibold text-on-surface">$ 18.000</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-secondary pt-1">
+<span class="flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-xs">account_balance_wallet</span> Vía Mercado Pago
+              </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-[#15803d] text-white hover:bg-[#16a34a] transition-colors font-semibold" onclick="this.closest('.flex-col').remove()" type="button">
+                  Aprobar
+                </button>
+<button class="px-2 py-1 text-label-sm font-label-sm rounded bg-surface-container text-error hover:bg-error-container/40 transition-colors" onclick="this.closest('.flex-col').remove()" type="button">
+                  Rechazar
+                </button>
+</div>
+</div>
+</div>
+<!-- Solicitud 2 -->
+<div class="p-3 rounded-lg bg-surface-container-low/70 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm font-headline-sm text-on-surface text-label-md">Leandro Paredes</span>
+<div class="text-body-sm font-body-sm text-secondary">Cancha 2 (F7) · 22:00 hs (Hoy)</div>
+</div>
+<span class="text-label-sm font-label-sm font-mono font-semibold text-on-surface">$ 21.000</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-secondary pt-1">
+<span class="flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-xs">payments</span> Efectivo en Mostrador
+              </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-[#15803d] text-white hover:bg-[#16a34a] transition-colors font-semibold" onclick="this.closest('.flex-col').remove()" type="button">
+                  Aprobar
+                </button>
+<button class="px-2 py-1 text-label-sm font-label-sm rounded bg-surface-container text-error hover:bg-error-container/40 transition-colors" onclick="this.closest('.flex-col').remove()" type="button">
+                  Rechazar
+                </button>
+</div>
+</div>
+</div>
+<!-- Solicitud 3 -->
+<div class="p-3 rounded-lg bg-surface-container-low/70 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm font-headline-sm text-on-surface text-label-md">Marcos Acuña</span>
+<div class="text-body-sm font-body-sm text-secondary">Cancha 3 (F8) · 23:00 hs (Hoy)</div>
+</div>
+<span class="text-label-sm font-label-sm font-mono font-semibold text-on-surface">$ 28.000</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-secondary pt-1">
+<span class="flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-xs">call</span> WhatsApp Directo
+              </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-[#15803d] text-white hover:bg-[#16a34a] transition-colors font-semibold" onclick="this.closest('.flex-col').remove()" type="button">
+                  Aprobar
+                </button>
+<button class="px-2 py-1 text-label-sm font-label-sm rounded bg-surface-container text-error hover:bg-error-container/40 transition-colors" onclick="this.closest('.flex-col').remove()" type="button">
+                  Rechazar
+                </button>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full mt-3 py-1.5 text-center text-label-sm font-label-sm text-secondary hover:text-on-surface bg-surface-container-low rounded hover:bg-surface-container transition-colors" type="button">
+          Ver historial de solicitudes
+        </button>
+</div>
+<!-- Widget Caja Rápida del Turnero -->
+<div class="bg-[#0f1e29] text-white p-4 rounded-xl shadow-md flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#79db8d]">point_of_sale</span>
+<span class="text-label-md font-label-md font-semibold">Caja Diaria Operativa</span>
+</div>
+<span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-[#79db8d]">
+            Turno Tarde
+          </span>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-1 font-mono">
+<div class="p-2 rounded bg-[#162a38]">
+<span class="text-[10px] text-slate-400 block font-sans">Efectivo Físico</span>
+<span class="text-headline-sm font-semibold text-white">$ 94.000</span>
+</div>
+<div class="p-2 rounded bg-[#162a38]">
+<span class="text-[10px] text-slate-400 block font-sans">Mercado Pago / Alias</span>
+<span class="text-headline-sm font-semibold text-emerald-400">$ 154.000</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="text-[11px] text-slate-400">Responsable: M. Palermo</span>
+<button class="text-label-sm font-label-sm px-3 py-1 bg-[#15803d] hover:bg-[#16a34a] text-white rounded font-medium transition-colors" type="button">
+            Cerrar Caja
+          </button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Micro-interacciones JavaScript B2B -->
+<script>
+    // Toggle Skeleton loader for simulated REST refetch
+    const refreshBtn = document.getElementById('btn-toggle-loading');
+    const bookingRows = document.getElementById('schedule-table-container');
+    const skeletonView = document.getElementById('skeleton-loader-view');
+
+    if (refreshBtn && bookingRows && skeletonView) {
+      refreshBtn.addEventListener('click', () => {
+        bookingRows.classList.add('hidden');
+        skeletonView.classList.remove('hidden');
+        refreshBtn.disabled = true;
+        refreshBtn.classList.add('opacity-50');
+
+        setTimeout(() => {
+          skeletonView.classList.add('hidden');
+          bookingRows.classList.remove('hidden');
+          refreshBtn.disabled = false;
+          refreshBtn.classList.remove('opacity-50');
+        }, 600);
+      });
+    }
+
+    // Filter pill tabs interactivity
+    const filterTabs = document.querySelectorAll('#pitch-filter-tabs button');
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterTabs.forEach(t => {
+          t.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+          t.classList.add('text-secondary');
+        });
+        tab.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+        tab.classList.remove('text-secondary');
+      });
+    });
+  </script>
+</div></main></div></body></html>

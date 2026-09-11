@@ -55,6 +55,11 @@ export default defineConfig({
         secure: false,
         ws: true,
       },
+      '/api': {
+        target,
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

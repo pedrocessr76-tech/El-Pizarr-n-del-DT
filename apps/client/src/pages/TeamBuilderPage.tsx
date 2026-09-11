@@ -67,12 +67,15 @@ const GENERIC_TO_FIFA: Record<string, FIFA_POSITION[]> = {
   'FWD': ['DC', 'ST', 'SD', 'ED', 'EI'],
 };
 
-// Rating general de un jugador (promedio de las 6 stats)
-const calcPlayerRating = (p: Player): number =>
-  Math.round(
+// Rating general de un jugador: usa el OVR real (player.rating) cuando está definido;
+// de lo contrario, lo estima como promedio de las 6 stats.
+const calcPlayerRating = (p: Player): number => {
+  if (typeof p.rating === 'number' && p.rating > 0) return Math.round(p.rating);
+  return Math.round(
     (p.stats.pace + p.stats.shooting + p.stats.passing +
      p.stats.dribbling + p.stats.defending + p.stats.physical) / 6
   );
+};
 
 // Zona a la que pertenece cada posición FIFA
 type TeamZone = 'DEF' | 'MID' | 'ATT';
