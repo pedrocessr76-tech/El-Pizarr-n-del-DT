@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
+import { B2bCourtEntity } from '../entities/court.entity';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
 import { B2bAuthController } from './b2b-auth.controller';
@@ -13,7 +14,7 @@ import { B2bRolesGuard } from './b2b-roles.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity], 'b2b'),
+    TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity], 'b2b'),
     PassportModule,
     JwtModule.register({ secret: process.env.B2B_JWT_SECRET || 'sistema-canchas-secret', signOptions: { expiresIn: '7d' } }),
   ],

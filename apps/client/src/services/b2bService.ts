@@ -25,6 +25,7 @@ export interface B2bBooking {
 export interface B2bFacility { id: string; organizationId: string; name: string; address?: string | null; status: string; }
 export interface B2bCourt { id: string; facilityId: string; organizationId: string; name: string; sportType: string; capacity: number; status: string; defaultPriceCentsArs: number; }
 export interface B2bMetricsSummary { date: string; currency: string; totalShifts: number; occupiedShifts: number; availableShifts: number; pendingBookings: number; confirmedBookings: number; cancelledBookings: number; revenueCentsArs: number; }
+export interface B2bOrganizationOption { id: string; name: string; slug: string; }
 
 // El backend sirve el B2B bajo `/api/v1`. VITE_API_URL apunta a la raíz de la API
 // (misma convención que en api.ts), por eso se agrega el prefijo `/api`.
@@ -51,6 +52,18 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register', input);
     return data;
   },
+  async registerClient(input: { email: string; fullName: string; password: string }) {
+    const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register-client', input);
+    return data;
+  },
+  async getPublicOrganizations() {
+    const { data } = await b2bApi.get<B2bOrganizationOption[]>('/v1/auth/organizations');
+    return data;
+  },
+  async getPublicCourts(organizationId: string) {
+    const { data } = await b2bApi.get(`/v1/auth/organizations/${organizationId}/courts`);
+    return data;
+  },
   async getProfile() {
     const { data } = await b2bApi.get<B2bUser>('/v1/auth/me');
     return data;
@@ -69,6 +82,14 @@ export const b2bService = {
   },
   async createFacility(input: { name: string; address?: string }) {
     const { data } = await b2bApi.post<B2bFacility>('/v1/facilities', input);
+    return data;
+  },
+  async createCourt(facilityId: string, input: { name: string; sportType?: string; defaultPriceCentsArs: number }) {
+    const { data } = await b2bApi.post<B2bCourt>(`/v1/facilities/${facilityId}/courts`, input);
+    return data;
+  },
+  async updateCourt(id: string, patch: { defaultPriceCentsArs?: number; name?: string; sportType?: string }) {
+    const { data } = await b2bApi.patch<B2bCourt>(`/v1/courts/${id}`, patch);
     return data;
   },
   async getBookings() {

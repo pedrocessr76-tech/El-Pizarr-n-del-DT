@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { B2bJwtGuard } from './b2b-jwt.guard';
 import { CurrentB2bUser } from './b2b-auth.decorators';
@@ -11,6 +11,13 @@ class RegisterB2bDto {
   @ApiProperty() email!: string;
   @ApiProperty() fullName!: string;
   @ApiProperty() password!: string;
+}
+
+class RegisterClientDto {
+  @ApiProperty() email!: string;
+  @ApiProperty() fullName!: string;
+  @ApiProperty() password!: string;
+  @ApiProperty({ required: false }) organizationId?: string;
 }
 
 class LoginB2bDto {
@@ -27,6 +34,24 @@ export class B2bAuthController {
   @ApiOperation({ summary: 'Crear una organización B2B y su propietario' })
   register(@Body() body: RegisterB2bDto) {
     return this.auth.registerOrganization(body);
+  }
+
+  @Post('register-client')
+  @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })
+  registerClient(@Body() body: RegisterClientDto) {
+    return this.auth.registerClient(body);
+  }
+
+  @Get('organizations')
+  @ApiOperation({ summary: 'Listar complejos públicos para el registro de clientes' })
+  listOrganizations() {
+    return this.auth.listPublicOrganizations();
+  }
+
+  @Get('organizations/:organizationId/courts')
+  @ApiOperation({ summary: 'Listar canchas públicas de un complejo' })
+  listOrganizationCourts(@Param('organizationId') organizationId: string) {
+    return this.auth.listPublicCourts(organizationId);
   }
 
   @Post('login')

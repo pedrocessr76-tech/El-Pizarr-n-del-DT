@@ -16,6 +16,7 @@ interface B2bState {
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (input: B2bRegisterInput) => Promise<boolean>;
+  registerClient: (input: { email: string; fullName: string; password: string }) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
@@ -52,6 +53,17 @@ export const useB2bStore = create<B2bState>((set) => ({
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta.' });
+      return false;
+    }
+  },
+  registerClient: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await b2bService.registerClient(input);
+      set({ ...persistAuth(response), isLoading: false });
+      return true;
+    } catch (error: any) {
+      set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta de cliente.' });
       return false;
     }
   },
