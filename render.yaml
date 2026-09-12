@@ -39,27 +39,25 @@ services:
           type: web
           name: el-pizarron-web
           envVarKey: RENDER_EXTERNAL_URL
-      # B2B: instancia PostgreSQL independiente para Sistema Canchas.
+      # B2B: misma instancia Free de Render (el-pizarron-db), base lógica independiente.
       - key: B2B_DB_HOST
         fromDatabase:
-          name: el-pizarron-db-canchas
+          name: el-pizarron-db
           property: host
       - key: B2B_DB_PORT
         fromDatabase:
-          name: el-pizarron-db-canchas
+          name: el-pizarron-db
           property: port
       - key: B2B_DB_USER
         fromDatabase:
-          name: el-pizarron-db-canchas
+          name: el-pizarron-db
           property: user
       - key: B2B_DB_PASSWORD
         fromDatabase:
-          name: el-pizarron-db-canchas
+          name: el-pizarron-db
           property: password
       - key: B2B_DB_NAME
-        fromDatabase:
-          name: el-pizarron-db-canchas
-          property: database
+        value: sistema_canchas
       - key: B2B_DB_SSL
         value: true
       - key: B2B_DB_SYNCHRONIZE
@@ -103,8 +101,5 @@ services:
 
 databases:
   - name: el-pizarron-db
-    region: virginia
-    plan: free
-  - name: el-pizarron-db-canchas
     region: virginia
     plan: free

@@ -1,34 +1,41 @@
 # Despliegue B2B en Render
 
-El producto usa dos instancias PostgreSQL Free independientes en Render:
+Se usa **una sola instancia PostgreSQL Free de Render** (el plan gratuito no permite pagar una segunda base). Dentro de esa misma instancia hay **dos bases lógicas independientes**, sin compartir tablas:
 
-- `el-pizarron-db` → base del juego original.
-- `el-pizarron-db-canchas` → base de Sistema Canchas (creada por Render).
+- Base del juego original (la que crea Render para `el-pizarron-db`).
+- Base `sistema_canchas` (Sistema Canchas), con prefijo `b2b_*` en sus tablas.
 
-No comparten instancia, usuario ni tablas. El backend NestJS abre dos conexiones separadas vía `DB_*` (juego) y `B2B_DB_*` (Sistema Canchas). El frontend es un único Static Site con dos entradas directas:
+El backend NestJS abre dos conexiones separadas vía `DB_*` (juego) y `B2B_DB_*` (Sistema Canchas), ambas apuntando al mismo host/puerto/usuario de `el-pizarron-db`, difiriendo solo en el nombre de base (`DB_NAME` vs `B2B_DB_NAME`). El frontend es un único Static Site con dos entradas directas:
 
 - `/dt`: El Pizarrón del DT.
 - `/canchas`: Sistema Canchas.
 
-El `render.yaml` declara ambas bases en `databases:` y mapea `B2B_DB_*` a `el-pizarron-db-canchas` mediante `fromDatabase` (host, puerto, usuario, clave y nombre de base). No hace falta crear la base a mano.
+El `render.yaml` mapea `B2B_DB_*` a la misma instancia `el-pizarron-db` (`fromDatabase`) y fija `B2B_DB_NAME = sistema_canchas`.
+
+## Creación automática de la base `sistema_canchas`
+
+Al arrancar, el API (`apps/server/src/main.ts`) verifica si la base `sistema_canchas` existe en la instancia compartida; si no, la **crea automáticamente** (`CREATE DATABASE`). No hace falta correr SQL a mano. Luego ejecuta la migración B2B (`B2B_DB_MIGRATIONS=true`) y carga el seed (`B2B_SEED=true`).
+
+> Requisito: el usuario de la instancia debe tener permiso `CREATE DATABASE`. Es el caso por defecto para el usuario principal que Render crea para `el-pizarron-db`. Si tu usuario no tuviera permiso, creá la base una vez desde el shell de Render:
+> `CREATE DATABASE sistema_canchas;`
 
 ## Si el API falla con `ECONNREFUSED` en `b2b`
 
-En un servicio Render existente, un cambio en `render.yaml` no siempre actualiza automáticamente las variables ya creadas. En `el-pizarron-api`, revisar/agregar manualmente que `B2B_DB_*` apunten al servicio `el-pizarron-db-canchas` (no al mismo que `DB_*`):
+En un servicio Render existente, un cambio en `render.yaml` no siempre actualiza automáticamente las variables ya creadas. En `el-pizarron-api`, revisar/agregar manualmente que `B2B_DB_*` apunten a la misma instancia de `el-pizarron-db` pero con `B2B_DB_NAME = sistema_canchas`:
 
 ```text
-B2B_DB_HOST       = host interno de el-pizarron-db-canchas
-B2B_DB_PORT       = puerto de el-pizarron-db-canchas
-B2B_DB_USER       = usuario de el-pizarron-db-canchas
-B2B_DB_PASSWORD   = clave de el-pizarron-db-canchas
-B2B_DB_NAME       = base de el-pizarron-db-canchas
+B2B_DB_HOST       = mismo host de el-pizarron-db
+B2B_DB_PORT       = mismo puerto de el-pizarron-db
+B2B_DB_USER       = mismo usuario de el-pizarron-db
+B2B_DB_PASSWORD   = misma clave de el-pizarron-db
+B2B_DB_NAME       = sistema_canchas
 B2B_DB_SSL        = true
 B2B_DB_MIGRATIONS = true
 ```
 
-El código conserva fallbacks a `DB_*` por compatibilidad heredada del MVP, pero en producción `B2B_DB_*` debe apuntar a la instancia independiente. No dejar `B2B_DB_HOST` en `localhost`.
+El código conserva fallbacks a `DB_*` por compatibilidad. No dejar `B2B_DB_HOST` en `localhost`.
 
-Después de crear/guardar las variables, ejecutar un nuevo deploy del servicio API.
+Después de guardar las variables, ejecutar un nuevo deploy del servicio API.
 
 Luego el servicio API ejecuta la migración B2B con `B2B_DB_MIGRATIONS=true` y carga el seed cuando `B2B_SEED=true`.
 
