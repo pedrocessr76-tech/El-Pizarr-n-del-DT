@@ -69,11 +69,11 @@ services:
       - key: B2B_SEED_EMAIL
         value: admin@lacancha.com.ar
       - key: B2B_SEED_PASSWORD
-        generateValue: true
+        value: canchas-demo
       - key: B2B_SEED_CLIENT_EMAIL
         value: cliente@lacancha.com.ar
       - key: B2B_SEED_CLIENT_PASSWORD
-        generateValue: true
+        value: canchas-client
       - key: B2B_JWT_SECRET
         generateValue: true
 

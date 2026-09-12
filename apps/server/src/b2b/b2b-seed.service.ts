@@ -36,11 +36,17 @@ export class B2bSeedService implements OnModuleInit {
     if (!organization) organization = await this.organizations.save(this.organizations.create({ name: 'Complejo La Cancha', slug: 'complejo-la-cancha' }));
     const email = process.env.B2B_SEED_EMAIL || 'admin@lacancha.com.ar';
     let user = await this.users.findOne({ where: { email, organizationId: organization.id } });
-    if (!user) user = await this.users.save(this.users.create({ organizationId: organization.id, email, fullName: 'Martín Palermo', passwordHash: await bcrypt.hash(process.env.B2B_SEED_PASSWORD || 'canchas-demo', 12) }));
+    if (!user) user = this.users.create({ organizationId: organization.id, email, fullName: 'Martín Palermo' });
+    // Se actualiza el hash en cada arranque para que un cambio de B2B_SEED_PASSWORD en Render se aplique sin tocar la BD.
+    user.passwordHash = await bcrypt.hash(process.env.B2B_SEED_PASSWORD || 'canchas-demo', 12);
+    user = await this.users.save(user);
     await this.userRoles.upsert({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.ADMIN }, ['userId', 'organizationId', 'roleId']);
     const clientEmail = process.env.B2B_SEED_CLIENT_EMAIL || 'cliente@lacancha.com.ar';
     let client = await this.users.findOne({ where: { email: clientEmail, organizationId: organization.id } });
-    if (!client) client = await this.users.save(this.users.create({ organizationId: organization.id, email: clientEmail, fullName: 'Cliente Demo', passwordHash: await bcrypt.hash(process.env.B2B_SEED_CLIENT_PASSWORD || 'canchas-client', 12) }));
+    if (!client) client = this.users.create({ organizationId: organization.id, email: clientEmail, fullName: 'Cliente Demo' });
+    // Mismo criterio: mantener la contraseña del cliente demo sincronizada con B2B_SEED_CLIENT_PASSWORD.
+    client.passwordHash = await bcrypt.hash(process.env.B2B_SEED_CLIENT_PASSWORD || 'canchas-client', 12);
+    client = await this.users.save(client);
     await this.userRoles.upsert({ userId: client.id, organizationId: organization.id, roleId: B2bRoleCode.CLIENT }, ['userId', 'organizationId', 'roleId']);
     let facility = await this.facilities.findOne({ where: { organizationId: organization.id, name: 'Sede Central Palermo' } });
     if (!facility) facility = await this.facilities.save(this.facilities.create({ organizationId: organization.id, name: 'Sede Central Palermo', address: 'Buenos Aires, Argentina' }));

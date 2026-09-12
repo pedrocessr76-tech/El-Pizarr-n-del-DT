@@ -1,17 +1,32 @@
 import { create } from 'zustand';
 import { b2bService, type B2bUser } from '../services/b2bService';
 
+interface B2bRegisterInput {
+  organizationName: string;
+  slug: string;
+  email: string;
+  fullName: string;
+  password: string;
+}
+
 interface B2bState {
   user: B2bUser | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (input: B2bRegisterInput) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
 
 const storedUser = localStorage.getItem('b2bUser');
+
+function persistAuth(response: { accessToken: string; user: B2bUser }): { user: B2bUser; token: string } {
+  localStorage.setItem('b2bToken', response.accessToken);
+  localStorage.setItem('b2bUser', JSON.stringify(response.user));
+  return { user: response.user, token: response.accessToken };
+}
 
 export const useB2bStore = create<B2bState>((set) => ({
   user: storedUser ? JSON.parse(storedUser) : null,
@@ -22,12 +37,21 @@ export const useB2bStore = create<B2bState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await b2bService.login(email, password);
-      localStorage.setItem('b2bToken', response.accessToken);
-      localStorage.setItem('b2bUser', JSON.stringify(response.user));
-      set({ user: response.user, token: response.accessToken, isLoading: false });
+      set({ ...persistAuth(response), isLoading: false });
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo iniciar sesión.' });
+      return false;
+    }
+  },
+  register: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await b2bService.register(input);
+      set({ ...persistAuth(response), isLoading: false });
+      return true;
+    } catch (error: any) {
+      set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta.' });
       return false;
     }
   },

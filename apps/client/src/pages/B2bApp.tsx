@@ -9,7 +9,6 @@ import {
   CircleDollarSign,
   Clock3,
   LayoutDashboard,
-  LogIn,
   LogOut,
   Menu,
   ShieldCheck,
@@ -58,6 +57,7 @@ export function B2bApp() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const login = useB2bStore((state) => state.login);
+  const register = useB2bStore((state) => state.register);
 
   const isStaff = role !== 'CLIENT';
   const navigate = (nextView: B2bView) => {
@@ -67,11 +67,24 @@ export function B2bApp() {
 
   const enterB2b = async (email: string, password: string) => {
     const authenticated = await login(email, password);
-    navigate(authenticated ? (role === 'CLIENT' ? 'portal' : 'dashboard') : (role === 'CLIENT' ? 'portal' : 'dashboard'));
+    if (!authenticated) return;
+    // Navegamos según los roles reales autenticados, no por el selector de demo.
+    const roles = useB2bStore.getState().user?.roles.map((item) => item.toUpperCase()) ?? [];
+    const isClient = roles.includes('CLIENT') || (roles.length === 0 && role === 'CLIENT');
+    setRole(isClient ? 'CLIENT' : 'ADMIN');
+    navigate(isClient ? 'portal' : 'dashboard');
+  };
+
+  const registerOrganization = async (input: { organizationName: string; slug: string; fullName: string; email: string; password: string }) => {
+    const created = await register(input);
+    if (!created) return;
+    // Un propietario recién registrado es personal: entra al panel de gestión.
+    setRole('ADMIN');
+    navigate('dashboard');
   };
 
   if (view === 'login') {
-    return <B2bLogin role={role} onRoleChange={setRole} onEnter={enterB2b} />;
+    return <B2bLogin role={role} onRoleChange={setRole} onEnter={enterB2b} onRegister={registerOrganization} />;
   }
 
   return (
@@ -104,10 +117,110 @@ export function B2bApp() {
   );
 }
 
-function B2bLogin({ role, onRoleChange, onEnter }: { role: B2bRole; onRoleChange: (role: B2bRole) => void; onEnter: (email: string, password: string) => Promise<void> }) {
+function B2bLogin({ role, onRoleChange, onEnter, onRegister }: {
+  role: B2bRole;
+  onRoleChange: (role: B2bRole) => void;
+  onEnter: (email: string, password: string) => Promise<void>;
+  onRegister: (input: { organizationName: string; slug: string; fullName: string; email: string; password: string }) => Promise<void>;
+}) {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState(role === 'CLIENT' ? 'cliente@lacancha.com.ar' : 'admin@lacancha.com.ar');
-  const [password, setPassword] = useState('canchas-demo');
-  return <div className="b2b-login"><div className="b2b-login-card"><div className="b2b-brand b2b-login-brand"><div className="b2b-brand-mark"><span>SC</span></div><div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div></div><div className="b2b-login-copy"><span>Acceso seguro</span><h1>Tu complejo,<br /><em>bajo control.</em></h1><p>Gestioná canchas, reservas y recaudación desde un solo lugar.</p></div><div className="profile-picker"><label>Ingresar como</label><div>{(['OWNER', 'ADMIN', 'OPERATOR', 'CLIENT'] as B2bRole[]).map((item) => <button key={item} className={role === item ? 'selected' : ''} onClick={() => { onRoleChange(item); setEmail(item === 'CLIENT' ? 'cliente@lacancha.com.ar' : 'admin@lacancha.com.ar'); }}><span className="profile-icon">{item === 'CLIENT' ? <UserRound size={18} /> : <ShieldCheck size={18} />}</span><span>{formatRole(item)}</span>{role === item && <Check size={16} />}</button>)}</div></div><label className="field-label">Email</label><input className="b2b-input" type="email" placeholder="tu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} /><label className="field-label">Contraseña</label><input className="b2b-input" type="password" placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} /><button className="primary-action wide" onClick={() => onEnter(email, password)}><LogIn size={17} /> Ingresar al sistema</button><p className="login-footnote">Acceso protegido · Sistema Canchas</p></div><div className="b2b-login-visual"><div className="visual-overlay"><span>OPERACIÓN EN VIVO</span><h2>Más reservas.<br />Menos complicaciones.</h2><p>La herramienta que tu complejo necesita para crecer.</p></div></div></div>;
+  const [password, setPassword] = useState(role === 'CLIENT' ? 'canchas-client' : 'canchas-demo');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const authError = useB2bStore((state) => state.error);
+  const isLoading = useB2bStore((state) => state.isLoading);
+  const clearError = useB2bStore((state) => state.clearError);
+
+  const slugify = (value: string) =>
+    value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+
+  const switchMode = () => {
+    clearError();
+    setValidationError(null);
+    setPassword('');
+    setConfirmPassword('');
+    setMode(mode === 'login' ? 'register' : 'login');
+  };
+
+  const handleSubmit = async () => {
+    clearError();
+    setValidationError(null);
+
+    if (mode === 'register') {
+      if (organizationName.trim().length < 3) { setValidationError('Ingresá el nombre de tu complejo u organización.'); return; }
+      if (fullName.trim().length < 3) { setValidationError('Ingresá tu nombre completo.'); return; }
+      if (email.trim().length < 3 || !email.includes('@')) { setValidationError('Ingresá un email válido.'); return; }
+      if (password.length < 6) { setValidationError('La contraseña debe tener al menos 6 caracteres.'); return; }
+      if (password !== confirmPassword) { setValidationError('Las contraseñas no coinciden.'); return; }
+      await onRegister({
+        organizationName: organizationName.trim(),
+        slug: slug.trim() || slugify(organizationName),
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
+      return;
+    }
+
+    if (email.trim().length === 0 || password.length === 0) { setValidationError('Ingresá tu email y contraseña.'); return; }
+    await onEnter(email.trim(), password);
+  };
+
+  const isRegister = mode === 'register';
+  return (
+    <div className="b2b-login">
+      <div className="b2b-login-card">
+        <div className="b2b-brand b2b-login-brand">
+          <div className="b2b-brand-mark"><span>SC</span></div>
+          <div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div>
+        </div>
+        <div className="b2b-login-copy">
+          <span>{isRegister ? 'Nueva organización' : 'Acceso seguro'}</span>
+          <h1>{isRegister ? (<>Tu complejo,<br /><em>listo para operar.</em></>) : (<>Tu complejo,<br /><em>bajo control.</em></>)}</h1>
+          <p>{isRegister ? 'Creá tu organización y empezá a gestionar canchas y reservas.' : 'Gestioná canchas, reservas y recaudación desde un solo lugar.'}</p>
+        </div>
+
+        {!isRegister && <div className="profile-picker"><label>Ingresar como</label><div>{(['OWNER', 'ADMIN', 'OPERATOR', 'CLIENT'] as B2bRole[]).map((item) => <button key={item} className={role === item ? 'selected' : ''} onClick={() => { onRoleChange(item); setEmail(item === 'CLIENT' ? 'cliente@lacancha.com.ar' : 'admin@lacancha.com.ar'); setPassword(item === 'CLIENT' ? 'canchas-client' : 'canchas-demo'); }}><span className="profile-icon">{item === 'CLIENT' ? <UserRound size={18} /> : <ShieldCheck size={18} />}</span><span>{formatRole(item)}</span>{role === item && <Check size={16} />}</button>)}</div></div>}
+
+        <form className="b2b-login-form" onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
+          {isRegister && <label className="field-label">Nombre del complejo u organización</label>}
+          {isRegister && <input className="b2b-input" type="text" placeholder="Ej: Complejo La Cancha" value={organizationName} onChange={(event) => { const value = event.target.value; setOrganizationName(value); if (slug.length === 0) setSlug(slugify(value)); }} />}
+
+          {isRegister && <label className="field-label">Identificador (URL)</label>}
+          {isRegister && <input className="b2b-input" type="text" placeholder="Ej: complejo-la-cancha" value={slug} onChange={(event) => setSlug(event.target.value)} />}
+
+          {isRegister && <label className="field-label">Nombre y apellido del propietario</label>}
+          {isRegister && <input className="b2b-input" type="text" placeholder="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} />}
+
+          <label className="field-label">Email</label>
+          <input className="b2b-input" type="email" placeholder="tu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+
+          <label className="field-label">Contraseña</label>
+          <input className="b2b-input" type="password" placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={isRegister ? 'new-password' : 'current-password'} />
+
+          {isRegister && <label className="field-label">Confirmar contraseña</label>}
+          {isRegister && <input className="b2b-input" type="password" placeholder="••••••••" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />}
+
+          {(validationError || authError) && <p className="login-error" role="alert">{validationError || authError}</p>}
+
+          <button type="submit" className="primary-action wide" disabled={isLoading}>
+            {isLoading ? 'Procesando...' : isRegister ? 'Crear cuenta' : 'Ingresar al sistema'}
+          </button>
+        </form>
+
+        <p className="login-footnote">
+          {isRegister ? '¿Ya tenés una cuenta?' : '¿Todavía no tenés cuenta?'}{' '}
+          <a href="#" onClick={(event) => { event.preventDefault(); switchMode(); }}>{isRegister ? 'Iniciar sesión' : 'Crear una organización'}</a>
+        </p>
+      </div>
+      <div className="b2b-login-visual"><div className="visual-overlay"><span>OPERACIÓN EN VIVO</span><h2>Más reservas.<br />Menos complicaciones.</h2><p>La herramienta que tu complejo necesita para crecer.</p></div></div>
+    </div>
+  );
 }
 
 function B2bNavButton({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) {
@@ -161,7 +274,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
       setCourts(loadedCourts);
       const availability = await Promise.all(loadedCourts.map((court) => b2bService.getAvailability(court.id, from.toISOString(), to.toISOString())));
       setShifts(availability.flat());
-    }).catch(() => setMessage('No se pudo cargar la disponibilidad. Mostrando el recorrido demo.'));
+    }).catch((err: any) => setMessage((err?.response?.status ? `No se pudo cargar la disponibilidad (HTTP ${err.response.status}). ` : '') + 'Mostrando el recorrido demo.'));
   }, []);
   if (view === 'payment') return <PaymentView onNavigate={onNavigate} />;
   const demoCourts = courts.length ? courts : [{ id: 'demo-1', name: 'Cancha 1', sportType: 'FUTBOL 5', defaultPriceCentsArs: 1800000 }, { id: 'demo-2', name: 'Cancha 2', sportType: 'FUTBOL 7', defaultPriceCentsArs: 2400000 }, { id: 'demo-3', name: 'Cancha 3', sportType: 'FUTBOL 8', defaultPriceCentsArs: 3200000 }];
