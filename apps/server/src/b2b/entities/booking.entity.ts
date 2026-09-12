@@ -26,7 +26,7 @@ export class B2bBookingEntity {
   @Column({ type: 'int' })
   priceCentsArs!: number;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   notes!: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })

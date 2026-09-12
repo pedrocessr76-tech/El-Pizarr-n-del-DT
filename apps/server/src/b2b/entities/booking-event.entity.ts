@@ -12,7 +12,7 @@ export class B2bBookingEventEntity {
   @Column({ type: 'uuid' })
   actorUserId!: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   fromStatus!: string | null;
 
   @Column({ length: 20 })

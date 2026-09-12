@@ -24,6 +24,7 @@ export interface B2bBooking {
 
 export interface B2bFacility { id: string; organizationId: string; name: string; address?: string | null; status: string; }
 export interface B2bCourt { id: string; facilityId: string; organizationId: string; name: string; sportType: string; capacity: number; status: string; defaultPriceCentsArs: number; }
+export interface B2bMetricsSummary { date: string; currency: string; totalShifts: number; occupiedShifts: number; availableShifts: number; pendingBookings: number; confirmedBookings: number; cancelledBookings: number; revenueCentsArs: number; }
 
 export const b2bApi = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -67,6 +68,10 @@ export const b2bService = {
   },
   async getBookings() {
     const { data } = await b2bApi.get<B2bBooking[]>('/v1/bookings');
+    return data;
+  },
+  async getMetricsSummary(date?: string) {
+    const { data } = await b2bApi.get<B2bMetricsSummary>('/v1/metrics/summary', { params: date ? { date } : undefined });
     return data;
   },
   async createBooking(input: { courtId: string; shiftId: string; notes?: string }) {

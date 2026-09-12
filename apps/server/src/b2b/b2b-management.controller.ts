@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { B2bRoles, CurrentB2bUser } from './auth/b2b-auth.decorators';
 import { B2bJwtGuard } from './auth/b2b-jwt.guard';
@@ -41,9 +41,10 @@ export class B2bManagementController {
   @Post('courts/:courtId/shifts/generate') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) generateShifts(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string, @Body() body: ShiftGenerationDto) { return this.service.generateShifts(user, courtId, body); }
   @Get('availability') availability(@CurrentB2bUser() user: B2bJwtUser, @Query('courtId') courtId: string, @Query('from') from: string, @Query('to') to: string) { return this.service.availability(user, courtId, from, to); }
   @Get('bookings') listBookings(@CurrentB2bUser() user: B2bJwtUser) { return this.service.listBookings(user); }
+  @Get('metrics/summary') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) metricsSummary(@CurrentB2bUser() user: B2bJwtUser, @Query('date') date?: string) { return this.service.metricsSummary(user, date ? new Date(date) : new Date()); }
   @Post('bookings') createBooking(@CurrentB2bUser() user: B2bJwtUser, @Body() body: BookingDto) { return this.service.createBooking(user, body); }
-  @Post('bookings/:id/confirm') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) confirm(@CurrentB2bUser() user: B2bJwtUser, @Param('id') id: string) { return this.service.transitionBooking(user, id, BookingStatus.CONFIRMED); }
-  @Post('bookings/:id/cancel') cancel(@CurrentB2bUser() user: B2bJwtUser, @Param('id') id: string) { return this.service.transitionBooking(user, id, BookingStatus.CANCELLED); }
-  @Post('bookings/:id/reschedule') reschedule(@CurrentB2bUser() user: B2bJwtUser, @Param('id') id: string, @Body() body: RescheduleDto) { return this.service.rescheduleBooking(user, id, body.shiftId); }
-  @Post('bookings/:id/complete') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) complete(@CurrentB2bUser() user: B2bJwtUser, @Param('id') id: string) { return this.service.transitionBooking(user, id, BookingStatus.COMPLETED); }
+  @Post('bookings/:id/confirm') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) confirm(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CONFIRMED); }
+  @Post('bookings/:id/cancel') cancel(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CANCELLED); }
+  @Post('bookings/:id/reschedule') reschedule(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string, @Body() body: RescheduleDto) { return this.service.rescheduleBooking(user, id, body.shiftId); }
+  @Post('bookings/:id/complete') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) complete(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.COMPLETED); }
 }

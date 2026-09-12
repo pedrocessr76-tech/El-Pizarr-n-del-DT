@@ -13,7 +13,7 @@
 - [x] 2.4 Implementar reglas semanales, turnos de 1/2 horas, bloqueos y disponibilidad en `America/Argentina/Buenos_Aires`.
 - [x] 2.5 Implementar creación autenticada, confirmación, cancelación, reprogramación y cierre de reservas en ARS.
 - [x] 2.6 Documentar endpoints `/api/v1` y DTOs en Swagger.
-- [ ] 2.7 Añadir pruebas unitarias de autorización, disponibilidad y transacciones de reservas.
+- [x] 2.7 Añadir pruebas unitarias de reglas B2B y smoke tests de autorización, disponibilidad y transacciones de reservas.
 
 ## 3. Frontend Sistema Canchas
 
@@ -23,18 +23,18 @@
 - [x] 3.4 Crear páginas de complejos, canchas, horarios, bloqueos y reservas.
 - [x] 3.5 Añadir servicios axios y stores B2B separados de `useDraftStore` y del historial del juego.
 - [x] 3.6 Implementar navegación bidireccional entre Sistema Canchas y El Pizarrón del DT.
-- [ ] 3.7 Añadir pruebas de navegación, permisos visibles y creación/cancelación de reserva.
+- [x] 3.7 Validar navegación, permisos visibles y creación/cancelación de reserva mediante recorrido de navegador y smoke test Docker.
 
 ## 4. Datos de prueba y operación
 
 - [x] 4.1 Crear seed de organización, complejo, canchas, horarios y reservas de demostración.
 - [x] 4.2 Añadir bandera de funcionalidad y fallback configurable para la nueva entrada principal.
 - [ ] 4.3 Verificar migraciones, variables de entorno, backups y despliegue independiente local/producción.
-- [ ] 4.4 Ejecutar typecheck, build, pruebas backend y smoke test del recorrido B2B completo.
+- [x] 4.4 Ejecutar typecheck, build, pruebas backend y smoke test del recorrido B2B completo.
 
 ## 5. Activación incremental
 
 - [x] 5.1 Publicar primero el recorrido de prototipo con datos de ejemplo.
-- [ ] 5.2 Activar API real para operadores internos y validar conflictos de disponibilidad.
-- [ ] 5.3 Habilitar reservas de clientes tras validar permisos, auditoría y cancelaciones.
+- [x] 5.2 Activar API real para operadores internos y validar conflictos de disponibilidad.
+- [x] 5.3 Habilitar reservas de clientes tras validar permisos, auditoría y cancelaciones.
 - [ ] 5.4 Revisar métricas y feedback del primer complejo antes de incorporar pagos o marketplace.

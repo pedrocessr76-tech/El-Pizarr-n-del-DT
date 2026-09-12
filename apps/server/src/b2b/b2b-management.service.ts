@@ -17,6 +17,7 @@ import { B2bOrganizationEntity } from './entities/organization.entity';
 import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
+import { canChangeBookingStatus, isStaffRole, isValidShiftDuration } from './domain-policy';
 
 @Injectable()
 export class B2bManagementService {
@@ -93,7 +94,7 @@ export class B2bManagementService {
   }
 
   async createShiftRule(user: B2bJwtUser, courtId: string, input: { weekday: number; startTime: string; endTime: string; durationHours: 1 | 2; priceCentsArs: number }) {
-    if (![1, 2].includes(input.durationHours)) throw new BadRequestException('La duración debe ser 1 o 2 horas');
+    if (!isValidShiftDuration(input.durationHours)) throw new BadRequestException('La duración debe ser 1 o 2 horas');
     await this.getCourt(user, courtId);
     return this.shiftRules.save(this.shiftRules.create({ courtId, ...input }));
   }
@@ -162,6 +163,33 @@ export class B2bManagementService {
     return this.bookings.find({ where, order: { createdAt: 'DESC' } });
   }
 
+  async metricsSummary(user: B2bJwtUser, date = new Date()) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const shifts = await this.shifts.find({
+      where: { organizationId: user.organizationId, startsAt: Between(start, end) },
+    });
+    const bookings = await this.bookings.find({ where: { organizationId: user.organizationId } });
+    const activeBookings = bookings.filter((booking) => [BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status));
+    const bookedShiftIds = new Set(activeBookings.map((booking) => booking.shiftId));
+    const revenueCentsArs = bookings
+      .filter((booking) => [BookingStatus.CONFIRMED, BookingStatus.COMPLETED].includes(booking.status))
+      .reduce((total, booking) => total + booking.priceCentsArs, 0);
+    return {
+      date: start.toISOString().slice(0, 10),
+      currency: 'ARS',
+      totalShifts: shifts.length,
+      occupiedShifts: shifts.filter((shift) => bookedShiftIds.has(shift.id)).length,
+      availableShifts: shifts.filter((shift) => !bookedShiftIds.has(shift.id) && shift.status === ShiftStatus.AVAILABLE).length,
+      pendingBookings: bookings.filter((booking) => booking.status === BookingStatus.PENDING).length,
+      confirmedBookings: bookings.filter((booking) => booking.status === BookingStatus.CONFIRMED).length,
+      cancelledBookings: bookings.filter((booking) => booking.status === BookingStatus.CANCELLED).length,
+      revenueCentsArs,
+    };
+  }
+
   async createBooking(user: B2bJwtUser, input: { courtId: string; shiftId: string; notes?: string }) {
     await this.getCourt(user, input.courtId);
     const shift = await this.shifts.findOne({ where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId } });
@@ -186,9 +214,9 @@ export class B2bManagementService {
   async transitionBooking(user: B2bJwtUser, id: string, status: BookingStatus) {
     const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    const isStaff = user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role));
+    const isStaff = user.roles.some(isStaffRole);
     if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
-    if (status === BookingStatus.CONFIRMED && !isStaff) throw new ForbiddenException('Solo un operador puede confirmar reservas');
+    if (!canChangeBookingStatus(booking.status, status, isStaff)) throw new ForbiddenException('Transición de reserva no permitida');
     const previous = booking.status;
     booking.status = status;
     const saved = await this.bookings.save(booking);
@@ -202,7 +230,7 @@ export class B2bManagementService {
   async rescheduleBooking(user: B2bJwtUser, id: string, shiftId: string) {
     const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    const isStaff = user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role));
+    const isStaff = user.roles.some(isStaffRole);
     if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
     const shift = await this.shifts.findOne({ where: { id: shiftId, organizationId: user.organizationId, status: ShiftStatus.AVAILABLE } });
     if (!shift) throw new ConflictException('El nuevo turno no está disponible');

@@ -14,7 +14,7 @@ export class B2bFacilityEntity {
   @Column({ length: 120 })
   name!: string;
 
-  @Column({ length: 220, nullable: true })
+  @Column({ type: 'varchar', length: 220, nullable: true })
   address!: string | null;
 
   @Column({ type: 'varchar', length: 20, default: B2bRecordStatus.ACTIVE })
