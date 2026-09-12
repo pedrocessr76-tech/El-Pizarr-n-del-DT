@@ -32,10 +32,12 @@ import { B2bModule, B2B_ENTITIES } from './b2b/b2b.module';
     TypeOrmModule.forRoot({
       name: 'b2b',
       type: 'postgres',
-      host: process.env.B2B_DB_HOST || 'localhost',
-      port: parseInt(process.env.B2B_DB_PORT || '5432', 10),
-      username: process.env.B2B_DB_USER || 'canchas',
-      password: process.env.B2B_DB_PASSWORD || 'canchas',
+      // Render puede tardar en sincronizar los env vars B2B del Blueprint.
+      // Durante el MVP ambas bases viven en la misma instancia PostgreSQL.
+      host: process.env.B2B_DB_HOST || process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.B2B_DB_PORT || process.env.DB_PORT || '5432', 10),
+      username: process.env.B2B_DB_USER || process.env.DB_USER || 'canchas',
+      password: process.env.B2B_DB_PASSWORD || process.env.DB_PASSWORD || 'canchas',
       database: process.env.B2B_DB_NAME || 'sistema_canchas',
       ssl:
         process.env.B2B_DB_SSL === 'true'

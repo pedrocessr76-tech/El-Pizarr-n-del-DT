@@ -18,6 +18,24 @@ Después de crear `el-pizarron-db`, ejecutar una vez contra la conexión externa
 CREATE DATABASE sistema_canchas;
 ```
 
+## Si el API falla con `ECONNREFUSED` en `b2b`
+
+En un servicio Render existente, un cambio en `render.yaml` no siempre actualiza automáticamente las variables ya creadas. En `el-pizarron-api`, revisar/agregar manualmente:
+
+```text
+B2B_DB_HOST       = mismo host interno de el-pizarron-db
+B2B_DB_PORT       = mismo puerto de el-pizarron-db
+B2B_DB_USER       = mismo usuario de el-pizarron-db
+B2B_DB_PASSWORD   = misma contraseña de el-pizarron-db
+B2B_DB_NAME       = sistema_canchas
+B2B_DB_SSL        = true
+B2B_DB_MIGRATIONS = true
+```
+
+El código también usa `DB_HOST`, `DB_PORT`, `DB_USER` y `DB_PASSWORD` como fallback de conexión durante el MVP. No dejar `B2B_DB_HOST` apuntando a `localhost` en Render.
+
+Después de crear la base y guardar las variables, ejecutar un nuevo deploy del servicio API.
+
 Luego el servicio API ejecuta la migración B2B con `B2B_DB_MIGRATIONS=true` y carga el seed cuando `B2B_SEED=true`.
 
 El healthcheck productivo del API usa `/health/b2b`, que ejecuta `SELECT 1` contra la conexión B2B y evita considerar saludable un backend cuya base de reservas esté caída.
