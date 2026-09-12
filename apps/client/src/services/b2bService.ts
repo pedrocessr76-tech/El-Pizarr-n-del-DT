@@ -26,8 +26,13 @@ export interface B2bFacility { id: string; organizationId: string; name: string;
 export interface B2bCourt { id: string; facilityId: string; organizationId: string; name: string; sportType: string; capacity: number; status: string; defaultPriceCentsArs: number; }
 export interface B2bMetricsSummary { date: string; currency: string; totalShifts: number; occupiedShifts: number; availableShifts: number; pendingBookings: number; confirmedBookings: number; cancelledBookings: number; revenueCentsArs: number; }
 
+// El backend sirve el B2B bajo `/api/v1`. VITE_API_URL apunta a la raíz de la API
+// (misma convención que en api.ts), por eso se agrega el prefijo `/api`.
+// En dev, Vite proxya `/api` al backend, así que la base queda `/api` de forma consistente.
+const B2B_API_BASE = `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/api`;
+
 export const b2bApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: B2B_API_BASE,
   headers: { 'Content-Type': 'application/json' },
 });
 

@@ -1,40 +1,34 @@
 # Despliegue B2B en Render
 
-Durante el MVP se utiliza una única instancia PostgreSQL Free por las limitaciones del plan de Render, pero con dos bases lógicas independientes:
+El producto usa dos instancias PostgreSQL Free independientes en Render:
 
-- `pizarron_dt`: juego original.
-- `sistema_canchas`: Sistema Canchas.
+- `el-pizarron-db` → base del juego original.
+- `el-pizarron-db-canchas` → base de Sistema Canchas (creada por Render).
 
-El servicio API recibe conexiones separadas mediante `DB_*` y `B2B_DB_*`. El frontend es un único Static Site con dos entradas directas:
+No comparten instancia, usuario ni tablas. El backend NestJS abre dos conexiones separadas vía `DB_*` (juego) y `B2B_DB_*` (Sistema Canchas). El frontend es un único Static Site con dos entradas directas:
 
 - `/dt`: El Pizarrón del DT.
 - `/canchas`: Sistema Canchas.
 
-## Preparación única de la base B2B
-
-Después de crear `el-pizarron-db`, ejecutar una vez contra la conexión externa de Render:
-
-```sql
-CREATE DATABASE sistema_canchas;
-```
+El `render.yaml` declara ambas bases en `databases:` y mapea `B2B_DB_*` a `el-pizarron-db-canchas` mediante `fromDatabase` (host, puerto, usuario, clave y nombre de base). No hace falta crear la base a mano.
 
 ## Si el API falla con `ECONNREFUSED` en `b2b`
 
-En un servicio Render existente, un cambio en `render.yaml` no siempre actualiza automáticamente las variables ya creadas. En `el-pizarron-api`, revisar/agregar manualmente:
+En un servicio Render existente, un cambio en `render.yaml` no siempre actualiza automáticamente las variables ya creadas. En `el-pizarron-api`, revisar/agregar manualmente que `B2B_DB_*` apunten al servicio `el-pizarron-db-canchas` (no al mismo que `DB_*`):
 
 ```text
-B2B_DB_HOST       = mismo host interno de el-pizarron-db
-B2B_DB_PORT       = mismo puerto de el-pizarron-db
-B2B_DB_USER       = mismo usuario de el-pizarron-db
-B2B_DB_PASSWORD   = misma contraseña de el-pizarron-db
-B2B_DB_NAME       = sistema_canchas
+B2B_DB_HOST       = host interno de el-pizarron-db-canchas
+B2B_DB_PORT       = puerto de el-pizarron-db-canchas
+B2B_DB_USER       = usuario de el-pizarron-db-canchas
+B2B_DB_PASSWORD   = clave de el-pizarron-db-canchas
+B2B_DB_NAME       = base de el-pizarron-db-canchas
 B2B_DB_SSL        = true
 B2B_DB_MIGRATIONS = true
 ```
 
-El código también usa `DB_HOST`, `DB_PORT`, `DB_USER` y `DB_PASSWORD` como fallback de conexión durante el MVP. No dejar `B2B_DB_HOST` apuntando a `localhost` en Render.
+El código conserva fallbacks a `DB_*` por compatibilidad heredada del MVP, pero en producción `B2B_DB_*` debe apuntar a la instancia independiente. No dejar `B2B_DB_HOST` en `localhost`.
 
-Después de crear la base y guardar las variables, ejecutar un nuevo deploy del servicio API.
+Después de crear/guardar las variables, ejecutar un nuevo deploy del servicio API.
 
 Luego el servicio API ejecuta la migración B2B con `B2B_DB_MIGRATIONS=true` y carga el seed cuando `B2B_SEED=true`.
 
