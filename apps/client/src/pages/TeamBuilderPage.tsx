@@ -980,27 +980,27 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onNavigate }) 
         </button>
       </div>
 
-      {/* OVERLAY 1: Player Selection Overlay */}
+      {/* OVERLAY 1: Player Selection Overlay (pantalla completa en mobile; 5 cartas visibles a la vez) */}
       {showPlayerOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="glass-panel w-full max-w-5xl rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden max-h-[90vh]">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-surface/50">
-              <div>
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md p-0 md:p-4">
+          <div className="glass-panel w-full h-dvh md:h-auto md:max-h-[90vh] max-w-5xl rounded-t-2xl md:rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden pt-safe md:pt-0 pb-safe md:pb-0">
+            <div className="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-surface/50 shrink-0">
+              <div className="min-w-0">
                 <h2 className="text-headline-sm font-headline-sm text-primary uppercase tracking-wider">Select Player</h2>
                 <p className="text-label-md font-label-md text-on-surface-variant mt-1">Position: {selectedPosition}</p>
               </div>
-              <button onClick={() => setShowPlayerOverlay(false)} className="text-on-surface-variant hover:text-white transition-colors">
+              <button onClick={() => setShowPlayerOverlay(false)} className="text-on-surface-variant hover:text-white transition-colors shrink-0">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <div className="p-6 overflow-x-auto no-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-6">
               {isLoadingPack ? (
                 <div className="flex items-center justify-center py-12">
                   <span className="material-symbols-outlined text-4xl text-primary animate-spin">autorenew</span>
                 </div>
               ) : filteredPlayers.length > 0 ? (
-                <div className="flex gap-4 w-max px-2 pb-4">
+                <div className="grid grid-cols-3 gap-2 md:flex md:gap-4 md:w-max md:px-2 md:pb-4 md:overflow-x-auto">
                   {filteredPlayers.map((player) => {
                     const rating = player.rating ?? Math.round(
                       (player.stats.pace + player.stats.shooting + player.stats.passing +
@@ -1011,30 +1011,30 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onNavigate }) 
                       <div
                         key={player.id}
                         onClick={() => handleSelectPlayer(player)}
-                        className={`${isGold ? 'card-gold' : 'card-silver'} w-48 h-72 rounded-lg p-1 cursor-pointer transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group opacity-${isGold ? '100' : '80'} hover:opacity-100`}
+                        className={`${isGold ? 'card-gold' : 'card-silver'} w-full md:w-48 h-[180px] md:h-72 rounded-lg p-1 cursor-pointer transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group ${isGold ? 'opacity-100' : 'opacity-80'} hover:opacity-100`}
                       >
                         <div className="bg-surface-container-lowest h-full w-full rounded-md flex flex-col relative overflow-hidden">
-                          <div className="flex justify-between items-start p-2 z-10">
+                          <div className="flex justify-between items-start p-1.5 md:p-2 z-10">
                             <div className="flex flex-col items-center">
-                              <span className={`text-headline-md font-headline-md drop-shadow-md ${isGold ? 'text-tertiary' : 'text-secondary-fixed'}`}>{rating}</span>
-                              <span className="text-label-md font-label-md text-on-surface-variant">{player.position}</span>
+                              <span className={`text-headline-md font-headline-md drop-shadow-md leading-none text-[16px] md:text-[24px] ${isGold ? 'text-tertiary' : 'text-secondary-fixed'}`}>{rating}</span>
+                              <span className="text-label-md font-label-md text-on-surface-variant text-[8px] md:text-[10px] mt-0.5">{player.position}</span>
                             </div>
-                            <div className="w-6 h-4 rounded-sm overflow-hidden border border-white/20">
-                              <span className={`material-symbols-outlined text-[14px] ${isGold ? 'text-tertiary' : 'text-secondary-fixed'}`}>flag</span>
+                            <div className="w-5 h-4 md:w-6 md:h-4 rounded-sm overflow-hidden border border-white/20">
+                              <span className={`material-symbols-outlined text-[12px] md:text-[14px] ${isGold ? 'text-tertiary' : 'text-secondary-fixed'}`}>flag</span>
                             </div>
                           </div>
-                          <div className="flex-1 flex justify-center items-center z-10">
-                            <span className={`material-symbols-outlined text-[64px] ${isGold ? 'text-tertiary' : 'text-secondary-fixed'} opacity-80`}>person</span>
+                          <div className="flex-1 flex justify-center items-center z-10 min-h-0">
+                            <span className={`material-symbols-outlined text-[34px] md:text-[64px] ${isGold ? 'text-tertiary' : 'text-secondary-fixed'} opacity-80`}>person</span>
                           </div>
-                          <div className={`bg-surface-container/90 backdrop-blur-sm border-t p-2 z-10 ${isGold ? 'border-tertiary/30' : 'border-secondary-fixed/20'}`}>
-                            <h3 className="text-body-md font-body-md font-bold text-center uppercase tracking-wide truncate mb-1">{player.name}</h3>
-                            <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">PAC</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.pace}</span></div>
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">DRI</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.dribbling}</span></div>
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">SHO</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.shooting}</span></div>
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">DEF</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.defending}</span></div>
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">PAS</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.passing}</span></div>
-                              <div className="flex justify-between items-center"><span className="text-[10px] text-on-surface-variant uppercase">PHY</span><span className="text-label-md font-label-md font-bold text-white">{player.stats.physical}</span></div>
+                          <div className={`bg-surface-container/90 backdrop-blur-sm border-t p-1.5 md:p-2 z-10 ${isGold ? 'border-tertiary/30' : 'border-secondary-fixed/20'}`}>
+                            <h3 className="text-body-md font-body-md font-bold text-center uppercase tracking-wide truncate text-[10px] md:text-sm mb-1">{player.name}</h3>
+                            <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 md:gap-x-2 md:gap-y-1">
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">PAC</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.pace}</span></div>
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">DRI</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.dribbling}</span></div>
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">SHO</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.shooting}</span></div>
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">DEF</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.defending}</span></div>
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">PAS</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.passing}</span></div>
+                              <div className="flex justify-between items-center"><span className="text-[8px] md:text-[10px] text-on-surface-variant uppercase">PHY</span><span className="text-label-md font-label-md font-bold text-white text-[9px] md:text-[12px]">{player.stats.physical}</span></div>
                             </div>
                           </div>
                         </div>
@@ -1049,8 +1049,8 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onNavigate }) 
                 </div>
               )}
             </div>
-            <div className="p-4 bg-surface-container-highest border-t border-surface-variant text-center">
-              <p className="text-label-md text-on-surface-variant">
+            <div className="p-3 md:p-4 bg-surface-container-highest border-t border-surface-variant text-center shrink-0">
+              <p className="text-label-md text-on-surface-variant text-[12px] md:text-base">
                 {message || 'Selecciona un jugador para asignar al slot activo.'}
               </p>
             </div>

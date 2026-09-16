@@ -32,46 +32,61 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
 
       {/* ===== Mobile layout ===== */}
       <div className="relative z-10 w-full max-w-md flex flex-col gap-5 md:hidden" id="main-content-mobile">
+        {/* Acciones superiores: login + sistema canchas */}
+        <div className="w-full flex items-center justify-between gap-2 pt-1">
+          <button
+            onClick={onOpenLogin}
+            className="flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 border border-white/10 px-3 py-2 text-primary font-label-md text-[12px] font-bold uppercase tracking-wider active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">login</span>
+            Iniciar Sesión
+          </button>
+          <button
+            onClick={() => { window.location.href = '/canchas'; }}
+            className="flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 border border-white/10 px-3 py-2 text-on-surface font-label-md text-[12px] font-bold uppercase tracking-wider active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">location_on</span>
+            Sistema Canchas
+          </button>
+        </div>
+
         {/* Branding hero */}
         <div className="flex flex-col items-center text-center pt-md pb-sm gap-3">
-          <div className="w-24 h-24 rounded-2xl bg-surface-container-low border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(165,208,185,0.25)]">
-            <span className="material-symbols-outlined text-[52px] text-primary">sports_soccer</span>
+          <div className="w-20 h-20 rounded-2xl bg-surface-container-low border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(165,208,185,0.25)]">
+            <span className="material-symbols-outlined text-[44px] text-primary">sports_soccer</span>
           </div>
           <div>
-            <h1 className="font-display-lg text-[34px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter">
+            <h1 className="font-display-lg text-[28px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter">
               EL PIZARRÓN
             </h1>
-            <p className="font-label-md text-on-surface-variant uppercase tracking-widest mt-2">
-              Táctica Avanzada · Gestión Total
-            </p>
           </div>
         </div>
 
         {/* Primary action */}
         <button
           onClick={() => onNavigate('builder')}
-          className="w-full bg-primary-container hover:bg-primary-container/80 active:scale-[0.98] text-on-primary-container rounded-xl py-5 flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all"
+          className="w-full bg-primary-container hover:bg-primary-container/80 active:scale-[0.98] text-on-primary-container rounded-xl py-4 flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all"
         >
-          <span className="material-symbols-outlined text-[28px]">sports_soccer</span>
-          <span className="font-headline-md text-[20px] font-black uppercase tracking-wide">Jugar Partido</span>
-          <span className="material-symbols-outlined text-[22px]">arrow_forward</span>
+          <span className="material-symbols-outlined text-[22px]">sports_soccer</span>
+          <span className="font-headline-md text-[16px] font-black uppercase tracking-wide">Jugar Partido</span>
+          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
 
         {/* Secondary actions */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('history')}
-            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-4 rounded-lg text-on-surface shadow-md transition-all"
+            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-3 rounded-lg text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-secondary text-[20px]">history</span>
-            <span className="font-headline-sm text-[15px] font-bold uppercase">Historial</span>
+            <span className="material-symbols-outlined text-secondary text-[17px]">history</span>
+            <span className="font-headline-sm text-[13px] font-bold uppercase">Historial</span>
           </button>
           <button
             onClick={() => onNavigate('catalog')}
-            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-4 rounded-lg text-on-surface shadow-md transition-all"
+            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-3 rounded-lg text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-primary text-[20px]">style</span>
-            <span className="font-headline-sm text-[15px] font-bold uppercase">Mis Cartas</span>
+            <span className="material-symbols-outlined text-primary text-[17px]">style</span>
+            <span className="font-headline-sm text-[13px] font-bold uppercase">Mis Cartas</span>
           </button>
         </div>
 
@@ -124,14 +139,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
           </div>
         )}
 
-        {/* Login CTA (mobile) */}
-        <button
-          onClick={onOpenLogin}
-          className="w-full bg-surface-container-high/60 border border-white/10 rounded-xl py-3.5 text-primary font-label-md flex items-center justify-center gap-2 active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-[20px]">login</span>
-          Iniciar Sesión
-        </button>
       </div>
 
       {/* ===== Desktop layout ===== */}

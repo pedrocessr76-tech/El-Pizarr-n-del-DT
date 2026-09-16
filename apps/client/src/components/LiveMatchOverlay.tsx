@@ -198,24 +198,24 @@ const PlayerDot: React.FC<{ player: Player; x: number; y: number; isUser: boolea
 );
 
 const TeamScoreBadge: React.FC<{ name: string; score: number; isUser: boolean; minute: number; finished: boolean }> = ({ name, score, isUser, minute, finished }) => (
-  <div className={`flex flex-col items-center gap-2 w-40 ${isUser ? 'scale-105' : 'opacity-80'}`}>
+  <div className={`flex flex-col items-center gap-1 md:gap-2 w-24 md:w-40 ${isUser ? 'scale-105' : 'opacity-80'}`}>
     <div
-      className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-extrabold border-2 ${
+      className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg md:text-xl font-extrabold border-2 ${
         isUser
           ? 'bg-tertiary text-on-tertiary border-2 border-tertiary shadow-[0_0_15px_rgba(233,195,73,0.5)]'
           : 'bg-surface-variant text-on-surface border border-white/20'
       }`}
     >
       {isUser ? (
-        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+        <span className="material-symbols-outlined text-[16px] md:text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
       ) : (
-        <span className="material-symbols-outlined text-[18px]">sports_soccer</span>
+        <span className="material-symbols-outlined text-[16px] md:text-[18px]">sports_soccer</span>
       )}
     </div>
-    <div className={`font-headline-sm font-headline-sm text-sm text-center leading-tight ${isUser ? 'text-tertiary' : 'text-on-surface'}`}>{name}</div>
-    <div className={`font-display-lg font-display-lg text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r ${isUser ? 'from-tertiary to-yellow-200' : 'from-on-surface to-on-surface-variant'} tabular-nums`}>{score}</div>
+    <div className={`font-headline-sm font-headline-sm text-xs md:text-sm text-center leading-tight ${isUser ? 'text-tertiary' : 'text-on-surface'}`}>{name}</div>
+    <div className={`font-display-lg font-display-lg text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r ${isUser ? 'from-tertiary to-yellow-200' : 'from-on-surface to-on-surface-variant'} tabular-nums`}>{score}</div>
     {!finished && (
-      <div className="font-label-md font-label-md text-[10px] text-on-surface-variant/60 uppercase tracking-widest">{minute}&apos;</div>
+      <div className="font-label-md font-label-md text-[10px] text-on-surface-variant/60 uppercase tracking-widest hidden md:block">{minute}&apos;</div>
     )}
   </div>
 );
@@ -229,6 +229,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [goalBanner, setGoalBanner] = useState<{ playerName: string; teamName: string; minute: number; team: 'home' | 'away' } | null>(null);
   const commentsRef = useRef<HTMLDivElement | null>(null);
+  const mobileCommentsRef = useRef<HTMLDivElement | null>(null);
   const eventIdRef = useRef(0);
 
   // Alineación mutable del usuario: permite sustituciones que se reflejan
@@ -344,11 +345,10 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
-  // Auto-scroll de comentarios.
+  // Auto-scroll de comentarios (desktop + feed mobile).
   useEffect(() => {
-    if (commentsRef.current) {
-      commentsRef.current.scrollTop = commentsRef.current.scrollHeight;
-    }
+    if (commentsRef.current) commentsRef.current.scrollTop = commentsRef.current.scrollHeight;
+    if (mobileCommentsRef.current) mobileCommentsRef.current.scrollTop = mobileCommentsRef.current.scrollHeight;
   }, [events]);
 
   const homeRating = avgRating({ starters: isHomeUser ? userStarters : match.homeTeam?.starters || [] } as Team);
@@ -569,7 +569,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background z-0"></div>
 
       {/* Modal de cristal (glass-panel) */}
-      <div className="glass-panel relative w-full max-w-[1400px] h-dvh max-h-dvh md:h-[800px] md:max-h-none rounded-t-2xl md:rounded-[24px] flex flex-col overflow-hidden pb-safe md:pb-0">
+      <div className="glass-panel relative w-full max-w-[1400px] h-dvh max-h-dvh md:h-[800px] md:max-h-none rounded-t-2xl md:rounded-[24px] flex flex-col overflow-hidden pt-safe md:pt-0 pb-safe md:pb-0">
         {/* Header Section */}
         <header className="flex flex-col gap-sm md:gap-md p-md md:p-lg border-b border-white/10">
           <div className="flex flex-wrap justify-between items-center gap-2 w-full">
@@ -716,10 +716,11 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
           <TeamScoreBadge name={awayName} score={awayScore} isUser={!isHomeUser} minute={minute} finished={finished} />
         </div>
 
-        {/* Cuerpo: campo dominante (izquierda) + comentarios y estadísticas (derecha) */}
+        {/* Cuerpo: cancha (desktop) + feed de goles en vivo (mobile) + comentarios/estadísticas */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          <div className="flex-1 p-2 md:p-6 flex md:border-r border-white/10 min-w-0">
-                        <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[420px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
+          {/* Cancha: solo desktop (en mobile se muestra el feed de goles). */}
+          <div className="hidden md:flex flex-1 p-6 md:border-r border-white/10 min-w-0">
+            <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[420px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
               <div className="absolute inset-0 pitch-lines"></div>
               <div className="pitch-center-line"></div>
               <div className="pitch-center-circle"></div>
@@ -781,7 +782,66 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
             </div>
           </div>
 
-                    {/* Columna derecha: comentarios en vivo + estadísticas */}
+          {/* Feed en vivo mobile: sin cancha, se ven los goles y comentarios mientras entran. */}
+          <div className="md:hidden flex-1 flex flex-col min-h-0 relative">
+            {/* Cartel de gol (mobile): aparece sobre el feed cuando hay gol. */}
+            {goalBanner && (
+              <div
+                className="absolute inset-x-4 top-3 z-30 pointer-events-none"
+                style={{ animation: 'goal-banner-in 0.45s ease-out both' }}
+              >
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-tertiary-container via-tertiary to-tertiary-container border border-tertiary shadow-[0_0_35px_rgba(233,195,73,0.7)]">
+                  <span className="material-symbols-outlined text-3xl text-on-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_soccer</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display-lg text-xl font-extrabold text-on-tertiary tracking-widest leading-none">¡GOL!</div>
+                    <div className="font-headline-sm text-sm font-bold text-on-tertiary mt-0.5 truncate">{goalBanner.playerName}</div>
+                    <div className="font-label-md text-[10px] uppercase tracking-widest text-on-tertiary/80 mt-0.5">{goalBanner.teamName} · {goalBanner.minute}&apos;</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Estadísticas compactas por equipo */}
+            <div className="shrink-0 px-4 pt-3 pb-1 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-label-md text-[10px] font-bold text-on-surface truncate flex-1 min-w-0">{homeName}</span>
+                <span className="font-stat-value text-sm text-primary tabular-nums shrink-0">{homePossession}%</span>
+                <div className="w-14 h-2 rounded-full bg-white/10 overflow-hidden shrink-0">
+                  <div className="h-full bg-gradient-to-r from-primary to-tertiary" style={{ width: `${homePossession}%` }}></div>
+                </div>
+                <span className="text-[10px] text-on-surface-variant shrink-0 tabular-nums">{homeShots} t</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-label-md text-[10px] font-bold text-on-surface truncate flex-1 min-w-0">{awayName}</span>
+                <span className="font-stat-value text-sm text-on-surface-variant tabular-nums shrink-0">{100 - homePossession}%</span>
+                <div className="w-14 h-2 rounded-full bg-white/10 overflow-hidden shrink-0">
+                  <div className="h-full bg-gradient-to-r from-tertiary to-primary" style={{ width: `${100 - homePossession}%` }}></div>
+                </div>
+                <span className="text-[10px] text-on-surface-variant shrink-0 tabular-nums">{awayShots} t</span>
+              </div>
+            </div>
+
+            {/* Feed de eventos: goles, comentarios y cambios en orden cronológico */}
+            <div ref={mobileCommentsRef} className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+              {events.length === 0 && <p className="text-on-surface-variant text-sm italic">El árbitro da el silbatazo inicial...</p>}
+              {events.map((e) => (
+                <div key={e.id} className={`flex gap-3 ${e.isGoal ? '' : 'opacity-70'}`}>
+                  <span className={`font-stat-value w-9 shrink-0 ${e.isGoal ? 'text-tertiary' : 'text-primary'}`}>{e.minute}&apos;</span>
+                  <p className="font-body-md text-sm text-on-surface-variant">
+                    {e.isGoal && (
+                      <span className="material-symbols-outlined text-[14px] text-tertiary align-middle mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>sports_soccer</span>
+                    )}
+                    <strong className={e.isGoal ? 'text-tertiary' : 'text-on-surface'}>
+                      {e.team === 'home' ? homeName : awayName}:{' '}
+                    </strong>
+                    {e.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Columna derecha (desktop): comentarios en vivo + estadísticas */}
           <div className="hidden md:flex w-[26rem] flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5 min-h-0">
             <h4 className="font-headline-sm text-on-surface px-4 py-3 border-b border-white/10">Comentarios en vivo</h4>
             <div ref={commentsRef} className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
