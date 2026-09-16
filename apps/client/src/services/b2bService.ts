@@ -20,12 +20,18 @@ export interface B2bBooking {
   status: string;
   priceCentsArs: number;
   notes?: string | null;
+  shiftStartsAt?: string | null;
+  shiftEndsAt?: string | null;
+  courtName?: string | null;
+  courtSportType?: string | null;
 }
 
 export interface B2bFacility { id: string; organizationId: string; name: string; address?: string | null; status: string; }
 export interface B2bCourt { id: string; facilityId: string; organizationId: string; name: string; sportType: string; capacity: number; status: string; defaultPriceCentsArs: number; }
 export interface B2bMetricsSummary { date: string; currency: string; totalShifts: number; occupiedShifts: number; availableShifts: number; pendingBookings: number; confirmedBookings: number; cancelledBookings: number; revenueCentsArs: number; }
 export interface B2bOrganizationOption { id: string; name: string; slug: string; }
+export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
+export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
 
 // El backend sirve el B2B bajo `/api/v1`. VITE_API_URL apunta a la raíz de la API
 // (misma convención que en api.ts), por eso se agrega el prefijo `/api`.
@@ -110,6 +116,30 @@ export const b2bService = {
   },
   async cancelBooking(id: string) {
     const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/cancel`);
+    return data;
+  },
+  async rescheduleBooking(id: string, shiftId: string) {
+    const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/reschedule`, { shiftId });
+    return data;
+  },
+  async completeBooking(id: string) {
+    const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/complete`);
+    return data;
+  },
+  async getShiftRules(courtId: string) {
+    const { data } = await b2bApi.get<B2bShiftRule[]>(`/v1/courts/${courtId}/shift-rules`);
+    return data;
+  },
+  async createShiftRule(courtId: string, input: { weekday: number; startTime: string; endTime: string; durationHours: 1 | 2; priceCentsArs: number }) {
+    const { data } = await b2bApi.post<B2bShiftRule>(`/v1/courts/${courtId}/shift-rules`, input);
+    return data;
+  },
+  async createAvailabilityBlock(courtId: string, input: { startsAt: string; endsAt: string; reason: string }) {
+    const { data } = await b2bApi.post(`/v1/courts/${courtId}/availability-blocks`, input);
+    return data;
+  },
+  async generateShifts(courtId: string, from: string, to: string) {
+    const { data } = await b2bApi.post(`/v1/courts/${courtId}/shifts/generate`, { from, to });
     return data;
   },
 };

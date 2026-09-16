@@ -1,0 +1,23 @@
+.b2b-schedule-forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+  border: 0;
+  padding: 24px 0;
+  margin: 0;
+  min-width: 0;
+}
+.b2b-schedule-forms form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.b2b-schedule-forms label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.b2b-schedule-forms .b2b-input { width: 100%; min-width: 0; box-sizing: border-box; }
+.b2b-schedule-forms button { margin-top: auto; }
+.b2b-schedule-forms:disabled { opacity: 0.65; }

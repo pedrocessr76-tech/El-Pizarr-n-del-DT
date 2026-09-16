@@ -107,7 +107,8 @@ export class B2bManagementService {
     await this.getCourt(user, courtId);
     const startsAt = new Date(input.startsAt);
     const endsAt = new Date(input.endsAt);
-    if (startsAt >= endsAt) throw new BadRequestException('El bloqueo tiene un rango inválido');
+    if (!Number.isFinite(startsAt.valueOf()) || !Number.isFinite(endsAt.valueOf()) || startsAt >= endsAt) throw new BadRequestException('El bloqueo tiene un rango inválido');
+    if (!input.reason?.trim() || input.reason.trim().length > 240) throw new BadRequestException('Ingresá un motivo de hasta 240 caracteres');
     return this.blocks.save(this.blocks.create({ organizationId: user.organizationId, courtId, startsAt, endsAt, reason: input.reason, createdBy: user.userId }));
   }
 
@@ -153,14 +154,40 @@ export class B2bManagementService {
     await this.getCourt(user, courtId);
     const startsAt = new Date(from);
     const endsAt = new Date(to);
-    return this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: Between(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } });
+    const [shifts, blocks] = await Promise.all([
+      this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: Between(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } }),
+      this.blocks.find({ where: { organizationId: user.organizationId, courtId } }),
+    ]);
+    return shifts.filter((shift) => !blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt));
   }
 
   async listBookings(user: B2bJwtUser) {
     const where = user.roles.includes(B2bRoleCode.CLIENT) && !user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role))
       ? { organizationId: user.organizationId, clientUserId: user.userId }
       : { organizationId: user.organizationId };
-    return this.bookings.find({ where, order: { createdAt: 'DESC' } });
+    const rows = await this.bookings.find({ where, order: { createdAt: 'DESC' } });
+    if (rows.length === 0) return [];
+    // Enriquecimiento explícito (sin relaciones TypeORM): hora del turno y datos de la cancha
+    // para que la bandeja del frontend muestre el horario real en lugar de un placeholder.
+    const shiftIds = [...new Set(rows.map((row) => row.shiftId))];
+    const courtIds = [...new Set(rows.map((row) => row.courtId).filter((id): id is string => Boolean(id)))];
+    const [shifts, courts] = await Promise.all([
+      this.shifts.find({ where: { id: In(shiftIds) } }),
+      courtIds.length ? this.courts.find({ where: { id: In(courtIds) } }) : Promise.resolve([] as B2bCourtEntity[]),
+    ]);
+    const shiftById = new Map(shifts.map((shift) => [shift.id, shift]));
+    const courtById = new Map(courts.map((court) => [court.id, court]));
+    return rows.map((row) => {
+      const shift = shiftById.get(row.shiftId);
+      const court = courtById.get(row.courtId);
+      return {
+        ...row,
+        shiftStartsAt: shift?.startsAt ?? null,
+        shiftEndsAt: shift?.endsAt ?? null,
+        courtName: court?.name ?? null,
+        courtSportType: court?.sportType ?? null,
+      };
+    });
   }
 
   async metricsSummary(user: B2bJwtUser, date = new Date()) {
@@ -194,6 +221,7 @@ export class B2bManagementService {
     await this.getCourt(user, input.courtId);
     const shift = await this.shifts.findOne({ where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId } });
     if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
+    await this.assertUnblocked(shift);
     const existing = await this.bookings.findOne({ where: { shiftId: shift.id, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } });
     if (existing) throw new ConflictException('El turno ya fue reservado');
     const booking = await this.bookings.save(this.bookings.create({
@@ -234,6 +262,7 @@ export class B2bManagementService {
     if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
     const shift = await this.shifts.findOne({ where: { id: shiftId, organizationId: user.organizationId, status: ShiftStatus.AVAILABLE } });
     if (!shift) throw new ConflictException('El nuevo turno no está disponible');
+    await this.assertUnblocked(shift);
     const previousShiftId = booking.shiftId;
     booking.shiftId = shift.id;
     booking.courtId = shift.courtId;
@@ -243,6 +272,13 @@ export class B2bManagementService {
     const saved = await this.bookings.save(booking);
     await this.recordEvent(booking.id, user.userId, booking.status, booking.status);
     return saved;
+  }
+
+  private async assertUnblocked(shift: B2bShiftEntity) {
+    const blocks = await this.blocks.find({ where: { organizationId: shift.organizationId, courtId: shift.courtId } });
+    if (blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt)) {
+      throw new ConflictException('El turno está bloqueado');
+    }
   }
 
   private async recordEvent(bookingId: string, actorUserId: string, fromStatus: string | null, toStatus: string) {

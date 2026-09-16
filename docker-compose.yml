@@ -50,6 +50,9 @@ services:
       - DB_USER=pizarron
       - DB_PASSWORD=pizarron
       - DB_NAME=pizarron_dt
+      # En desarrollo synchronize crea el esquema; las migraciones quedan para producción.
+      - DB_SYNCHRONIZE=true
+      - DB_MIGRATIONS=false
       - B2B_DB_HOST=b2b-db
       - B2B_DB_PORT=5432
       - B2B_DB_USER=canchas

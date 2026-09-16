@@ -3,8 +3,8 @@
 ## Backend
 
 ### Calidad / Infraestructura
-- Tests automatizados para el núcleo de simulación, los flujos de draft y de auth
-- Migraciones versionadas en lugar de `synchronize: true` (riesgo en producción)
+- [x] Tests automatizados para el núcleo de simulación, los flujos de draft y de auth
+- [x] Migraciones versionadas en lugar de `synchronize: true` (riesgo en producción)
 
 ## Frontend
 
@@ -15,12 +15,14 @@
   - **Empuje por posesión**: el juego completo (ambos equipos) se desplaza hacia el arco rival cuando un equipo domina la posesión.
   - **Resaltado (pulse)** del equipo que marca en el minuto en curso, y refleja las sustituciones del botón "Cambios" (los puntos usan la alineación mutable).
   - Renderizado con el estilo visual de la página (dots con iniciales, colores tertiary/neutral) dentro del pitch existente.
+  - **Estado**: ✅ Implementado en `LiveMatchOverlay.tsx`.
 
 ### Overlay de partido en vivo — Botón "Cambios" (sustituciones en tiempo real) ✅ implementado
 - Botón **"Cambios"** en el header del overlay que abre un panel con los **11 titulares** y los **7 suplentes** del equipo del usuario para **intercambiarlos** durante el partido.
 - Restricciones implementadas: máximo **5 cambios** por partido (regla de producto), solo habilitado mientras el partido está en juego (no al terminar), y el reemplazado pasa a suplente mientras el ingresado pasa a titular.
 - El cambio se registra en el feed de eventos y **afecta la simulación posterior**: el rating del nuevo once recalcula posesión/tiros del resto del partido.
 - Pendiente (opcional): persistir el cambio en el modelo de datos del backend y que influya en la simulación del servidor.
+- **Estado**: ✅ Implementado en `LiveMatchOverlay.tsx` (`MAX_CHANGES = 5`).
 
 ## Producto (fuera de alcance actual)
 

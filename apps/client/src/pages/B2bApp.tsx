@@ -1,8 +1,11 @@
+import { ScheduleSettings } from '../components/b2b/ScheduleSettings';
+
+import { OperationalMetrics } from '../components/b2b/OperationalMetrics';
+
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
-  BarChart3,
   CalendarDays,
   Check,
   ChevronDown,
@@ -283,10 +286,9 @@ function StaffView({ view, onNavigate, onSelectBooking }: { view: B2bView; onNav
 }
 
 function DashboardView({ bookingRows, onNavigate, onSelectBooking }: { bookingRows: BookingRow[]; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: BookingRow) => void }) {
-  return <div className="b2b-content"><div className="b2b-page-heading"><div><span className="eyebrow"><i /> OPERACIÓN EN VIVO</span><h1>Dashboard Operativo</h1><p>Jornada en curso — Buenos Aires, ART</p></div><div className="heading-actions"><button className="secondary-action" onClick={() => onNavigate('availability')}><SlidersHorizontal size={16} /> Administrar canchas</button><button className="primary-action" onClick={() => onNavigate('bookings')}>＋ Nueva reserva</button></div></div><div className="b2b-filter-row"><div className="court-tabs"><button className="active">Todas las canchas</button></div><button className="date-button"><CalendarDays size={16} /> Hoy<ChevronDown size={15} /></button></div><div className="metric-grid"><Metric label="Ingresos estimados hoy" value="—" detail="0 turnos facturados" accent="green" icon={<CircleDollarSign />} trend="Sin datos" /><Metric label="Ocupación de canchas" value="—" detail="0 de 0 slots cubiertos" accent="blue" icon={<BarChart3 />} trend="Sin datos" /><Metric label="Estado de turnos del día" value="—" detail="— libres · — pendientes" accent="amber" icon={<CalendarDays />} trend="Sin datos" /><Metric label="Próximo turno inminente" value="—" detail="Sin turnos" accent="green" icon={<Clock3 />} trend="Sin datos" /></div><div className="operations-grid"><section className="panel schedule-panel"><div className="panel-heading"><div><h2>Agenda de turnos · Jornada hoy</h2><small>{bookingRows.length} turnos visibles</small></div><button className="text-button" onClick={() => onNavigate('availability')}>Vista cronológica <ArrowRight size={15} /></button></div><div className="schedule-table"><div className="schedule-head"><span>Horario</span><span>Cancha / Formato</span><span>Cliente / Reserva</span><span>Estado</span><span>Importe</span></div>{bookingRows.length === 0 && <div className="empty-state">No hay turnos registrados para hoy.</div>}{bookingRows.slice(0, 10).map((booking) => <button className="schedule-row" key={`${booking.time}-${booking.court}-${booking.client}`} onClick={() => onSelectBooking(booking)}><span><strong>{booking.time}</strong><small>24 Oct</small></span><span><strong>{booking.court}</strong><small>{booking.type}</small></span><span>{booking.client}</span><StatusBadge status={booking.status} /><span>{booking.price}</span><ArrowRight size={15} /></button>)}</div></section><aside className="side-stack"><section className="panel live-panel"><div className="panel-heading"><h2>Estado actual en vivo</h2><span className="muted">Sin datos en vivo</span></div><div className="availability-empty">No hay información en vivo disponible.</div></section></aside></div></div>;
+  return <div className="b2b-content"><div className="b2b-page-heading"><div><span className="eyebrow"><i /> OPERACIÓN EN VIVO</span><h1>Dashboard Operativo</h1><p>Jornada en curso — Buenos Aires, ART</p></div><div className="heading-actions"><button className="secondary-action" onClick={() => onNavigate('availability')}><SlidersHorizontal size={16} /> Administrar canchas</button><button className="primary-action" onClick={() => onNavigate('bookings')}>＋ Nueva reserva</button></div></div><div className="b2b-filter-row"><div className="court-tabs"><button className="active">Todas las canchas</button></div><button className="date-button"><CalendarDays size={16} /> Hoy<ChevronDown size={15} /></button></div><OperationalMetrics /><div className="operations-grid"><section className="panel schedule-panel"><div className="panel-heading"><div><h2>Agenda de turnos · Jornada hoy</h2><small>{bookingRows.length} turnos visibles</small></div><button className="text-button" onClick={() => onNavigate('availability')}>Vista cronológica <ArrowRight size={15} /></button></div><div className="schedule-table"><div className="schedule-head"><span>Horario</span><span>Cancha / Formato</span><span>Cliente / Reserva</span><span>Estado</span><span>Importe</span></div>{bookingRows.length === 0 && <div className="empty-state">No hay turnos registrados para hoy.</div>}{bookingRows.slice(0, 10).map((booking) => <button className="schedule-row" key={`${booking.time}-${booking.court}-${booking.client}`} onClick={() => onSelectBooking(booking)}><span><strong>{booking.time}</strong><small>24 Oct</small></span><span><strong>{booking.court}</strong><small>{booking.type}</small></span><span>{booking.client}</span><StatusBadge status={booking.status} /><span>{booking.price}</span><ArrowRight size={15} /></button>)}</div></section><aside className="side-stack"><section className="panel live-panel"><div className="panel-heading"><h2>Estado actual en vivo</h2><span className="muted">Sin datos en vivo</span></div><div className="availability-empty">No hay información en vivo disponible.</div></section></aside></div></div>;
 }
 
-function Metric({ label, value, detail, accent, icon, trend }: { label: string; value: string; detail: string; accent: string; icon: React.ReactNode; trend: string }) { return <section className={`metric-card ${accent}`}><div className="metric-top"><span>{label}</span><i>{icon}</i></div><strong>{value}</strong><small>{trend}</small><div className="metric-bottom"><span>{detail}</span></div></section>; }
 function StatusBadge({ status }: { status: string }) { return <span className={`status-badge ${status.toLowerCase()}`}><i />{statusLabels[status] || status}</span>; }
 
 function AvailabilityView({ onNavigate }: { onNavigate: (view: B2bView) => void }) {
@@ -450,15 +452,7 @@ function SettingsView() {
           </div>
         </section>
       )}
-      {tab === 'rules' && (
-        <section className="panel settings-panel">
-          <div className="settings-panel-head">
-            <div><h2>Horarios y bloqueos</h2><small>Zona horaria: America/Argentina/Buenos_Aires · Turnos de 1 o 2 horas.</small></div>
-            <button className="primary-action">＋ Nueva regla</button>
-          </div>
-          <div className="availability-empty">No hay reglas de horario configuradas todavía.</div>
-        </section>
-      )}
+      {tab === 'rules' && <ScheduleSettings courts={courts} />}
     </div>
   );
 }

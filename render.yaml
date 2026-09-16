@@ -32,6 +32,12 @@ services:
           property: database
       - key: DB_SSL
         value: true
+      # El esquema del juego se versiona con migraciones (apps/server/src/migrations).
+      # synchronize queda deshabilitado: en producción puede borrar columnas con datos.
+      - key: DB_SYNCHRONIZE
+        value: false
+      - key: DB_MIGRATIONS
+        value: true
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN

@@ -1,5 +1,31 @@
 # Implementado — Estado Actual
 
+## Testing e Infraestructura de Calidad
+
+- **Jest + ts-jest** configurado en `apps/server/jest.config.js`; 92 tests en 6 suites (`npm test`).
+- Cobertura por área:
+  - `match/match-simulation.spec.ts` → 21 tests del núcleo de simulación (Poisson, penales, goleadores, asistencias, calificaciones).
+  - `b2b/domain-policy.spec.ts` → 25 tests de reglas B2B (duración de turnos, roles de staff, transiciones de reserva).
+  - `auth/auth.service.spec.ts` → registro/login (bcrypt, JWT, duplicados, credenciales inválidas).
+  - `draft/draft.service.spec.ts` → pack, tope de plantilla 11+7, equipo de invitado vs. usuario, reset.
+  - `migrations/*.spec.ts` → validan el SQL de las migraciones contra los metadatos de las entidades.
+- **Smoke test E2E B2B** (`apps/server/scripts/b2b-smoke-test.mjs`, `npm run test:b2b`): 61 verificaciones sobre
+  autorización (401/403), disponibilidad (reglas, generación de turnos, bloqueos) y transacciones de reservas
+  (crear → confirmar → reprogramar → completar → cancelar, liberación de turnos y métricas).
+  Se autoabastece registrando una organización con slug único, así que no depende del seed ni muta los datos demo.
+
+## Migraciones versionadas
+
+- `synchronize` deshabilitado por defecto en producción (`resolveSynchronize` sólo lo habilita en desarrollo).
+- `apps/server/src/migrations/1724000000000-InitialGameSchema.ts`: baseline del esquema del juego,
+  idempotente (`CREATE TABLE IF NOT EXISTS`) para poder aplicarse sobre bases ya creadas por synchronize.
+- `apps/server/src/b2b/migrations/1710000000000-CreateB2bSchema.ts`: esquema B2B con índice parcial
+  `b2b_active_booking_per_shift` que impide dos reservas activas sobre el mismo turno.
+- DataSources para la CLI de TypeORM: `src/data-source.ts` y `src/b2b/data-source.ts`.
+- Scripts: `migration:show|run|revert` y `b2b:migration:show|run|revert`.
+- `DB_MIGRATIONS=true` / `B2B_DB_MIGRATIONS=true` en producción (Render), deshabilitado en docker-compose (desarrollo).
+- `.env.example` documenta todas las variables (bases, migraciones, JWT, seed, CORS).
+
 ## Data Model
 
 - PostgreSQL (TypeORM) con entidades: Player, Team, TeamPlayer, Match, **Tournament**, User

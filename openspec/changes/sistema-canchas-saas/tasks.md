@@ -29,7 +29,7 @@
 
 - [x] 4.1 Crear seed de organización, complejo, canchas, horarios y reservas de demostración.
 - [x] 4.2 Añadir bandera de funcionalidad y fallback configurable para la nueva entrada principal.
-- [ ] 4.3 Verificar migraciones, variables de entorno, backups y despliegue independiente local/producción.
+- [x] 4.3 Verificar migraciones, variables de entorno, backups y despliegue independiente local/producción.
 - [x] 4.4 Ejecutar typecheck, build, pruebas backend y smoke test del recorrido B2B completo.
 
 ## 5. Activación incremental

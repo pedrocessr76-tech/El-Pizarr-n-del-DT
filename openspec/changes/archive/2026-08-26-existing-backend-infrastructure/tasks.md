@@ -15,7 +15,7 @@
 
 - [x] 3.1 Sincronizar catálogo/equipos reales desde `Jugadores_Base_de_Datos` al iniciar servidor
 - [x] 3.2 GET /players (listado completo, ordenado por rating desc)
-- [ ] 3.3 GET /players con filtros de nombre/posición server-side (hoy filtrado en el cliente)
+- [x] 3.3 GET /players con filtros de nombre/posición server-side (implementado en `PlayerService.findAll` con QueryBuilder: ILIKE, rating, rarity, min/max)
 
 ## 4. Draft Mode (Backend)
 
@@ -38,7 +38,7 @@
 - [x] 6.4 POST /match/tournament/:id/complete (marcar como completado)
 - [x] 6.5 GET /match/tournament/:id y GET /match/team/:id
 - [x] 6.6 Desempate ponderado (penales) en partidos empatados
-- [ ] 6.7 Resumen de partido con calificaciones por jugador (hoy solo resultados y feed de eventos)
+- [x] 6.7 Resumen de partido con calificaciones por jugador (`summaryJson` persistido en `MatchEntity`, con `MatchSummary` de home/away `PlayerMatchStats` incluyendo matchRating, goles y asistencias)
 
 ## 7. Game State (Backend)
 
@@ -56,4 +56,4 @@
 - [x] 8.7 Torneo: bracket de 4 rondas con conectores y ganadores resaltados
 - [x] 8.8 Partido en vivo con velocidad x30/x60/x90, feed de eventos y goles
 - [x] 8.9 Overlay de fin de torneo (derrota) con estadísticas
-- [ ] 8.10 Tests automatizados (núcleo de simulación, draft y auth)
+- [x] 8.10 Tests automatizados (núcleo de simulación, draft y auth)

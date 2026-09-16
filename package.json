@@ -8,7 +8,10 @@
     "dev": "npm run build --workspace=server && concurrently \"cd apps/server && npm run start\" \"cd apps/client && npm run dev\"",
     "dev:server": "cd apps/server && npm run build && npm run start",
     "dev:client": "cd apps/client && npm run dev",
-    "build": "npm run build --workspace=server && npm run build --workspace=client"
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "test": "npm run test --workspace=server",
+    "test:b2b:unit": "npm run test:b2b:unit --workspace=server",
+    "test:b2b": "npm run test:b2b --workspace=server"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

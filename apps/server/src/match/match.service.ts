@@ -7,7 +7,8 @@ import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from './entities/match.entity';
 import { TournamentEntity } from './entities/tournament.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import type { Match, Team, Player, Tournament, RoundName, MatchStatus, MatchSummary, PlayerMatchStats } from '../../../../packages/shared/types/models';
+import { matchSimulation } from './match-simulation';
+import type { Match, Team, Player, Tournament, RoundName, MatchStatus, MatchSummary } from '../../../../packages/shared/types/models';
 import * as crypto from 'crypto';
 
 const ROUND_ORDER: RoundName[] = ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
@@ -91,101 +92,6 @@ export class MatchService {
     };
   }
 
-    private averageTeamRating(team: Team): number {
-      const ratings = team.starters
-        .filter((player) => typeof player.rating === 'number')
-        .map((player) => player.rating as number);
-      if (ratings.length === 0) return 50;
-      return ratings.reduce((a, b) => a + b, 0) / ratings.length;
-    }
-
-    private sumTeamStats(team: Team): number {
-      return team.starters.reduce((total, player) => {
-        return total + player.stats.pace + player.stats.shooting + player.stats.passing + player.stats.dribbling + player.stats.defending + player.stats.physical;
-      }, 0);
-    }
-
-    // Distribución de goles: selecciona goleadores de forma ponderada por su disparo
-    // (bonus para delanteros y mediapuntas). Devuelve un mapa playerId -> goles.
-    private assignGoalScorers(players: Player[], totalGoals: number): Record<string, number> {
-      const goals: Record<string, number> = {};
-      if (players.length === 0 || totalGoals <= 0) return goals;
-
-      const weightFor = (p: Player): number =>
-        (p.stats?.shooting ?? 5) +
-        (p.position === 'FWD' ? 15 : p.position === 'MID' ? 8 : 0);
-
-      for (let g = 0; g < totalGoals; g++) {
-        const totalWeight = players.reduce((s, p) => s + weightFor(p), 0);
-        if (totalWeight <= 0) break;
-        let r = Math.random() * totalWeight;
-        for (const p of players) {
-          r -= weightFor(p);
-          if (r <= 0) {
-            goals[p.id] = (goals[p.id] ?? 0) + 1;
-            break;
-          }
-        }
-      }
-      return goals;
-    }
-
-    // Distribución de asistencias (ponderada por pase), sin repetir demasiado al goleador.
-    private assignAssists(players: Player[], total: number, goalScorers: Record<string, number>): Record<string, number> {
-      const assists: Record<string, number> = {};
-      if (players.length === 0 || total <= 0) return assists;
-
-      const weightFor = (p: Player): number =>
-        (p.stats?.passing ?? 5) + (p.position === 'MID' ? 10 : p.position === 'FWD' ? 5 : 0);
-
-      for (let a = 0; a < total; a++) {
-        const options = players.filter((p) => (goalScorers[p.id] ?? 0) === 0);
-        const pool = options.length > 0 ? options : players;
-        const totalWeight = pool.reduce((s, p) => s + weightFor(p), 0);
-        if (totalWeight <= 0) break;
-        let r = Math.random() * totalWeight;
-        for (const p of pool) {
-          r -= weightFor(p);
-          if (r <= 0) {
-            assists[p.id] = (assists[p.id] ?? 0) + 1;
-            break;
-          }
-        }
-      }
-      return assists;
-    }
-
-    // Calcula la calificación (1-10) de cada titular y sus goles/asistencias.
-    private computeMatchSummary(team: Team, goals: number): PlayerMatchStats[] {
-      const starters = team.starters;
-      if (starters.length === 0) return [];
-
-      const goalScorers = this.assignGoalScorers(starters, goals);
-      const totalAssists = Math.min(2, goals);
-      const assistantIds = this.assignAssists(starters, totalAssists, goalScorers);
-
-      return starters.map((p) => {
-        const base = (p.rating ?? 50) / 10; // OVR -> base sobre 10
-        const perf = Math.random() * 1.4 - 0.8; // rendimiento: -0.8 .. +0.6
-        const goalBonus = Math.min(1.5, (goalScorers[p.id] ?? 0) * 0.7);
-        const assistBonus = (assistantIds[p.id] ?? 0) * 0.3;
-        const matchRating = Math.min(
-          10,
-          Math.max(1, Math.round((base + perf + goalBonus + assistBonus) * 10) / 10),
-        );
-
-        return {
-          playerId: p.id,
-          name: p.name,
-          position: p.position,
-          rating: p.rating ?? 50,
-          matchRating,
-          goals: goalScorers[p.id] ?? 0,
-          assists: assistantIds[p.id] ?? 0,
-        };
-      });
-    }
-
     private shuffle<T>(input: T[]): T[] {
       const arr = [...input];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -207,54 +113,21 @@ export class MatchService {
         .trim();
     }
 
-    // Distribución de Poisson (Knuth): nº de goles esperados según lambda
-    private poissonRandom(lambda: number): number {
-      const L = Math.exp(-lambda);
-      let k = 0;
-      let p = 1;
-      do {
-        k += 1;
-        p *= Math.random();
-      } while (p > L);
-      return Math.max(0, k - 1);
-    }
-
     // Simula un partido completo (ponderado por rating medio) y persiste el resultado.
     private async simulateAndPersistMatch(matchEntity: MatchEntity): Promise<Match> {
       const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
       const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
       if (!homeTeam || !awayTeam) throw new NotFoundException('Equipo no encontrado.');
 
-      const homeRating = this.averageTeamRating(homeTeam);
-      const awayRating = this.averageTeamRating(awayTeam);
-      const ratingDiff = homeRating - awayRating;
+      // Toda la logica de simulación vive en el módulo puro MatchSimulation
+      // (apps/server/src/match/match-simulation.ts), cubierto por tests unitarios.
+      const result = matchSimulation.simulateMatch(homeTeam, awayTeam);
 
-      // Goles esperados ponderados: ±12 puntos de rating ≈ ±1 gol esperado.
-      const homeLambda = Math.max(0.25, 1.5 + ratingDiff / 12);
-      const awayLambda = Math.max(0.25, 1.5 - ratingDiff / 12);
-
-      const homeScore = Math.min(7, this.poissonRandom(homeLambda));
-      const awayScore = Math.min(7, this.poissonRandom(awayLambda));
-
-      let winnerId = homeScore > awayScore ? homeTeam.id : awayTeam.id;
-
-      // Empate → tanda de penales ponderada por rating para decidir quien avanza.
-      if (homeScore === awayScore) {
-        const homeWinProb = Math.min(0.85, Math.max(0.15, 0.5 + ratingDiff / 40));
-        winnerId = Math.random() < homeWinProb ? homeTeam.id : awayTeam.id;
-      }
-
-      matchEntity.homeScore = homeScore;
-      matchEntity.awayScore = awayScore;
+      matchEntity.homeScore = result.homeScore;
+      matchEntity.awayScore = result.awayScore;
       matchEntity.status = 'FINISHED';
-      matchEntity.winnerId = winnerId;
-
-      // Resumen por jugador: calificaciones, goles y asistencias de cada titular.
-      const summary: MatchSummary = {
-        home: this.computeMatchSummary(homeTeam, homeScore),
-        away: this.computeMatchSummary(awayTeam, awayScore),
-      };
-      matchEntity.summaryJson = JSON.stringify(summary);
+      matchEntity.winnerId = result.winnerId;
+      matchEntity.summaryJson = JSON.stringify(result.summary);
 
       await this.matchRepo.save(matchEntity);
 
@@ -262,11 +135,11 @@ export class MatchService {
         id: matchEntity.id,
         homeTeam,
         awayTeam,
-        homeScore,
-        awayScore,
+        homeScore: result.homeScore,
+        awayScore: result.awayScore,
         status: 'FINISHED',
-        winnerId,
-        summary,
+        winnerId: result.winnerId,
+        summary: result.summary,
       };
     }
 
