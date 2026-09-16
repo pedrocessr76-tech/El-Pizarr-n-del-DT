@@ -31,44 +31,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
       </div>
 
       {/* ===== Mobile layout ===== */}
-      <div className="relative z-10 w-full max-w-md flex flex-col gap-5 md:hidden" id="main-content-mobile">
-        {/* Acciones superiores: login + sistema canchas */}
-        <div className="w-full flex items-center justify-between gap-2 pt-1">
-          <button
-            onClick={onOpenLogin}
-            className="flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 border border-white/10 px-3 py-2 text-primary font-label-md text-[12px] font-bold uppercase tracking-wider active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-[16px]">login</span>
-            Iniciar Sesión
-          </button>
-          <button
-            onClick={() => { window.location.href = '/canchas'; }}
-            className="flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 border border-white/10 px-3 py-2 text-on-surface font-label-md text-[12px] font-bold uppercase tracking-wider active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-[16px]">location_on</span>
-            Sistema Canchas
-          </button>
-        </div>
-
+      <div className="relative z-10 w-full max-w-md flex flex-col gap-4 md:hidden" id="main-content-mobile">
         {/* Branding hero */}
-        <div className="flex flex-col items-center text-center pt-md pb-sm gap-3">
+        <div className="flex flex-col items-center text-center pt-2 pb-1 gap-2.5">
           <div className="w-20 h-20 rounded-2xl bg-surface-container-low border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(165,208,185,0.25)]">
             <span className="material-symbols-outlined text-[44px] text-primary">sports_soccer</span>
           </div>
-          <div>
-            <h1 className="font-display-lg text-[28px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter">
-              EL PIZARRÓN
-            </h1>
-          </div>
+          <h1 className="font-display-lg text-[28px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter">
+            EL PIZARRÓN
+          </h1>
         </div>
 
         {/* Primary action */}
         <button
           onClick={() => onNavigate('builder')}
-          className="w-full bg-primary-container hover:bg-primary-container/80 active:scale-[0.98] text-on-primary-container rounded-xl py-4 flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all"
+          className="w-full rounded-2xl bg-primary-container active:scale-[0.98] text-on-primary-container flex items-center justify-center gap-3 py-5 shadow-xl shadow-primary/20 transition-all"
         >
-          <span className="material-symbols-outlined text-[22px]">sports_soccer</span>
-          <span className="font-headline-md text-[16px] font-black uppercase tracking-wide">Jugar Partido</span>
+          <span className="material-symbols-outlined text-[24px]">sports_soccer</span>
+          <span className="font-headline-md text-[17px] font-black uppercase tracking-wide">Jugar Partido</span>
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
 
@@ -76,16 +56,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('history')}
-            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-3 rounded-lg text-on-surface shadow-md transition-all"
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface-container-high active:scale-95 py-5 text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-secondary text-[17px]">history</span>
+            <span className="material-symbols-outlined text-secondary text-[26px]">history</span>
             <span className="font-headline-sm text-[13px] font-bold uppercase">Historial</span>
           </button>
           <button
             onClick={() => onNavigate('catalog')}
-            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-3 rounded-lg text-on-surface shadow-md transition-all"
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface-container-high active:scale-95 py-5 text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-primary text-[17px]">style</span>
+            <span className="material-symbols-outlined text-primary text-[26px]">style</span>
             <span className="font-headline-sm text-[13px] font-bold uppercase">Mis Cartas</span>
           </button>
         </div>
@@ -130,10 +110,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
             </button>
           </div>
         ) : (
-          <div className="bg-surface-container-low/70 rounded-xl p-5 border border-white/5 text-center">
-            <span className="material-symbols-outlined text-[36px] text-on-surface-variant">groups</span>
-            <p className="font-body-md text-on-surface-variant mt-2">Aún no armaste tu equipo.</p>
-            <p className="font-label-md text-on-surface-variant/70 text-[12px] mt-1">
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface-container-low/70 border border-white/5 px-6 py-8 text-center">
+            <span className="material-symbols-outlined text-[40px] text-on-surface-variant">groups</span>
+            <p className="font-body-md text-on-surface-variant mt-1">Aún no armaste tu equipo.</p>
+            <p className="font-label-md text-on-surface-variant/70 text-[12px]">
               Completa 11 titulares + 7 suplentes para jugar.
             </p>
           </div>

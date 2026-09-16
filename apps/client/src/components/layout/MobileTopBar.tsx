@@ -4,7 +4,7 @@ export type MobileShellVariant = 'game' | 'canchas';
 
 export interface MobileTopBarAction {
   icon: string;
-  label: string;
+  label?: string;
   onClick?: () => void;
 }
 
@@ -31,7 +31,7 @@ const variantClasses: Record<MobileShellVariant, {
     title: 'text-on-surface',
     subtitle: 'text-on-surface-variant',
     brandBtn: 'text-left',
-    action: 'bg-surface-container-high text-primary',
+    action: 'bg-surface-container-high border border-white/10 text-primary',
   },
   canchas: {
     bar: 'border-b',
@@ -62,31 +62,34 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
       className={`fixed inset-x-0 top-0 z-40 md:hidden pt-safe ${c.bar}`}
       style={style}
     >
-      <div className="flex h-16 items-center justify-between gap-3 px-4">
+      <div className="flex h-16 items-stretch justify-between gap-2 px-3">
+        {/* Marca a la izquierda: ícono + nombre de la app */}
         <button
           type="button"
           onClick={onBrandClick}
-          className={`flex min-w-0 items-center gap-3 ${c.brandBtn}`}
+          className={`flex min-w-0 items-center gap-2.5 ${c.brandBtn}`}
         >
-          <span className={`material-symbols-outlined text-[26px] ${c.brand}`}>sports_soccer</span>
-          <span className="flex min-w-0 flex-col">
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${c.brand}`}>{brand}</span>
-            <span className={`truncate text-lg font-extrabold uppercase leading-tight ${c.title}`}>{title}</span>
-            {subtitle && <span className={`truncate text-[11px] ${c.subtitle}`}>{subtitle}</span>}
+          <span className={`material-symbols-outlined text-[24px] ${c.brand} shrink-0`}>sports_soccer</span>
+          <span className="flex min-w-0 flex-col justify-center leading-none">
+            <span className={`truncate text-[13px] font-extrabold uppercase tracking-tight ${c.title}`}>{brand}</span>
+            <span className={`truncate text-[10px] uppercase tracking-widest mt-1 ${c.subtitle}`}>{title}</span>
+            {subtitle && <span className={`truncate text-[10px] mt-0.5 ${c.subtitle}`}>{subtitle}</span>}
           </span>
         </button>
 
+        {/* Acciones a la derecha, alineadas sin desbordar */}
         {actions && actions.length > 0 && (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {actions.map((action) => (
               <button
-                key={action.label}
+                key={action.label ?? action.icon}
                 type="button"
                 onClick={action.onClick}
-                aria-label={action.label}
-                className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-[13px] font-bold transition-transform active:scale-95 ${c.action}`}
+                aria-label={action.label ?? action.icon}
+                className={`flex h-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-bold uppercase tracking-wide transition-transform active:scale-95 ${c.action}`}
               >
-                <span className="material-symbols-outlined text-[20px]">{action.icon}</span>
+                <span className="material-symbols-outlined text-[17px]">{action.icon}</span>
+                {action.label && <span className="leading-none">{action.label}</span>}
               </button>
             ))}
           </div>

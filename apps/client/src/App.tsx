@@ -101,11 +101,12 @@ function App() {
           brand="El Pizarrón del DT"
           title={MOBILE_TITLES[activeTab]}
           onBrandClick={() => setActiveTab('home')}
-          actions={
+          actions={[
             user
-              ? [{ icon: 'logout', label: 'Cerrar sesión', onClick: logout }]
-              : [{ icon: 'login', label: 'Iniciar sesión', onClick: () => setIsLoginOpen(true) }]
-          }
+              ? { icon: 'logout', label: 'Salir', onClick: logout }
+              : { icon: 'login', label: 'Iniciar Sesión', onClick: () => setIsLoginOpen(true) },
+            { icon: 'location_on', label: 'Canchas', onClick: () => { window.location.href = '/canchas'; } },
+          ]}
         />
         <MobileTabBar
           variant="game"
@@ -114,8 +115,9 @@ function App() {
           onSelect={(tab) => setActiveTab(tab)}
         />
 
-        {/* Main Page Content*/}
-        <main className="w-full pt-16 md:pt-0 mobile-shell-pad">
+        {/* Main Page Content */}
+        {/* pt reserva la altura del header fijo (h-16 + safe-area del notch) para que el contenido no se superponga */}
+        <main className="w-full pt-[calc(env(safe-area-inset-top,0px)+4rem)] md:pt-0 mobile-shell-pad">
           {renderActivePage()}
         </main>
 
