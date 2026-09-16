@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useB2bStore } from '../store/useB2bStore';
 import { b2bService, type B2bOrganizationOption } from '../services/b2bService';
+import { MobileTopBar } from '../components/layout/MobileTopBar';
+import { MobileTabBar, type MobileTab } from '../components/layout/MobileTabBar';
 
 type B2bRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'CLIENT';
 type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'portal' | 'payment';
@@ -109,8 +111,28 @@ export function B2bApp() {
     return <B2bLogin role={role} onRoleChange={setRole} onEnter={enterB2b} onRegister={registerOrganization} onRegisterClient={registerClientAccount} />;
   }
 
+  const mobileTabs: MobileTab<B2bView>[] = isStaff
+    ? [
+        { id: 'dashboard', label: 'Operativa', icon: 'dashboard' },
+        { id: 'availability', label: 'Canchas', icon: 'calendar_month' },
+        { id: 'bookings', label: 'Reservas', icon: 'groups' },
+        { id: 'login', label: 'Perfil', icon: 'person' },
+      ]
+    : [
+        { id: 'portal', label: 'Reservar', icon: 'sports_soccer' },
+        { id: 'payment', label: 'Pago', icon: 'credit_card' },
+        { id: 'bookings', label: 'Mis turnos', icon: 'event_available' },
+        { id: 'login', label: 'Perfil', icon: 'person' },
+      ];
+
   return (
     <div className="b2b-app">
+      <MobileTopBar
+        variant="canchas"
+        brand="Sistema Canchas"
+        title={orgName || 'Sistema Canchas'}
+        actions={[{ icon: 'logout', label: 'Salir', onClick: () => navigate('login') }]}
+      />
       <aside className={`b2b-sidebar ${mobileMenu ? 'is-open' : ''}`}>
         <div className="b2b-brand">
           <div className="b2b-brand-mark"><span>SC</span></div>
@@ -134,6 +156,7 @@ export function B2bApp() {
         <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><button className="icon-button" title="Notificaciones">♧</button><button className="profile-button" onClick={() => navigate('login')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
         {isStaff ? <StaffView view={view} onNavigate={navigate} onSelectBooking={setSelectedBooking} /> : <RealClientView view={view} onNavigate={navigate} />}
       </main>
+      <MobileTabBar variant="canchas" tabs={mobileTabs} activeTab={view} onSelect={(next) => navigate(next)} />
       {selectedBooking && <BookingDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} onAction={async (action) => { if (selectedBooking.id) { if (action === 'confirm') await b2bService.confirmBooking(selectedBooking.id); if (action === 'cancel') await b2bService.cancelBooking(selectedBooking.id); } setSelectedBooking(null); }} />}
     </div>
   );
@@ -328,6 +351,9 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
       .catch(() => setMessage('No se pudieron cargar las canchas de este complejo.'));
   }, [organizationId]);
     const selectedOrgName = organizations.find((org) => org.id === organizationId)?.name ?? '';
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [duration, setDuration] = useState<1 | 2>(1);
+  const [selectedShift, setSelectedShift] = useState<{ courtName: string; courtId: string; shiftId?: string; label: string; priceCents: number } | null>(null);
   if (view === 'payment') return <PaymentView onNavigate={onNavigate} />;
     const demoCourts = courts.length ? courts : [{ id: 'placeholder', name: 'Sin canchas todavía', sportType: 'Seleccioná un complejo', defaultPriceCentsArs: 0 }];
   const reserve = async (courtId: string, shiftId?: string) => {
@@ -337,7 +363,16 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
     }
     onNavigate('payment');
   };
-  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)}>{organizations.length === 0 && <option value="">Cargando complejos…</option>}{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><button className="select-control">Próximos 7 días <CalendarDays size={16} /></button></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className="active">1 hora</button><button>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div>{(courtShifts.length ? courtShifts : []).map((shift) => <button key={`${court.id}-${shift.id || 'shift'}`} onClick={() => reserve(court.id, shift.id)}>{new Date(shift.startsAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>)}</div></div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Duración</span><strong>1 hora</strong></div><div className="receipt-total"><span>Total estimado</span><strong>— ARS</strong></div><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div></div>;
+  const toDayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const weekDays = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
+  const activeDay = selectedDate || (weekDays[0] ? toDayKey(weekDays[0]) : '');
+  const durationLabel = duration === 1 ? '1 hora' : '2 horas';
+  const selectedTotalCents = selectedShift ? selectedShift.priceCents * duration : 0;
+  const confirmSelection = () => {
+    if (selectedShift) void reserve(selectedShift.courtId, selectedShift.shiftId);
+    else onNavigate('payment');
+  };
+  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)}>{organizations.length === 0 && <option value="">Cargando complejos…</option>}{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDays.map((d) => { const key = toDayKey(d); const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' })}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(new Date(shift.startsAt)) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = new Date(shift.startsAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
 
 }
 
@@ -458,5 +493,34 @@ function SettingsView() {
 }
 
 
-function PaymentView({ onNavigate }: { onNavigate: (view: B2bView) => void }) { return <div className="b2b-content client-content"><button className="back-link" onClick={() => onNavigate('portal')}><ArrowLeft size={16} /> Volver al portal</button><div className="payment-layout"><section className="panel payment-card"><div className="success-icon"><Check size={28} /></div><span className="eyebrow">CONFIRMACIÓN DE TURNO</span><h1>Tu turno está listo</h1><p>Revisá los datos antes de confirmar la reserva.</p><div className="payment-detail"><span>Resumen de reserva</span><strong>Reserva confirmada</strong><small>Los datos del turno se cargarán desde tu historial de reservas.</small></div><div className="receipt-total"><span>Total</span><strong>Según turno reservado</strong></div><button className="primary-action wide" onClick={() => onNavigate('portal')}><Check size={16} /> Confirmar turno</button><p className="payment-note">La integración con una pasarela de pagos se agregará en una etapa posterior.</p></section></div></div>; }
+function PaymentView({ onNavigate }: { onNavigate: (view: B2bView) => void }) {
+  const [modality, setModality] = useState<'deposit' | 'total'>('deposit');
+  const [method, setMethod] = useState<'mercadopago' | 'transfer'>('mercadopago');
+  const [holder, setHolder] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+  const label = modality === 'deposit' ? 'Pagar seña (30%)' : 'Pagar total';
+  return (
+    <div className="b2b-content client-content">
+      <button className="back-link" onClick={() => onNavigate('portal')}><ArrowLeft size={16} /> Volver al portal</button>
+      <div className="payment-layout">
+        <section className="panel payment-card">
+          <div className="success-icon"><Check size={28} /></div>
+          <span className="eyebrow">CONFIRMACIÓN DE TURNO</span>
+          <h1>Tu turno está listo</h1>
+          <p>Revisá los datos antes de confirmar la reserva.</p>
+          <div className="payment-steps"><span className="done">1. Turno</span><span className="active">2. Pago</span><span>3. Confirmación</span></div>
+          <div className="payment-detail"><span>Resumen de reserva</span><strong>Reserva confirmada</strong><small>Los datos del turno se cargarán desde tu historial de reservas.</small></div>
+          <div className="selector-block"><label>Modalidad de pago</label><div className="duration-toggle"><button className={modality === 'deposit' ? 'active' : ''} onClick={() => setModality('deposit')}>Seña (30%)</button><button className={modality === 'total' ? 'active' : ''} onClick={() => setModality('total')}>Pago total</button></div></div>
+          <div className="selector-block"><label>Medio de pago</label><div className="duration-toggle"><button className={method === 'mercadopago' ? 'active' : ''} onClick={() => setMethod('mercadopago')}>Mercado Pago</button><button className={method === 'transfer' ? 'active' : ''} onClick={() => setMethod('transfer')}>Transferencia</button></div></div>
+          <div className="selector-block"><label>Nombre del titular</label><input className="b2b-input" placeholder="Como figura en la tarjeta" value={holder} onChange={(event) => setHolder(event.target.value)} /></div>
+          <div className="receipt-total"><span>Total</span><strong>{label}</strong></div>
+          {confirmed && <p className="settings-feedback">Pago registrado. Te enviaremos la confirmación del turno.</p>}
+          <button className="primary-action wide hidden md:inline-flex" onClick={() => setConfirmed(true)}><Check size={16} /> {label}</button>
+          <p className="payment-note">La integración con una pasarela de pagos se agregará en una etapa posterior.</p>
+        </section>
+      </div>
+      <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500">Modalidad</div><div className="font-bold text-[#15803d]">{label}</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={() => setConfirmed(true)}>{label}</button></div>
+    </div>
+  );
+}
 function BookingDrawer({ booking, onClose, onAction }: { booking: BookingRow; onClose: () => void; onAction: (action: 'confirm' | 'cancel') => Promise<void> }) { return <div className="drawer-backdrop" onClick={onClose}><aside className="booking-drawer" onClick={(event) => event.stopPropagation()}><button className="close-drawer" onClick={onClose}><X size={18} /></button><span className="eyebrow">DETALLE DE RESERVA</span><h2>{booking.client}</h2><StatusBadge status={booking.status} /><div className="drawer-details"><span><Clock3 size={16} />{booking.time}</span><span><CalendarDays size={16} /> Reserva online</span><span><Trophy size={16} />{booking.court} · {booking.type}</span><span><CircleDollarSign size={16} />{booking.price} ARS</span></div><div className="drawer-actions"><button className="secondary-action" onClick={() => onAction('cancel')}>Cancelar</button><button className="primary-action" onClick={() => onAction('confirm')}>Confirmar reserva</button></div></aside></div>; }

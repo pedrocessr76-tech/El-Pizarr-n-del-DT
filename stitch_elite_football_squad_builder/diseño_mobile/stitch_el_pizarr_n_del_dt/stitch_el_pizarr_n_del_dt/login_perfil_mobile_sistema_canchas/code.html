@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Sistema Canchas</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#faf8ff;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:calc(env(safe-area-inset-bottom,0px));}.pt-safe{padding-top:calc(env(safe-area-inset-top,0px));}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-background": "#131b2e", "inverse-on-surface": "#eef0ff", "on-tertiary": "#ffffff", "error-container": "#ffdad6", "primary-fixed": "#95f8a7", "on-primary-fixed-variant": "#005323", "on-primary-container": "#d3ffd5", "primary-fixed-dim": "#79db8d", "surface-container-highest": "#dae2fd", "on-secondary-fixed": "#0e1d28", "tertiary-fixed": "#ffdcc3", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb77d", "on-surface-variant": "#3f493f", "surface-tint": "#006d30", "error": "#ba1a1a", "on-primary": "#ffffff", "on-secondary-container": "#576673", "secondary-container": "#d5e4f4", "on-surface": "#131b2e", "on-secondary-fixed-variant": "#3a4855", "surface-container-low": "#f2f3ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#79db8d", "secondary": "#51606d", "background": "#faf8ff", "surface-container": "#eaedff", "surface-dim": "#d2d9f4", "on-tertiary-fixed-variant": "#6e3900", "surface-variant": "#dae2fd", "outline-variant": "#becabc", "on-tertiary-fixed": "#2f1500", "outline": "#6f7a6e", "surface-bright": "#faf8ff", "on-error-container": "#93000a", "inverse-surface": "#283044", "surface-container-high": "#e2e7ff", "on-primary-fixed": "#00210a", "primary": "#00652c", "primary-container": "#15803d", "tertiary-container": "#a95b00", "surface": "#faf8ff", "secondary-fixed": "#d5e4f4", "secondary-fixed-dim": "#b9c8d7", "tertiary": "#854600", "on-secondary": "#ffffff", "on-tertiary-container": "#fff1e9" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter-compact": "0.5rem", "margin-mobile": "0.75rem", "space-xs": "0.25rem", "gutter": "1rem", "space-md": "0.75rem", "space-sm": "0.5rem", "space-xl": "2rem", "space-lg": "1.25rem", "margin": "1.25rem" }, "fontFamily": { "body-md": ["Inter"], "label-lg": ["Inter"], "data-metric": ["Inter"], "headline-sm": ["Inter"], "data-tabular": ["Inter"], "headline-md": ["Inter"], "body-sm": ["Inter"], "label-md": ["Inter"], "headline-xl": ["Inter"], "headline-lg": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "data-metric": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "data-tabular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed pt-safe pb-safe"><main class="flex-1 flex flex-col relative w-full bg-surface min-h-screen"><div class="flex flex-col w-full px-margin-mobile pb-space-xl">
+<!-- Brand & Mascot Header -->
+<div class="flex flex-col items-center text-center mt-space-md mb-space-lg">
+<div class="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary shadow-md mb-space-sm text-on-primary">
+<span class="material-symbols-outlined text-data-metric" style="font-variation-settings: 'FILL' 1;">sports_soccer</span>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-label-sm">bolt</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Sistema Canchas</span>
+<span class="bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm px-space-xs py-0.5 rounded-full uppercase">ARG</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">Plataforma de Reservas &amp; Gestión Deportiva</p>
+</div>
+<!-- Role Segmented Selector -->
+<div class="bg-surface-container-high p-space-xs rounded-full flex relative shadow-sm mb-space-lg" role="tablist">
+<button aria-selected="true" class="flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 bg-surface-container-lowest text-primary shadow-sm font-label-md text-label-md" id="tab-jugador" onclick="switchProfile('jugador')" role="tab">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 1;">sports_soccer</span>
+<span>Soy Jugador</span>
+</button>
+<button aria-selected="false" class="flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 text-secondary hover:text-on-surface font-label-md text-label-md" id="tab-admin" onclick="switchProfile('admin')" role="tab">
+<span class="material-symbols-outlined text-headline-sm">domain</span>
+<span>Soy Dueño / Admin</span>
+</button>
+</div>
+<!-- Profile Content Container -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-md flex flex-col">
+<!-- Header Dynamic Copy -->
+<div class="mb-space-md">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm px-space-sm py-0.5 rounded-full flex items-center gap-1" id="role-pill">
+<span class="material-symbols-outlined text-label-sm">check_circle</span>
+          Turnos &amp; Partidos
+        </span>
+<span class="font-body-sm text-body-sm text-secondary">• Buenos Aires &amp; Federal</span>
+</div>
+<h1 class="font-headline-md text-headline-md text-on-surface" id="view-title">Ingresá para reservar tu cancha</h1>
+<p class="font-body-sm text-body-sm text-secondary mt-1" id="view-subtitle">Consultá turnos en tiempo real y aboná tu seña al instante.</p>
+</div>
+<!-- Quick Access Buttons -->
+<div class="flex flex-col gap-space-sm mb-space-md">
+<!-- WhatsApp Fast Access -->
+<button class="w-full h-10 px-space-md bg-primary text-on-primary rounded-xl flex items-center justify-between shadow-sm active:opacity-90 transition-transform active:scale-[0.99]" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-6 h-6 rounded-full bg-surface-container-lowest/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-headline-sm">chat</span>
+</div>
+<span class="font-label-md text-label-md">Acceso rápido con WhatsApp</span>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm px-space-xs py-0.5 rounded">1-Clic</span>
+</button>
+<!-- Google Access -->
+<button class="w-full h-10 px-space-md bg-surface-container-low text-on-surface rounded-xl flex items-center justify-center gap-space-sm shadow-sm active:bg-surface-container" type="button">
+<svg class="w-4 h-4" viewbox="0 0 24 24">
+<path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.67v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.16z" fill="#4285F4"></path>
+<path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" fill="#34A853"></path>
+<path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z" fill="#FBBC05"></path>
+<path d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" fill="#EA4335"></path>
+</svg>
+<span class="font-label-md text-label-md">Continuar con Google</span>
+</button>
+</div>
+<!-- Soft Divider -->
+<div class="relative flex items-center justify-center my-space-xs mb-space-md">
+<div class="w-full h-px bg-surface-container-highest"></div>
+<span class="absolute bg-surface-container-lowest px-space-sm font-label-sm text-label-sm text-secondary">o con tus datos</span>
+</div>
+<!-- Credential Fields -->
+<form class="flex flex-col gap-space-md" onsubmit="event.preventDefault();">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1" for="identifier" id="label-identifier">Teléfono o Correo Electrónico</label>
+<div class="relative flex items-center">
+<div class="absolute left-space-sm text-secondary flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-headline-sm" id="icon-identifier">call</span>
+</div>
+<input class="w-full h-10 pl-9 pr-space-md bg-surface-container-low text-on-surface placeholder:text-secondary rounded-xl font-body-md text-body-md focus:outline-none focus:bg-surface-container transition-colors" id="identifier" placeholder="ej: 11 4589-2310 o tu@email.com" type="text"/>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-1">
+<label class="font-label-md text-label-md text-on-surface" for="password">Contraseña</label>
+<button class="font-label-sm text-label-sm text-primary hover:underline" type="button">¿Olvidaste tu clave?</button>
+</div>
+<div class="relative flex items-center">
+<div class="absolute left-space-sm text-secondary flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-headline-sm">lock</span>
+</div>
+<input class="w-full h-10 pl-9 pr-10 bg-surface-container-low text-on-surface placeholder:text-secondary rounded-xl font-body-md text-body-md focus:outline-none focus:bg-surface-container transition-colors" id="password" placeholder="••••••••" type="password"/>
+<button aria-label="Mostrar contraseña" class="absolute right-space-sm text-secondary hover:text-on-surface flex items-center" onclick="togglePassVisibility()" type="button">
+<span class="material-symbols-outlined text-headline-sm" id="eye-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember me & Quick Shift Flag -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-space-xs cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded bg-surface-container text-primary accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Recordar mi sesión</span>
+</label>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container-low px-space-xs py-0.5 rounded">ARS Seguro</span>
+</div>
+<!-- Main Action CTA -->
+<button class="w-full h-11 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-space-xs shadow-md active:opacity-95 transition-all mt-space-xs" id="main-cta" type="submit">
+<span id="cta-text">Iniciar Sesión y Reservar</span>
+<span class="material-symbols-outlined text-headline-sm">arrow_forward</span>
+</button>
+</form>
+<!-- Registration Link -->
+<div class="mt-space-md pt-space-md bg-surface-container-low rounded-xl p-space-sm text-center flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-secondary" id="register-header">¿Primera vez organizando un partido?</span>
+<button class="font-label-md text-label-md text-primary font-semibold hover:underline" id="register-cta" type="button">
+        Registrate gratis (30 seg)
+      </button>
+</div>
+</div>
+<!-- Live Complex Snapshot & Proof -->
+<div class="mt-space-lg grid grid-cols-2 gap-space-sm">
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 1;">qr_code_2</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Señas Automáticas</p>
+<p class="font-body-sm text-body-sm text-secondary truncate">Mercado Pago &amp; Alias</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Turnos Garantizados</p>
+<p class="font-body-sm text-body-sm text-secondary truncate">Sin doble reserva</p>
+</div>
+</div>
+</div>
+<!-- Facility Visual Snippet -->
+<div class="mt-space-md bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center gap-space-md">
+<img class="w-14 h-14 rounded-lg object-cover shadow-sm shrink-0" data-alt="Close up action shot of a clean synthetic turf football pitch in Buenos Aires under floodlights at dusk, professional maintenance, vibrant green grass" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdVE4qBKuPlEfFiVuusCZ8XwqtnpLVD2E06pQfeziSA44o2pOnbx0DzRn2lktul3A1qaQlh1lnHfUpBB4IJcEdFfqBYWRaK697RIruimz4mVqCJ0peBJhtXSkM-O8279ve8_t5oFfnCj_qrsGV65o_UhhOAkAFpo5EAYWJ1jcIooTHg5lsC2BgPIGQ48QwC-ew3ZF9awoe3aDRWYU-m8xwo8icEqmKNReDXB_mhVYNr2dnnq92kc45Hw"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary uppercase font-semibold">En Vivo</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface truncate">Más de 240 canchas activas</p>
+<p class="font-body-sm text-body-sm text-secondary truncate">Fútbol 5, 8, 11 y Pádel en todo el país</p>
+</div>
+</div>
+<!-- Explanatory Difference Footer Card -->
+<div class="mt-space-md bg-surface-container-high rounded-xl p-space-md flex flex-col gap-space-sm shadow-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-headline-sm">info</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">¿Qué perfil debés elegir?</span>
+</div>
+<div class="grid grid-cols-1 gap-space-xs font-body-sm text-body-sm text-on-surface">
+<div class="flex items-start gap-space-xs bg-surface-container-lowest p-space-xs rounded-lg">
+<span class="material-symbols-outlined text-primary text-headline-sm shrink-0">sports_soccer</span>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Jugador / Capitán</span>
+<span class="text-secondary text-body-sm">Buscá turnos disponibles, pagá señas compartidas y descargá comprobantes al instante.</span>
+</div>
+</div>
+<div class="flex items-start gap-space-xs bg-surface-container-lowest p-space-xs rounded-lg">
+<span class="material-symbols-outlined text-secondary text-headline-sm shrink-0">dashboard</span>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Dueño / Encargado de Complejo</span>
+<span class="text-secondary text-body-sm">Planilla en vivo de canchas, arqueo de Caja Diaria, control de turnos fijos y señas.</span>
+</div>
+</div>
+</div>
+<!-- Security & Compliance Bar -->
+<div class="flex items-center justify-between pt-space-xs text-secondary font-label-sm text-label-sm">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-label-sm text-primary">lock</span>
+<span>Conexión TLS 256-bit</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-label-sm">dns</span>
+<span>Servidores AR</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let currentProfile = 'jugador';
+
+  function switchProfile(profile) {
+    currentProfile = profile;
+    const tabJugador = document.getElementById('tab-jugador');
+    const tabAdmin = document.getElementById('tab-admin');
+    const viewTitle = document.getElementById('view-title');
+    const viewSubtitle = document.getElementById('view-subtitle');
+    const rolePill = document.getElementById('role-pill');
+    const ctaText = document.getElementById('cta-text');
+    const mainCta = document.getElementById('main-cta');
+    const labelIdentifier = document.getElementById('label-identifier');
+    const iconIdentifier = document.getElementById('icon-identifier');
+    const identifierInput = document.getElementById('identifier');
+    const registerHeader = document.getElementById('register-header');
+    const registerCta = document.getElementById('register-cta');
+
+    if (profile === 'jugador') {
+      tabJugador.className = 'flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 bg-surface-container-lowest text-primary shadow-sm font-label-md text-label-md';
+      tabAdmin.className = 'flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 text-secondary hover:text-on-surface font-label-md text-label-md';
+      tabJugador.setAttribute('aria-selected', 'true');
+      tabAdmin.setAttribute('aria-selected', 'false');
+
+      viewTitle.innerText = 'Ingresá para reservar tu cancha';
+      viewSubtitle.innerText = 'Consultá turnos en tiempo real y aboná tu seña al instante.';
+      rolePill.innerHTML = '<span class="material-symbols-outlined text-label-sm">check_circle</span> Turnos & Partidos';
+      rolePill.className = 'bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm px-space-sm py-0.5 rounded-full flex items-center gap-1';
+
+      mainCta.className = 'w-full h-11 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-space-xs shadow-md active:opacity-95 transition-all mt-space-xs';
+      ctaText.innerText = 'Iniciar Sesión y Reservar';
+
+      labelIdentifier.innerText = 'Teléfono o Correo Electrónico';
+      iconIdentifier.innerText = 'call';
+      identifierInput.placeholder = 'ej: 11 4589-2310 o tu@email.com';
+
+      registerHeader.innerText = '¿Primera vez organizando un partido?';
+      registerCta.innerText = 'Registrate gratis (30 seg)';
+    } else {
+      tabAdmin.className = 'flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 bg-surface-container-lowest text-on-surface shadow-sm font-label-md text-label-md';
+      tabJugador.className = 'flex-1 py-2.5 px-space-sm rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 text-secondary hover:text-on-surface font-label-md text-label-md';
+      tabAdmin.setAttribute('aria-selected', 'true');
+      tabJugador.setAttribute('aria-selected', 'false');
+
+      viewTitle.innerText = 'Panel de Control del Predio';
+      viewSubtitle.innerText = 'Planilla horaria, control de cobros de caja y bloqueo de turnos.';
+      rolePill.innerHTML = '<span class="material-symbols-outlined text-label-sm">admin_panel_settings</span> Gestión de Complejo';
+      rolePill.className = 'bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-space-sm py-0.5 rounded-full flex items-center gap-1';
+
+      mainCta.className = 'w-full h-11 bg-on-background text-on-primary rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-space-xs shadow-md active:opacity-95 transition-all mt-space-xs';
+      ctaText.innerText = 'Acceder a Panel de Canchas';
+
+      labelIdentifier.innerText = 'Usuario Operador o Email del Predio';
+      iconIdentifier.innerText = 'badge';
+      identifierInput.placeholder = 'ej: admin@canchas.com.ar o usuario';
+
+      registerHeader.innerText = '¿Querés digitalizar tu predio deportivo?';
+      registerCta.innerText = 'Solicitar demo de administración';
+    }
+  }
+
+  function togglePassVisibility() {
+    const passInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eye-icon');
+    if (passInput.type === 'password') {
+      passInput.type = 'text';
+      eyeIcon.innerText = 'visibility_off';
+    } else {
+      passInput.type = 'password';
+      eyeIcon.innerText = 'visibility';
+    }
+  }
+</script></main></body></html>

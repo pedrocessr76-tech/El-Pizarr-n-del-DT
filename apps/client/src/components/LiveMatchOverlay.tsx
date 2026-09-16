@@ -554,7 +554,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
   const oppScoredNow = (isHomeUser ? awayGoalMinutes.includes(minute) : homeGoalMinutes.includes(minute)) && minute > 0;
 
     return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-lg">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-lg">
             {/* Fondo de estadio difuminado */}
       <div
         className="absolute inset-0 opacity-30 z-0"
@@ -569,10 +569,10 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background z-0"></div>
 
       {/* Modal de cristal (glass-panel) */}
-      <div className="glass-panel relative w-full max-w-[1400px] h-[800px] rounded-[24px] flex flex-col overflow-hidden">
+      <div className="glass-panel relative w-full max-w-[1400px] h-dvh max-h-dvh md:h-[800px] md:max-h-none rounded-t-2xl md:rounded-[24px] flex flex-col overflow-hidden pb-safe md:pb-0">
         {/* Header Section */}
-        <header className="flex flex-col gap-md p-lg border-b border-white/10">
-          <div className="flex justify-between items-center w-full">
+        <header className="flex flex-col gap-sm md:gap-md p-md md:p-lg border-b border-white/10">
+          <div className="flex flex-wrap justify-between items-center gap-2 w-full">
             {/* Live Indicator con live-dot */}
             <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10">
               <span className="live-dot"></span>
@@ -580,7 +580,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
             </div>
 
             {/* Match Progress Bar (90 minutos) */}
-            <div className="flex-grow max-w-3xl mx-xl flex flex-col gap-2">
+            <div className="w-full md:w-auto flex-grow max-w-3xl mx-0 md:mx-xl flex flex-col gap-2 order-last md:order-none">
               <div className="flex justify-between font-label-md font-label-md text-on-surface-variant">
                 <span>0&apos;</span>
                 <span>45&apos;</span>
@@ -703,10 +703,10 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
         )}
 
         {/* Marcador */}
-        <div className="px-6 pt-4 flex items-center justify-center gap-6 shrink-0">
-                  <TeamScoreBadge name={homeName} score={homeScore} isUser={isHomeUser} minute={minute} finished={finished} />
+<div className="px-2 md:px-6 pt-3 md:pt-4 flex items-center justify-center gap-2 md:gap-6 shrink-0">
+          <TeamScoreBadge name={homeName} score={homeScore} isUser={isHomeUser} minute={minute} finished={finished} />
           <div className="text-center">
-            <div className="font-display-lg text-5xl font-extrabold text-on-surface tabular-nums">
+            <div className="font-display-lg text-4xl md:text-5xl font-extrabold text-on-surface tabular-nums">
               {homeScore} - {awayScore}
             </div>
             {finished && match.homeScore === match.awayScore && (
@@ -718,7 +718,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
         {/* Cuerpo: campo dominante (izquierda) + comentarios y estadísticas (derecha) */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          <div className="flex-1 p-6 flex border-r border-white/10 min-w-0">
+          <div className="flex-1 p-2 md:p-6 flex md:border-r border-white/10 min-w-0">
                         <div className="flex-1 pitch-bg rounded-xl relative border border-white/20 shadow-2xl overflow-hidden min-h-[420px] transform-gpu" style={{ transformStyle: 'preserve-3d' }}>
               <div className="absolute inset-0 pitch-lines"></div>
               <div className="pitch-center-line"></div>
@@ -782,7 +782,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
           </div>
 
                     {/* Columna derecha: comentarios en vivo + estadísticas */}
-          <div className="w-[26rem] flex flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5 min-h-0">
+          <div className="hidden md:flex w-[26rem] flex-col bg-surface-container/50 backdrop-blur shrink-0 border-l border-white/5 min-h-0">
             <h4 className="font-headline-sm text-on-surface px-4 py-3 border-b border-white/10">Comentarios en vivo</h4>
             <div ref={commentsRef} className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
               {events.length === 0 && <p className="text-on-surface-variant text-sm italic">El árbitro da el silbatazo inicial...</p>}
@@ -852,7 +852,7 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
 
         {/* Resultado final + acciones */}
                 {finished && (
-          <div className="bg-surface-container-high/50 backdrop-blur border-t border-white/5 p-6 flex items-center justify-between gap-4 shrink-0">
+          <div className="bg-surface-container-high/50 backdrop-blur border-t border-white/5 p-4 md:p-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 shrink-0">
             <div className="flex items-center gap-4 min-w-0">
               <span className={`material-symbols-outlined text-4xl ${userWon ? 'text-tertiary drop-shadow-[0_0_10px_rgba(233,195,73,0.5)]' : 'text-error'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                 {userWon ? 'emoji_events' : 'flag'}
@@ -872,16 +872,16 @@ export const LiveMatchOverlay: React.FC<LiveMatchOverlayProps> = ({ match, teamI
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0 md:w-auto">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase border border-white/20 text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors"
+                className="flex-1 md:flex-none px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase border border-white/20 text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors"
               >
                 CERRAR
               </button>
               <button
                 onClick={userWon ? onContinue : onLose}
-                className={`px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase font-bold transition-all transform hover:scale-[1.02] ${
+                className={`flex-1 md:flex-none px-6 py-2 rounded-lg font-label-md font-label-md text-xs uppercase font-bold transition-all transform hover:scale-[1.02] ${
                   userWon
                     ? 'bg-gradient-to-r from-tertiary to-amber-500 text-on-tertiary shadow-[0_0_15px_rgba(233,195,73,0.5)] hover:shadow-[0_0_25px_rgba(233,195,73,0.8)]'
                     : 'bg-error text-on-error border border-error'

@@ -517,7 +517,7 @@ const FORMATIONS: Record<string, Formation> = {
   },
 };
 
-export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavigate }) => {
+export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onNavigate }) => {
   const [activeFormation, setActiveFormation] = useState<string>('4-3-3 (Plana)');
   const [showPlayerOverlay, setShowPlayerOverlay] = useState<boolean>(false);
   const [showMatchPrepOverlay, setShowMatchPrepOverlay] = useState<boolean>(false);
@@ -810,26 +810,8 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
 
   return (
     <div className="bg-background text-on-background antialiased min-h-screen flex flex-col relative">
-      {/* Top Navigation */}
-      <nav className="fixed top-0 w-full z-40 flex justify-between items-center px-gutter h-16 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
-        <button
-          onClick={onBack}
-          className="text-primary hover:opacity-80 transition-opacity flex items-center gap-xs"
-        >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
-          <span className="font-label-md text-label-md hidden md:inline">Atrás</span>
-        </button>
-        <div className="text-headline-md font-headline-md font-extrabold text-primary tracking-tighter">
-          FOOTBALL ELITE
-        </div>
-        <div className="flex items-center gap-sm text-primary">
-          <span className="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer">account_circle</span>
-          <span className="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer">settings</span>
-        </div>
-      </nav>
-
       {/* Main Content Area */}
-      <main className="flex-1 mt-16 pb-32 md:pb-0 px-gutter py-margin max-w-5xl mx-auto w-full flex flex-col md:flex-row gap-margin">
+      <main className="flex-1 md:mt-16 px-gutter py-margin max-w-5xl mx-auto w-full flex flex-col md:flex-row gap-margin">
         {/* Left Column: Pitch / Team Builder */}
         <section className="flex-1 flex flex-col gap-sm">
           {/* Header for Pitch */}
@@ -845,7 +827,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
           </div>
 
           {/* The Pitch */}
-          <div className="pitch-bg rounded-b-xl aspect-[3/4] md:aspect-[4/5] w-full shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] relative flex flex-col justify-around py-8 px-4">
+          <div className="pitch-bg rounded-b-xl aspect-[2/3] md:aspect-[4/5] w-full shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] relative flex flex-col justify-around py-8 px-4">
             <div className="pitch-lines"></div>
             <div className="pitch-center-circle"></div>
             <div className="pitch-center-line"></div>
@@ -918,7 +900,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
               <h2 className="text-headline-sm font-headline-sm text-on-background">SUPLENTES</h2>
               <div className="text-stat-value font-stat-value text-on-surface-variant">{substitutesCount}/7</div>
             </div>
-            <div className="flex flex-wrap gap-sm justify-start">
+            <div className="flex flex-nowrap gap-sm justify-start overflow-x-auto no-scrollbar pb-1 md:flex-wrap md:overflow-visible">
                             {currentFormation.slots.filter(s => s.type === 'substitute').map(({ id, position }) => {
                 const player = getPlayerForSlot(id);
                 const isRelocating = relocatingSlotId === id;
@@ -929,13 +911,13 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
                     rating={calcPlayerRating(player)}
                     isRelocating={isRelocating}
                     onClick={() => handleSlotClick(position, id)}
-                    className="w-11"
+                    className="w-11 shrink-0"
                   />
                 ) : (
                   <button
                     key={id}
                     onClick={() => handleSlotClick(position, id)}
-                    className="w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner"
+                    className="shrink-0 w-14 h-14 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors shadow-inner"
                   >
                     <span className="material-symbols-outlined text-headline-sm">add</span>
                   </button>
@@ -953,7 +935,7 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
           <button
             onClick={() => setShowMatchPrepOverlay(true)}
             disabled={!isTeamComplete}
-            className={`w-full py-md px-lg rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center border border-tertiary shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.6)] transition-all uppercase tracking-wider font-bold ${
+            className={`hidden md:flex w-full py-md px-lg rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm items-center justify-center border border-tertiary shadow-[0_0_15px_rgba(165,208,185,0.3)] hover:shadow-[0_0_25px_rgba(165,208,185,0.6)] transition-all uppercase tracking-wider font-bold ${
               isTeamComplete
                 ? 'hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
                 : 'opacity-40 cursor-not-allowed'
@@ -962,27 +944,41 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
             JUGAR
           </button>
         </section>
+
+        {/* Espacio para la barra de acción fija mobile */}
+        <div className="h-28 md:hidden" aria-hidden="true" />
       </main>
 
-      {/* Bottom Navigation (Mobile Only) */}
-      <nav className="md:hidden fixed bottom-0 w-full z-40 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest/90 dark:bg-surface-container-lowest/90 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
-        <a className="flex flex-col items-center justify-center text-primary bg-primary-container/30 rounded-xl px-4 py-1 scale-90 transition-transform duration-150" href="#">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>strategy</span>
-          <span className="text-label-md font-label-md mt-1">Plantilla</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>storefront</span>
-          <span className="text-label-md font-label-md mt-1">Mercado</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>sports_soccer</span>
-          <span className="text-label-md font-label-md mt-1">Jugar</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="#">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>shield</span>
-          <span className="text-label-md font-label-md mt-1">Club</span>
-        </a>
-      </nav>
+      {/* Barra de acción fija mobile: dificultad segmentada + Continuar */}
+      <div className="mobile-sticky-bar md:hidden bg-surface-container-lowest/95 backdrop-blur-xl border-t border-white/10 px-gutter py-2 flex flex-col gap-2">
+        <div className="flex items-center justify-between bg-surface-container-high p-1 rounded-lg">
+          {(['Principiante', 'Profesional', 'Leyenda'] as Difficulty[]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDifficulty(d)}
+              className={`flex-1 py-1.5 text-center rounded text-label-md font-label-md font-bold transition-colors ${
+                difficulty === d ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowMatchPrepOverlay(true)}
+          disabled={!isTeamComplete}
+          className={`w-full h-12 rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 uppercase tracking-wider font-bold transition-all ${
+            isTeamComplete
+              ? 'bg-primary-container text-on-primary active:scale-[0.98]'
+              : 'bg-surface-container-high text-on-surface-variant opacity-60 cursor-not-allowed'
+          }`}
+        >
+          Continuar
+          <span className="text-label-md font-label-md bg-on-primary text-primary px-2 py-0.5 rounded-full font-bold">
+            {startersCount}/{currentFormation.slots.filter((s) => s.type === 'starter').length}
+          </span>
+        </button>
+      </div>
 
       {/* OVERLAY 1: Player Selection Overlay */}
       {showPlayerOverlay && (
@@ -1064,8 +1060,8 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onBack, onNavi
 
       {/* OVERLAY 2: Match Preparation Overlay */}
       {showMatchPrepOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="glass-panel w-full max-w-3xl rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md p-0 md:p-4">
+          <div className="glass-panel w-full max-w-3xl rounded-t-2xl md:rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_10px_10px_-5px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden max-h-[85dvh] md:max-h-[90vh] pb-safe md:pb-0">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-surface/50">
               <div>
                 <h2 className="text-headline-sm font-headline-sm text-primary uppercase tracking-wider">Match Preparation</h2>

@@ -28,6 +28,13 @@ const ROUND_COLUMNS: RoundColumn[] = [
 
 const ALL_ROUND_KEYS: RoundName[] = ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
 
+const ROUND_SHORT: Record<RoundName, string> = {
+  OCTAVOS: 'Octavos',
+  CUARTOS: 'Cuartos',
+  SEMIS: 'Semis',
+  FINAL: 'Final',
+};
+
 const emptyRounds = (): Record<RoundName, Match[]> => ({
   OCTAVOS: [],
   CUARTOS: [],
@@ -65,9 +72,15 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
   const [error, setError] = useState<string | null>(null);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
   const [showDefeat, setShowDefeat] = useState<boolean>(false);
+  const [activeRound, setActiveRound] = useState<RoundName>('OCTAVOS');
   const initRef = useRef<string | null>(null);
 
   const rounds = useMemo(() => (tournament ? normalizeRounds(tournament.rounds) : emptyRounds()), [tournament]);
+
+  // La ronda visible en mobile sigue a la ronda actual del torneo.
+  useEffect(() => {
+    if (tournament?.currentRound) setActiveRound(tournament.currentRound);
+  }, [tournament?.currentRound]);
 
   // Crear o refrescar el torneo una sola vez por equipo.
   useEffect(() => {
@@ -220,10 +233,10 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
     );
   };
 
-  const renderMatchCard = (match: Match | undefined, roundKey: RoundName, slotIdx: number) => {
+  const renderMatchCard = (match: Match | undefined, roundKey: RoundName, slotIdx: number, mobile = false) => {
     if (!match) {
       return (
-        <div className="w-[248px] rounded-xl border border-dashed border-white/15 bg-surface-container-low px-4 py-3 flex flex-col gap-2 opacity-70">
+        <div className="w-full md:w-[248px] rounded-xl border border-dashed border-white/15 bg-surface-container-low px-4 py-3 flex flex-col gap-2 opacity-70">
           <div className="flex justify-between items-center">
             <span className="font-label-md text-xs text-on-surface-variant italic">Por definir</span>
             <span className="material-symbols-outlined text-[16px] text-on-surface-variant">hourglass_empty</span>
@@ -252,7 +265,7 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
             ? 'bg-surface-container-high border-2 border-primary shadow-[0_0_30px_-5px_rgba(165,208,185,0.45)]'
             : 'bg-surface-container-high border border-white/10 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.4)]'
         } ${isFinalRound && isUserMatch ? 'border-tertiary/50' : ''}`}
-        style={{ width: isFinalRound ? 300 : 248 }}
+        style={mobile ? { width: '100%' } : { width: isFinalRound ? 300 : 248 }}
       >
         {isUserMatch && (
           <div
@@ -330,9 +343,9 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
   };
 
   return (
-    <div className="bg-surface text-on-surface h-screen w-screen flex flex-col antialiased relative pitch-bg overflow-hidden">
-      {/* Header */}
-      <header className="w-full z-50 flex justify-between items-center px-gutter h-16 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg shrink-0">
+    <div className="bg-surface text-on-surface min-h-screen w-full md:h-screen md:w-screen flex flex-col antialiased relative pitch-bg md:overflow-hidden">
+      {/* Header (desktop) */}
+      <header className="hidden md:flex w-full z-50 justify-between items-center px-gutter h-16 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-lg shrink-0">
         <button onClick={onBack} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
           <span className="material-symbols-outlined">arrow_back</span>
           <span className="font-label-md text-label-md tracking-wider">VOLVER</span>
@@ -353,8 +366,16 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
         </button>
       </header>
 
-      {/* Main Bracket Canvas */}
-      <div className="flex-1 overflow-auto relative p-xl pb-32">
+      {/* Barra mobile: reiniciar torneo */}
+      <div className="md:hidden flex items-center justify-end px-gutter pt-2">
+        <button onClick={handleReset} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
+          <span className="font-label-md text-label-md tracking-wider uppercase">Nuevo Torneo</span>
+          <span className="material-symbols-outlined">refresh</span>
+        </button>
+      </div>
+
+      {/* Main Bracket Canvas (desktop) */}
+      <div className="hidden md:block flex-1 overflow-auto relative p-xl pb-32">
         <div className="relative h-[1000px] min-w-[1320px]">
           {isLoading && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface/60 backdrop-blur-sm rounded-xl">
@@ -419,6 +440,79 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
             </div>
           )}
         </div>
+      </div>
+
+      {/* Vista mobile: banner en vivo + selector de ronda + lista de partidos */}
+      <div className="md:hidden flex flex-col gap-4 px-gutter pb-6 pt-1 flex-1">
+        {error && (
+          <div className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-xs text-center">{error}</div>
+        )}
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <span className="material-symbols-outlined text-4xl text-primary animate-spin">autorenew</span>
+          </div>
+        )}
+
+        {!tournament && !isLoading && !error && (
+          <div className="text-center py-10">
+            <span className="material-symbols-outlined text-5xl text-on-surface-variant">emoji_events</span>
+            <p className="font-body-md text-on-surface-variant mt-4">Preparando la Copa Élite...</p>
+          </div>
+        )}
+
+        {tournament && (
+          <>
+            {/* Banner En Vivo */}
+            {(() => {
+              const currentKey = tournament.currentRound;
+              const live = currentKey
+                ? rounds[currentKey].find((m) => m.homeTeam?.id === teamId || m.awayTeam?.id === teamId)
+                : undefined;
+              if (!live || live.status === 'FINISHED') return null;
+              const opponent = live.homeTeam?.id === teamId ? live.awayTeam : live.homeTeam;
+              return (
+                <div className="rounded-2xl bg-gradient-to-br from-primary/20 to-surface-container-high border border-primary/40 p-md flex items-center justify-between gap-3 shadow-lg">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-primary font-label-md text-[10px] uppercase tracking-widest font-bold">
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      En Vivo
+                    </div>
+                    <div className="font-headline-sm text-on-surface truncate mt-1">
+                      {(live.homeTeam?.id === teamId ? live.homeTeam : live.awayTeam)?.name || 'Tu equipo'} vs{' '}
+                      {opponent?.name || 'Por definir'}
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-primary text-3xl shrink-0">sports_soccer</span>
+                </div>
+              );
+            })()}
+
+            {/* Selector de ronda segmentado */}
+            <div className="flex items-center gap-1 bg-surface-container-high p-1 rounded-lg">
+              {ROUND_COLUMNS.map((col) => (
+                <button
+                  key={col.key}
+                  onClick={() => setActiveRound(col.key)}
+                  className={`flex-1 py-2 rounded text-[11px] font-label-md uppercase tracking-wide transition-colors ${
+                    activeRound === col.key ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant'
+                  }`}
+                >
+                  {ROUND_SHORT[col.key]}
+                </button>
+              ))}
+            </div>
+
+            {/* Lista de partidos de la ronda */}
+            <div className="flex flex-col gap-5 pt-2">
+              {Array.from({ length: ROUND_COLUMNS.find((c) => c.key === activeRound)?.count ?? 0 }).map((_, i) => (
+                <div key={`${activeRound}-${i}`} className="flex justify-center">
+                  {renderMatchCard(rounds[activeRound]?.[i], activeRound, i, true)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Overlay de Partido en Vivo */}

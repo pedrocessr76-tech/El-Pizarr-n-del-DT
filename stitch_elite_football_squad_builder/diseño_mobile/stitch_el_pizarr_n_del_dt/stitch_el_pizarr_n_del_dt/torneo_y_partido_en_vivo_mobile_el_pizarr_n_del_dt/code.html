@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=archivoNarrow:wght@100..900&family=inter:wght@100..900&family=jetbrainsMono:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-container": "#b49600", "error": "#ffb4ab", "secondary": "#e6c43b", "surface-variant": "#2e3636", "on-primary-container": "#00521e", "inverse-on-surface": "#2a3232", "tertiary-container": "#99bca6", "on-primary": "#003913", "tertiary": "#b4d8c1", "on-surface": "#dce4e4", "surface-container-high": "#242b2c", "on-secondary-container": "#3b3000", "surface-container-low": "#151d1d", "on-tertiary": "#163627", "secondary-fixed": "#ffe173", "background": "#0d1515", "primary": "#53eb77", "on-secondary-fixed": "#221b00", "outline": "#869584", "on-surface-variant": "#bccbb8", "outline-variant": "#3d4a3c", "on-tertiary-fixed": "#002113", "on-primary-fixed": "#002108", "surface-container": "#192121", "on-error-container": "#ffdad6", "surface": "#0d1515", "primary-container": "#2dce5e", "on-error": "#690005", "tertiary-fixed-dim": "#abcfb8", "primary-fixed": "#69ff88", "on-secondary-fixed-variant": "#554500", "on-tertiary-container": "#2c4c3b", "surface-container-lowest": "#080f10", "inverse-surface": "#dce4e4", "on-background": "#dce4e4", "primary-fixed-dim": "#48e26f", "on-tertiary-fixed-variant": "#2d4d3c", "secondary-fixed-dim": "#e6c43b", "tertiary-fixed": "#c7ebd4", "inverse-primary": "#006e2b", "surface-container-highest": "#2e3636", "surface-tint": "#48e26f", "surface-dim": "#0d1515", "on-primary-fixed-variant": "#00531e", "error-container": "#93000a", "surface-bright": "#333b3b", "on-secondary": "#3b2f00" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-mobile": "16px", "card-width": "160px", "card-height": "220px", "gutter": "16px", "unit": "4px", "margin-desktop": "32px" }, "fontFamily": { "body-md": ["inter"], "display-lg": ["archivoNarrow"], "headline-lg": ["archivoNarrow"], "headline-lg-mobile": ["archivoNarrow"], "label-sm": ["jetbrainsMono"] }, "fontSize": { "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }], "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }], "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }], "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "700" }], "label-sm": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl pt-safe"><div class="h-16 px-margin-mobile flex items-center justify-between gap-unit"><div class="flex items-center gap-2"><img alt='Text logo "EL PIZARRÓN DEL DT" in a bold, modern sports sans-serif. Next to the text, a clean, minimalist geometric football icon. Professional, sharp, and high-contrast. White text.. Design context: - Primary color: #2dce5e
+- Font: archivoNarrow
+- Mode: dark
+- Roundness: rounded-md
+. The logo should be visually consistent with these brand tokens.' class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W2VMn2PfHwHoulAybpy6T-mw9DFCQ46hzlGmhc-YqD3okuxelgqbjhw145eA3zwgxOnfXVIxFZzdHil30ksufeteXOD0vOPALmAEmFUyibD4CQE35NxVHTapcPwPpsJQ3UNYwCgfawhyqnLOuHjdzPoBaiFR4yeyzb6Fz74DZpLMUDRiwLMZ8SJdVAXgoNjXgYiIAWpx9JFVSAY-8YUplqoK4s8CrsKGsAO35yzedKMMhvjFfMi-IA1yOg"/><div class="flex flex-col"><span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">DT MASTER</span><span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight tracking-tight uppercase">Torneo</span></div></div><div class="flex items-center gap-2"><div class="flex items-center bg-surface-container-high px-2 py-1 rounded-full gap-1"><span class="material-symbols-outlined text-secondary text-[16px]">monetization_on</span><span class="font-label-sm text-label-sm text-secondary font-bold">2.4K</span></div><div class="flex items-center bg-surface-container-high px-2 py-1 rounded-full gap-1"><span class="material-symbols-outlined text-primary text-[16px]">diamond</span><span class="font-label-sm text-label-sm text-primary font-bold">180</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Live Tournament Header Banner -->
+<div class="px-margin-mobile pt-2 pb-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-primary font-bold tracking-wider uppercase">EN VIVO // MINUTO A MINUTO</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-secondary text-[14px]">emoji_events</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold">COPA MASTER</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase block">FASE FINAL // ELIMINATORIAS</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface uppercase tracking-tight">GRAN FINAL DT 2025</h1>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-bold bg-secondary/10 px-2 py-1 rounded">BOTE: $50K</span>
+</div>
+</div>
+<!-- Interactive Round Selector Tabs -->
+<div class="px-margin-mobile mb-3">
+<div class="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded-xl">
+<button class="py-2 text-center rounded-lg font-label-sm text-label-sm text-on-surface-variant transition-all hover:text-on-surface" id="tab-cuartos" onclick="switchTab('cuartos')">
+        CUARTOS
+      </button>
+<button class="py-2 text-center rounded-lg font-label-sm text-label-sm text-on-surface-variant transition-all hover:text-on-surface" id="tab-semis" onclick="switchTab('semis')">
+        SEMIS
+      </button>
+<button class="py-2 text-center rounded-lg font-label-sm text-label-sm bg-primary text-on-primary font-bold shadow-md shadow-primary/20 transition-all" id="tab-final" onclick="switchTab('final')">
+        ★ FINAL
+      </button>
+</div>
+</div>
+<!-- Bracket Views Container -->
+<div class="px-margin-mobile mb-4">
+<!-- View: CUARTOS (Hidden initially) -->
+<div class="hidden flex-col gap-2" id="view-cuartos">
+<div class="bg-surface-container p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-primary font-bold">RMA</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold text-sm">Real Madrid</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">2 - 1</span>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Arsenal</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">ARS</div>
+</div>
+</div>
+<div class="bg-surface-container p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-primary font-bold">BAY</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold text-sm">Bayern M.</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">3 - 0</span>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">PSG</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">PSG</div>
+</div>
+</div>
+<div class="bg-surface-container p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-primary font-bold">MIL</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold text-sm">AC Milan</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">4 - 2</span>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Barça</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">FCB</div>
+</div>
+</div>
+</div>
+<!-- View: SEMIS (Hidden initially) -->
+<div class="hidden flex-col gap-2" id="view-semis">
+<div class="bg-surface-container p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-primary font-bold">BAY</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold text-sm">Bayern M.</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">2 - 1</span>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Real Madrid</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">RMA</div>
+</div>
+</div>
+<div class="bg-surface-container p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-primary font-bold">MIL</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold text-sm">AC Milan</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">1 - 0</span>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Man City</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">MCI</div>
+</div>
+</div>
+</div>
+<!-- View: FINAL FEATURED CARD (Default) -->
+<div class="flex flex-col" id="view-final">
+<div class="relative overflow-hidden rounded-2xl bg-surface-container shadow-xl">
+<!-- Background Ambient Stadium Glow -->
+<div class="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-secondary/10 blur-3xl pointer-events-none"></div>
+<!-- Trophy Crown Header -->
+<div class="relative bg-surface-container-high/80 px-4 py-2.5 flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">workspace_premium</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold tracking-wider">TROFEO CHAMPIONS DT</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">TIEMPO REAL</span>
+</div>
+<!-- Versus Matchup Display -->
+<div class="p-4 flex items-center justify-between">
+<!-- Home: Bayern Munich -->
+<div class="flex flex-col items-center text-center w-5/12">
+<div class="relative mb-2">
+<div class="w-16 h-16 rounded-2xl bg-surface-container-highest flex items-center justify-center p-2 shadow-inner">
+<img class="w-12 h-12 object-contain" data-alt="Official football club badge crest icon for Bayern Munich with red and white Bavarian diamonds and deep navy blue ring, professional sports graphic vector style on clean dark backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCttVsYVSkLYVuAYYDzlGYnyzGy9UZERTApI7p9YaP7MQ5Cz-NCuRythwepBO3roQtIOQdE_ksfEDSKa3dIwc1y96xFn8JyNZ-348gcqas8VxiQLOTZ_Oo22IucbE8Tp0P1rivAcUxwny9DY_bZ0FhlVRqvL9ntuY6VeJADTgy9vsMt5VX5pCFpaKs85rdFmsytZ93D3AeQ3lAJH6v_d-SzzcqNoght-ncScPyql9FtRzMnfxI38zXqYA"/>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-surface-variant text-[10px] font-label-sm font-bold text-on-surface px-1.5 py-0.5 rounded">LOCAL</span>
+</div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-base uppercase leading-tight">BAYERN</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-[11px] mt-0.5">Táctica: 4-2-3-1</span>
+</div>
+<!-- Score Digit Central -->
+<div class="flex flex-col items-center justify-center w-2/12">
+<div class="flex items-center gap-1">
+<span class="font-display-lg text-display-lg text-on-surface leading-none" id="score-home">1</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary leading-none">:</span>
+<span class="font-display-lg text-display-lg text-primary leading-none" id="score-away">3</span>
+</div>
+<div class="mt-1 flex items-center gap-1 bg-surface-container-lowest px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-primary text-[12px] animate-spin">timelapse</span>
+<span class="font-label-sm text-label-sm text-primary font-bold text-[11px]" id="match-timer">84'</span>
+</div>
+</div>
+<!-- Away: AC Milan -->
+<div class="flex flex-col items-center text-center w-5/12">
+<div class="relative mb-2">
+<div class="w-16 h-16 rounded-2xl bg-surface-container-highest flex items-center justify-center p-2 shadow-inner">
+<img class="w-12 h-12 object-contain" data-alt="Official football club badge crest emblem for AC Milan featuring sharp red and black vertical stripes with cross of St George in heraldic oval shield, modern esports broadcast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkCixMDnLIyF9BKRRZ4Gr5DXPYcd3zotyX-1T50jIJODEQ-quX1nB_9XplTdbLQA55IQrEIHVv4CWPFgs4FhSn5JdOiBcc-a-5RioBsBZEuKnmTvFe-NK_MPFPdK3aMRqKXhSBpqaGUCdDpMFNMu9JY8d2DxSHaQpOM_Fb3ouLGBTKq1d64aYNefivigwUuRhFF2BTt3WmBNB7pD1TDdtnTOelTEGOxVkLtyVCAuPujY1eQTusQU7fXg"/>
+</div>
+<span class="absolute -bottom-1 -left-1 bg-secondary text-[10px] font-label-sm font-bold text-on-secondary px-1.5 py-0.5 rounded">RIVAL</span>
+</div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-base uppercase leading-tight">AC MILAN</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-[11px] mt-0.5">Táctica: 4-3-3</span>
+</div>
+</div>
+<!-- Tactical Match Possession Bar -->
+<div class="px-4 pb-3">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Posesión 54%</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">46% AC Milan</span>
+</div>
+<div class="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden flex">
+<div class="h-full bg-outline transition-all duration-500" style="width: 54%"></div>
+<div class="h-full bg-primary transition-all duration-500" style="width: 46%"></div>
+</div>
+</div>
+<!-- Action Trigger Button -->
+<div class="p-3 bg-surface-container-high/60 flex items-center gap-2">
+<button class="flex-1 bg-primary text-on-primary font-headline-lg-mobile text-headline-lg-mobile text-sm py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 active:scale-95 transition-all" id="toggle-match-feed-btn" onclick="toggleMatchCenter()">
+<span class="material-symbols-outlined text-[18px]">sports</span>
+<span id="action-btn-text">GESTIONAR TÁCTICA EN VIVO</span>
+</button>
+<button class="w-12 h-12 rounded-xl bg-surface-container-highest text-secondary flex items-center justify-center active:scale-90 transition-transform" onclick="simulateFastMinute()" title="Simular 1 Minuto">
+<span class="material-symbols-outlined text-[22px]">fast_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Realtime Match Center / Minute by Minute Drawer -->
+<div class="px-margin-mobile flex flex-col gap-3" id="live-match-center">
+<!-- Quick Pitch Radar Graphic Preview -->
+<div class="relative bg-surface-container rounded-2xl p-3 overflow-hidden">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">stadium</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold uppercase tracking-wider">PIZARRÓN DE ZONAS CALIENTES</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/15 px-2 py-0.5 rounded font-bold">PRESIÓN ALTA</span>
+</div>
+<!-- Pitch Visualization SVG with Hex Grid and Field Lines -->
+<div class="relative w-full h-28 rounded-xl overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<!-- Pitch Grid SVG -->
+<svg class="absolute inset-0 w-full h-full opacity-40" preserveaspectratio="none" viewbox="0 0 300 120">
+<rect fill="#0d1515" height="120" width="300" x="0" y="0"></rect>
+<line stroke="#3d4a3c" stroke-dasharray="4 2" stroke-width="1.5" x1="150" x2="150" y1="0" y2="120"></line>
+<circle cx="150" cy="60" fill="none" r="28" stroke="#3d4a3c" stroke-width="1.5"></circle>
+<rect fill="none" height="72" stroke="#3d4a3c" stroke-width="1" width="40" x="0" y="24"></rect>
+<rect fill="none" height="72" stroke="#3d4a3c" stroke-width="1" width="40" x="260" y="24"></rect>
+<!-- Heatmap circles -->
+<circle cx="90" cy="50" fill="#e6c43b" filter="blur(8px)" opacity="0.25" r="22"></circle>
+<circle cx="210" cy="65" fill="#53eb77" filter="blur(10px)" opacity="0.35" r="28"></circle>
+</svg>
+<!-- Dynamic Marker Nodes on Pitch -->
+<div class="relative z-10 flex items-center justify-between w-full px-6">
+<div class="flex flex-col items-center">
+<span class="w-6 h-6 rounded-full bg-outline-variant text-on-surface font-label-sm text-[10px] flex items-center justify-center font-bold">4</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant mt-0.5">DEF</span>
+</div>
+<div class="flex flex-col items-center animate-pulse">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary font-label-sm text-[10px] flex items-center justify-center font-bold">10</span>
+<span class="font-label-sm text-[9px] text-primary font-bold mt-0.5">LEAO</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="w-6 h-6 rounded-full bg-secondary text-on-secondary font-label-sm text-[10px] flex items-center justify-center font-bold">9</span>
+<span class="font-label-sm text-[9px] text-secondary font-bold mt-0.5">GIROUD</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Statistics Bento Strip -->
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-container p-2.5 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant text-[11px]">TIROS AL ARCO</span>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-on-surface font-bold">4</span>
+<span class="text-on-surface-variant text-xs">/</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-primary font-bold">8</span>
+</div>
+<span class="font-label-sm text-[10px] text-primary font-bold mt-0.5">+50% EFICACIA</span>
+</div>
+<div class="bg-surface-container p-2.5 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant text-[11px]">CÓRNERS</span>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-on-surface font-bold">6</span>
+<span class="text-on-surface-variant text-xs">/</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-primary font-bold">3</span>
+</div>
+<span class="font-label-sm text-[10px] text-on-surface-variant mt-0.5">TOTAL: 9</span>
+</div>
+<div class="bg-surface-container p-2.5 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant text-[11px]">FALTAS</span>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-error font-bold">11</span>
+<span class="text-on-surface-variant text-xs">/</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-on-surface font-bold">7</span>
+</div>
+<span class="font-label-sm text-[10px] text-error font-bold mt-0.5">2 TARJETAS</span>
+</div>
+</div>
+<!-- Live Event Timeline Feed (Minuto a Minuto) -->
+<div class="bg-surface-container rounded-2xl p-4 shadow-md flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">receipt_long</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold uppercase tracking-wider">INCIDENCIAS DEL PARTIDO</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold bg-surface-container-high px-2 py-0.5 rounded-full" id="event-counter">4 EVENTOS</span>
+</div>
+<!-- Timeline Container -->
+<div class="flex flex-col gap-2.5" id="timeline-feed">
+<!-- Event: Giroud Goal -->
+<div class="flex items-start gap-3 bg-surface-container-low p-2.5 rounded-xl transition-all">
+<div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-xs text-primary uppercase">¡GOL DE O. GIROUD!</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">75'</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface text-xs leading-snug mt-0.5">Cabezazo imparable al ángulo tras centro milimétrico de Theo Hernández. Asistencia clave de Milan.</p>
+</div>
+</div>
+<!-- Event: Yellow Card -->
+<div class="flex items-start gap-3 bg-surface-container-low p-2.5 rounded-xl transition-all">
+<div class="w-8 h-8 rounded-lg bg-secondary/20 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">style</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-xs text-secondary uppercase">TARJETA AMARILLA</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold">58'</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface text-xs leading-snug mt-0.5">Falta táctica de C. Romero en el centro del campo para frenar el contragolpe rival.</p>
+</div>
+</div>
+<!-- Event: First Half Goal Bayern -->
+<div class="flex items-start gap-3 bg-surface-container-low p-2.5 rounded-xl transition-all">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-xs text-on-surface uppercase">GOL DE M. SILVA</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-bold">32'</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs leading-snug mt-0.5">Disparo rasante cruzado tras un rebote en el área chica para adelantar transitoriamente a Bayern.</p>
+</div>
+</div>
+<!-- Event: First Goal Milan -->
+<div class="flex items-start gap-3 bg-surface-container-low p-2.5 rounded-xl transition-all">
+<div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-xs text-primary uppercase">GOL DE R. LEÃO</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">14'</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface text-xs leading-snug mt-0.5">Jugada individual por la banda izquierda superando a dos defensas con remate cruzado.</p>
+</div>
+</div>
+</div>
+<!-- Quick DT Tactical Command Actions -->
+<div class="mt-2 pt-2 grid grid-cols-2 gap-2">
+<button class="py-2.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-sm text-label-sm flex items-center justify-center gap-1.5 transition-all" onclick="applyTactic('autobus')">
+<span class="material-symbols-outlined text-[16px] text-secondary">shield</span>
+<span>ESTACIONAR AUTOBÚS</span>
+</button>
+<button class="py-2.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-sm text-label-sm flex items-center justify-center gap-1.5 transition-all" onclick="applyTactic('ataque')">
+<span class="material-symbols-outlined text-[16px] text-primary">bolt</span>
+<span>PRESIÓN ALTA TOTAL</span>
+</button>
+</div>
+<!-- Finish Match / Final Simulation Trigger -->
+<button class="w-full mt-1 py-3 px-4 bg-surface-container-lowest hover:bg-surface-container-high text-on-surface font-headline-lg-mobile text-headline-lg-mobile text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all" onclick="finishMatchInstant()">
+<span class="material-symbols-outlined text-primary text-[18px]">flag_circle</span>
+<span>FINALIZAR PARTIDO Y RECLAMAR COPA</span>
+</button>
+</div>
+<!-- Champions Rewards & Standings Preview Card -->
+<div class="bg-gradient-to-r from-surface-container via-surface-container to-secondary/10 rounded-2xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[28px]">military_tech</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-sm text-on-surface uppercase">PREMIACIÓN DT MASTER</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-xs">+1,200 XP • Carta Oro Campeón</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-secondary text-on-secondary px-3 py-1.5 rounded-full font-label-sm text-label-sm font-bold shadow-md">
+<span>RECLAMAR</span>
+</div>
+</div>
+</div>
+<!-- Micro-interaction Logic -->
+<script>
+    function switchTab(tabName) {
+      const tabs = ['cuartos', 'semis', 'final'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('tab-' + t);
+        const view = document.getElementById('view-' + t);
+        if (t === tabName) {
+          btn.className = 'py-2 text-center rounded-lg font-label-sm text-label-sm bg-primary text-on-primary font-bold shadow-md shadow-primary/20 transition-all';
+          if (view) {
+            view.classList.remove('hidden');
+            view.classList.add('flex');
+          }
+        } else {
+          btn.className = 'py-2 text-center rounded-lg font-label-sm text-label-sm text-on-surface-variant transition-all hover:text-on-surface';
+          if (view) {
+            view.classList.add('hidden');
+            view.classList.remove('flex');
+          }
+        }
+      });
+    }
+
+    let currentMinute = 84;
+    function simulateFastMinute() {
+      if (currentMinute < 90) {
+        currentMinute += 2;
+        document.getElementById('match-timer').innerText = currentMinute + "'";
+        
+        // Dynamic event trigger at 88'
+        if (currentMinute >= 88) {
+          const feed = document.getElementById('timeline-feed');
+          const newEvent = document.createElement('div');
+          newEvent.className = 'flex items-start gap-3 bg-primary/15 p-2.5 rounded-xl transition-all animate-pulse';
+          newEvent.innerHTML = `
+            <div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[18px]">verified</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="font-headline-lg-mobile text-headline-lg-mobile text-xs text-primary uppercase">¡ATAJADA CAMPEONATO!</span>
+                <span class="font-label-sm text-label-sm text-primary font-bold">${currentMinute}'</span>
+              </div>
+              <p class="font-body-md text-body-md text-on-surface text-xs leading-snug mt-0.5">El arquero desvía con la punta de los dedos al tiro de esquina. ¡El banco celebra con euforia!</p>
+            </div>
+          `;
+          feed.insertBefore(newEvent, feed.firstChild);
+          document.getElementById('event-counter').innerText = '5 EVENTOS';
+        }
+      } else {
+        alert('¡Tiempo reglamentario cumplido! Puedes finalizar el partido.');
+      }
+    }
+
+    function toggleMatchCenter() {
+      const el = document.getElementById('live-match-center');
+      el.scrollIntoView({ behavior: 'smooth' });
+      const actionBtn = document.getElementById('action-btn-text');
+      actionBtn.innerText = 'ÓRDENES TÁCTICAS ACTIVAS';
+    }
+
+    function applyTactic(type) {
+      const timer = document.getElementById('match-timer');
+      const prev = timer.innerText;
+      timer.innerText = type === 'autobus' ? 'DEFENSA' : 'ATAQUE';
+      setTimeout(() => {
+        timer.innerText = prev;
+      }, 1500);
+    }
+
+    function finishMatchInstant() {
+      document.getElementById('match-timer').innerText = "FINAL";
+      alert("¡CAMPEÓN DE LA COPA MASTER! Victoria 3-1 de AC Milan. Se han acreditado +1,200 XP y carta especial.");
+    }
+  </script>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.3)]" data-active-classes="text-primary font-bold"><div class="flex justify-around items-center h-16 px-1"><a class="flex flex-col items-center justify-center gap-1 w-14 h-14 text-on-surface-variant transition-all" data-path="inicio" href="#"><span class="material-symbols-outlined text-[22px]">sports_soccer</span><span class="font-label-sm text-label-sm text-[10px]">Inicio</span></a><a class="flex flex-col items-center justify-center gap-1 w-14 h-14 text-on-surface-variant transition-all" data-path="formacion" href="#"><span class="material-symbols-outlined text-[22px]">schema</span><span class="font-label-sm text-label-sm text-[10px]">Táctica</span></a><a class="flex flex-col items-center justify-center gap-1 w-14 h-14 text-on-surface-variant transition-all" data-path="mi-equipo" href="#"><span class="material-symbols-outlined text-[22px]">groups</span><span class="font-label-sm text-label-sm text-[10px]">Equipo</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-1 w-14 h-14 transition-all text-primary font-bold" data-path="torneo" href="#"><span class="material-symbols-outlined text-[22px]">emoji_events</span><span class="font-label-sm text-label-sm text-[10px]">Torneo</span></a><a class="flex flex-col items-center justify-center gap-1 w-14 h-14 text-on-surface-variant transition-all" data-path="cartas" href="#"><span class="material-symbols-outlined text-[22px]">style</span><span class="font-label-sm text-label-sm text-[10px]">Cartas</span></a></div></nav></body></html>

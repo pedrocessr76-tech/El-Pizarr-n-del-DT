@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Sistema Canchas</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#faf8ff;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:calc(env(safe-area-inset-bottom,0px));}.pt-safe{padding-top:calc(env(safe-area-inset-top,0px));}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-background": "#131b2e", "inverse-on-surface": "#eef0ff", "on-tertiary": "#ffffff", "error-container": "#ffdad6", "primary-fixed": "#95f8a7", "on-primary-fixed-variant": "#005323", "on-primary-container": "#d3ffd5", "primary-fixed-dim": "#79db8d", "surface-container-highest": "#dae2fd", "on-secondary-fixed": "#0e1d28", "tertiary-fixed": "#ffdcc3", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb77d", "on-surface-variant": "#3f493f", "surface-tint": "#006d30", "error": "#ba1a1a", "on-primary": "#ffffff", "on-secondary-container": "#576673", "secondary-container": "#d5e4f4", "on-surface": "#131b2e", "on-secondary-fixed-variant": "#3a4855", "surface-container-low": "#f2f3ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#79db8d", "secondary": "#51606d", "background": "#faf8ff", "surface-container": "#eaedff", "surface-dim": "#d2d9f4", "on-tertiary-fixed-variant": "#6e3900", "surface-variant": "#dae2fd", "outline-variant": "#becabc", "on-tertiary-fixed": "#2f1500", "outline": "#6f7a6e", "surface-bright": "#faf8ff", "on-error-container": "#93000a", "inverse-surface": "#283044", "surface-container-high": "#e2e7ff", "on-primary-fixed": "#00210a", "primary": "#00652c", "primary-container": "#15803d", "tertiary-container": "#a95b00", "surface": "#faf8ff", "secondary-fixed": "#d5e4f4", "secondary-fixed-dim": "#b9c8d7", "tertiary": "#854600", "on-secondary": "#ffffff", "on-tertiary-container": "#fff1e9" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter-compact": "0.5rem", "margin-mobile": "0.75rem", "space-xs": "0.25rem", "gutter": "1rem", "space-md": "0.75rem", "space-sm": "0.5rem", "space-xl": "2rem", "space-lg": "1.25rem", "margin": "1.25rem" }, "fontFamily": { "body-md": ["Inter"], "label-lg": ["Inter"], "data-metric": ["Inter"], "headline-sm": ["Inter"], "data-tabular": ["Inter"], "headline-md": ["Inter"], "body-sm": ["Inter"], "label-md": ["Inter"], "headline-xl": ["Inter"], "headline-lg": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "data-metric": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "data-tabular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0 flex-1"><img alt="Brand logo. - Primary color: #15803d
+- Font: inter
+- Mode: light
+- Roundness: rounded-sm
+" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVhkSG2vN86riaYjB3Gw03yxcICZOj-rzgIDxYcuRBtRVYxPeT2QkRZNC1_Mojpxf2R5tzdE4Z39RLYonVOjRqtgSarLYfr-2vNQGdjEtMbggeIoBpALWqYTCC7iTr4ncUi4uUtZF62NcjQPoM0uFC5oQVsSN-eEIbP6mWcH4hWYkQ_F9ZOgvH7ZYVTSj2MQ2_EdTQ0kB4XC2UqIAoYPCOJF6xC1UuXTKEISrlmAXrHLTcun5jshGhUw"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface truncate">Sistema Canchas</span><span class="material-symbols-outlined text-[16px] text-primary">verified</span></div><button class="flex items-center gap-space-xs text-left min-w-0 py-0.5 hover:opacity-80 transition-opacity"><span class="material-symbols-outlined text-[14px] text-primary flex-shrink-0">location_on</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">Complejo La Cancha · Palermo</span><span class="material-symbols-outlined text-[14px] text-secondary flex-shrink-0">expand_more</span></button></div></div><div class="flex items-center gap-space-xs flex-shrink-0"><div class="hidden"><span class="font-label-md text-label-md">Reservar</span></div><button aria-label="Notificaciones" class="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-[calc(100vh-4rem)]"><div class="flex flex-col w-full pb-20">
+<!-- Top Venue Notice & Fast Telemetry -->
+<section class="px-gutter pt-space-sm pb-space-xs">
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-primary text-[18px]">stadium</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Sede Palermo</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 animate-pulse"></span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[13px] text-tertiary">schedule</span>
+<span class="font-label-sm text-label-sm">Hasta 02:00 hs</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">bolt</span>
+        Confirmación instantánea con seña digital vía Mercado Pago o Transferencia.
+      </p>
+</div>
+</section>
+<!-- Horizontal Date Pill Selector -->
+<section class="mt-space-xs px-gutter">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-md text-label-md text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">calendar_month</span>
+        Fecha del partido
+      </span>
+<span class="font-label-sm text-label-sm text-secondary">Octubre 2024</span>
+</div>
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-0.5">
+<button class="date-chip flex-shrink-0 px-3.5 py-2 rounded-xl bg-primary text-on-primary shadow-sm flex flex-col items-center min-w-[76px] transition-transform active:scale-95" data-date="Hoy Mié 24" type="button">
+<span class="font-label-sm text-label-sm opacity-90 uppercase">Hoy</span>
+<span class="font-headline-sm text-headline-sm font-bold">Mié 24</span>
+</button>
+<button class="date-chip flex-shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container flex flex-col items-center min-w-[76px] transition-transform active:scale-95" data-date="Mañana Jue 25" type="button">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Mañana</span>
+<span class="font-headline-sm text-headline-sm font-semibold">Jue 25</span>
+</button>
+<button class="date-chip flex-shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container flex flex-col items-center min-w-[76px] transition-transform active:scale-95" data-date="Vie 26" type="button">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Viernes</span>
+<span class="font-headline-sm text-headline-sm font-semibold">Vie 26</span>
+</button>
+<button class="date-chip flex-shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container flex flex-col items-center min-w-[76px] transition-transform active:scale-95" data-date="Sáb 27" type="button">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Sábado</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-tertiary">Sáb 27</span>
+</button>
+<button class="date-chip flex-shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container flex flex-col items-center min-w-[76px] transition-transform active:scale-95" data-date="Dom 28" type="button">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Domingo</span>
+<span class="font-headline-sm text-headline-sm font-semibold">Dom 28</span>
+</button>
+</div>
+</section>
+<!-- Filter Pills & Duration Segmented Control -->
+<section class="mt-space-sm px-gutter flex flex-col gap-space-xs">
+<!-- Format Category Pills -->
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-0.5">
+<button class="filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-on-secondary-fixed text-surface-container-lowest font-label-md text-label-md shadow-xs">
+        Todas
+      </button>
+<button class="filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+        Fútbol 5 Techada
+      </button>
+<button class="filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+        Fútbol 7
+      </button>
+<button class="filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+        Fútbol 8
+      </button>
+</div>
+<!-- Duration Segmented Toggle -->
+<div class="bg-surface-container-low p-1 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-1.5 pl-2 text-secondary">
+<span class="material-symbols-outlined text-[16px]">timelapse</span>
+<span class="font-label-sm text-label-sm">Duración turno:</span>
+</div>
+<div class="flex items-center bg-surface-container-highest p-0.5 rounded-lg">
+<button class="px-3 py-1 rounded-md bg-surface-container-lowest text-primary font-label-md text-label-md shadow-xs transition-all" id="dur-60">
+          1 Hora
+        </button>
+<button class="px-3 py-1 rounded-md text-secondary font-label-md text-label-md hover:text-on-surface transition-all" id="dur-120">
+          2 Horas
+        </button>
+</div>
+</div>
+</section>
+<!-- Pitch Cards Roster -->
+<section class="mt-space-md px-gutter flex flex-col gap-space-md">
+<!-- Card 1: Cancha 1 'La Bombonerita' -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col transition-all">
+<!-- Media Header -->
+<div class="relative w-full h-36 bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up professional perspective of an indoor artificial turf football pitch in Palermo Buenos Aires under soft bright stadium spotlights with crisp white boundary markings, clean emerald green synthetic grass fibers and dark protective roofing netting overhead." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3zeK7JxGp_pOYG4XBkukaYKHYuVbNmjB72Dd0XduHrsqal9t7RZu_wfFPN08wVi0voOPqwFsFdmr9ND8emx3khHEtiNOoLZ8wCq4ckzPd5nkvwh5nl7KRmPXaEQxRQbm5R1eGlgTphK1KIpgxah77PJRP0L5myCnqZnCa0aFdCTtjTo2vaHtddSxcScj2Y3mhufoPX9hkwtscLQMig3c6GCwfwGdLz2WPppyC0ZzDeaztpHq9iwDlBg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+<span class="bg-primary text-on-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">roofing</span> Techada
+          </span>
+<span class="bg-black/50 backdrop-blur-md text-white font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary-fixed">star</span> 4.9 (128)
+          </span>
+</div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+<div>
+<h3 class="font-headline-md text-headline-md text-white leading-tight">Cancha 1 “La Bombonerita”</h3>
+<p class="font-body-sm text-body-sm text-slate-200">Fútbol 5 · Sintético Pro 60mm</p>
+</div>
+</div>
+</div>
+<!-- Specs Badges -->
+<div class="px-space-md pt-2.5 flex flex-wrap gap-1.5">
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">water_drop</span> 100% Impermeable
+        </span>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">shower</span> Vestuarios
+        </span>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">sports_soccer</span> Pelota N°4
+        </span>
+</div>
+<!-- Pricing Bar -->
+<div class="px-space-md py-2 mt-1 flex items-center justify-between bg-surface-container-low/60">
+<div>
+<span class="font-label-sm text-label-sm text-secondary block">Total Cancha / hora</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">ARS $18.000</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-secondary block">Seña requerida hoy</span>
+<span class="font-label-md text-label-md text-primary font-bold bg-primary-fixed/30 px-2 py-0.5 rounded">ARS $8.000</span>
+</div>
+</div>
+<!-- Slot Timeline Selection -->
+<div class="p-space-md pt-2">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-secondary uppercase font-semibold tracking-wider">Horarios Hoy Mié 24</span>
+<span class="font-label-sm text-label-sm text-primary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">touch_app</span> Tocá para elegir
+          </span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+<!-- 18:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch="Cancha 1" data-sena="8.000" data-time="18:00 hs" data-total="18.000" type="button">
+<span class="font-label-md text-label-md font-bold">18:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$18k</span>
+</button>
+<!-- 19:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch="Cancha 1" data-sena="8.000" data-time="19:00 hs" data-total="18.000" type="button">
+<span class="font-label-md text-label-md font-bold">19:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$18k</span>
+</button>
+<!-- 20:00 (Ocupado) -->
+<div class="flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-highest/60 text-secondary/50 cursor-not-allowed select-none">
+<span class="font-label-md text-label-md line-through">20:00</span>
+<span class="font-label-sm text-label-sm text-error/70 uppercase">Ocupado</span>
+</div>
+<!-- 21:00 (Selected Default Active) -->
+<button class="slot-btn is-active flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-primary text-on-primary shadow-sm ring-2 ring-primary ring-offset-2 ring-offset-surface transition-all active:scale-95" data-pitch='Cancha 1 "La Bombonerita"' data-sena="8.000" data-time="21:00 hs" data-total="18.000" type="button">
+<div class="flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+<span class="font-label-md text-label-md font-bold">21:00</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-primary-container font-semibold">$18k</span>
+</button>
+<!-- 22:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch="Cancha 1" data-sena="8.000" data-time="22:00 hs" data-total="18.000" type="button">
+<span class="font-label-md text-label-md font-bold">22:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$18k</span>
+</button>
+<!-- 23:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch="Cancha 1" data-sena="8.000" data-time="23:00 hs" data-total="18.000" type="button">
+<span class="font-label-md text-label-md font-bold">23:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$18k</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2: Cancha 2 'El Monumentalito' -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col transition-all">
+<!-- Media Header -->
+<div class="relative w-full h-36 bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Outdoor green football 7 pitch illuminated by powerful 800 lux stadium floodlights at dusk, synthetic green turf with sharp white center circle and penalty box lines, urban Buenos Aires neighborhood ambiance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIxgKJSc8yF0oWn9Fu04pfyg2IV3uMNqy9Am3eJ7IiFB7jS4opJoMtSFB3rgVMsUW83UIt7lECdmIZ_OMP4LRy4bU1g2p_1RjxZbViLfOGSIGDUzT1o8KLWxVYIy4iL0L3LerRc5-ySURerLxMiiI1QZMO2ru0f2zYBOlUdF-tokgwbv9Moy3LrhNBhf6HkWNginILTx7W7UQwLiacz6poW5tGCbnP6aCw4TNffPlA4isxjy3vVcwuCw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+<span class="bg-secondary text-white font-label-sm text-label-sm px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">wb_sunny</span> Descubierta
+          </span>
+<span class="bg-black/50 backdrop-blur-md text-white font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary-fixed">star</span> 4.8 (94)
+          </span>
+</div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+<div>
+<h3 class="font-headline-md text-headline-md text-white leading-tight">Cancha 2 “El Monumentalito”</h3>
+<p class="font-body-sm text-body-sm text-slate-200">Fútbol 7 · Césped Monofilamento</p>
+</div>
+</div>
+</div>
+<!-- Specs Badges -->
+<div class="px-space-md pt-2.5 flex flex-wrap gap-1.5">
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">grass</span> Monofilamento Fibrilado
+        </span>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">lightbulb</span> Iluminación LED 800 Lux
+        </span>
+</div>
+<!-- Pricing Bar -->
+<div class="px-space-md py-2 mt-1 flex items-center justify-between bg-surface-container-low/60">
+<div>
+<span class="font-label-sm text-label-sm text-secondary block">Total Cancha / hora</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">ARS $24.000</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-secondary block">Seña requerida hoy</span>
+<span class="font-label-md text-label-md text-primary font-bold bg-primary-fixed/30 px-2 py-0.5 rounded">ARS $10.000</span>
+</div>
+</div>
+<!-- Slot Timeline Selection -->
+<div class="p-space-md pt-2">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-secondary uppercase font-semibold tracking-wider">Horarios Hoy Mié 24</span>
+<span class="font-label-sm text-label-sm text-secondary">3 turnos libres</span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+<!-- 19:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch='Cancha 2 "El Monumentalito"' data-sena="10.000" data-time="19:00 hs" data-total="24.000" type="button">
+<span class="font-label-md text-label-md font-bold">19:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$24k</span>
+</button>
+<!-- 20:00 (Ocupado) -->
+<div class="flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-highest/60 text-secondary/50 cursor-not-allowed select-none">
+<span class="font-label-md text-label-md line-through">20:00</span>
+<span class="font-label-sm text-label-sm text-error/70 uppercase">Ocupado</span>
+</div>
+<!-- 22:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch='Cancha 2 "El Monumentalito"' data-sena="10.000" data-time="22:00 hs" data-total="24.000" type="button">
+<span class="font-label-md text-label-md font-bold">22:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$24k</span>
+</button>
+<!-- 23:00 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch='Cancha 2 "El Monumentalito"' data-sena="10.000" data-time="23:00 hs" data-total="24.000" type="button">
+<span class="font-label-md text-label-md font-bold">23:00</span>
+<span class="font-label-sm text-label-sm text-secondary">$24k</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 3: Cancha 3 'Catedral del Fútbol' -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col transition-all">
+<!-- Media Header -->
+<div class="relative w-full h-36 bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Wide perspective of an expansive 8-a-side artificial football field at dusk with large regulation goals, perimeter green rebound netting, players warming up on the sideline, professional Argentine sports club atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6QFPPXPC20F_t_Xr3AfvaAlUSWU_cE4mYQ3FVTifqjcYZlA78nUyPUsbiEtJ3xTtyAB1e-Tx8E82wUPN7s8_9Cbh2h8LaKzMBT8uQJXmrKCMVFCPzmZwCP6bXkcvLg81VwQ-d1D-ymwpyodL6VaxuF4OtjqB31icuFT0Jfq_na_GzULVer5zSsVXW1xh8DOPToSkHU17cRXAyLIETkOa2jEeaKDoQe7c5ILmmnShZ3bLGisgVGfJ7eA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+<span class="bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-xs font-semibold">
+<span class="material-symbols-outlined text-[12px]">groups</span> Fútbol 8
+          </span>
+<span class="bg-black/50 backdrop-blur-md text-white font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary-fixed">star</span> 5.0 (42)
+          </span>
+</div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+<div>
+<h3 class="font-headline-md text-headline-md text-white leading-tight">Cancha 3 “Catedral del Fútbol”</h3>
+<p class="font-body-sm text-body-sm text-slate-200">Fútbol 8 · Césped Caucho For Green</p>
+</div>
+</div>
+</div>
+<!-- Specs Badges -->
+<div class="px-space-md pt-2.5 flex flex-wrap gap-1.5">
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">sports_soccer</span> Arcos Reglamentarios
+        </span>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary">local_parking</span> Estacionamiento Gratis
+        </span>
+</div>
+<!-- Pricing Bar -->
+<div class="px-space-md py-2 mt-1 flex items-center justify-between bg-surface-container-low/60">
+<div>
+<span class="font-label-sm text-label-sm text-secondary block">Total Cancha / hora</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">ARS $28.000</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-secondary block">Seña requerida hoy</span>
+<span class="font-label-md text-label-md text-primary font-bold bg-primary-fixed/30 px-2 py-0.5 rounded">ARS $12.000</span>
+</div>
+</div>
+<!-- Slot Timeline Selection -->
+<div class="p-space-md pt-2">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-secondary uppercase font-semibold tracking-wider">Horarios Hoy Mié 24</span>
+<span class="font-label-sm text-label-sm text-error font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">alarm</span> ¡Últimos 2 turnos!
+          </span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+<!-- 18:00 (Ocupado) -->
+<div class="flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-highest/60 text-secondary/50 cursor-not-allowed select-none">
+<span class="font-label-md text-label-md line-through">18:00</span>
+<span class="font-label-sm text-label-sm text-error/70 uppercase">Ocupado</span>
+</div>
+<!-- 21:30 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch='Cancha 3 "Catedral del Fútbol"' data-sena="12.000" data-time="21:30 hs" data-total="28.000" type="button">
+<span class="font-label-md text-label-md font-bold">21:30</span>
+<span class="font-label-sm text-label-sm text-secondary">$28k</span>
+</button>
+<!-- 22:30 -->
+<button class="slot-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all active:scale-95" data-pitch='Cancha 3 "Catedral del Fútbol"' data-sena="12.000" data-time="22:30 hs" data-total="28.000" type="button">
+<span class="font-label-md text-label-md font-bold">22:30</span>
+<span class="font-label-sm text-label-sm text-secondary">$28k</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Additional Amenities & Perks Bento -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-2.5">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+<span class="font-label-md text-label-md font-bold">¿Qué incluye tu reserva?</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-on-surface-variant">
+<div class="flex items-center gap-2 bg-surface-container-lowest p-2 rounded-lg shadow-2xs">
+<span class="material-symbols-outlined text-primary text-[18px]">sports</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Pecheras limpias</span>
+<span class="font-body-sm text-body-sm text-secondary text-[11px]">2 juegos de colores</span>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-lowest p-2 rounded-lg shadow-2xs">
+<span class="material-symbols-outlined text-primary text-[18px]">local_drink</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Agua mineral</span>
+<span class="font-body-sm text-body-sm text-secondary text-[11px]">Bidón recargable</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Sticky Bottom Summary Floating Sheet -->
+<div class="fixed bottom-16 left-0 right-0 z-40 px-3 pb-2 pt-1 pointer-events-none">
+<div class="pointer-events-auto max-w-[420px] mx-auto bg-inverse-surface/95 backdrop-blur-md text-inverse-on-surface rounded-2xl p-space-md shadow-2xl flex flex-col gap-2 transform transition-all duration-200">
+<!-- Selection Detail Line -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center text-primary-fixed flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">sports_soccer</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-white font-semibold truncate" id="summary-pitch">Cancha 1 “La Bombonerita”</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-300 flex items-center gap-1 truncate">
+<span class="font-semibold text-primary-fixed" id="summary-time">Mié 24 · 21:00 hs</span>
+<span>·</span>
+<span id="summary-total">Total ARS $18.000</span>
+</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-label-sm text-label-sm text-slate-300 block">Seña</span>
+<span class="font-headline-sm text-headline-sm text-primary-fixed font-bold" id="summary-sena">ARS $8.000</span>
+</div>
+</div>
+<!-- Action Row Button -->
+<div class="flex items-center gap-2 pt-1">
+<button class="flex-1 bg-primary hover:bg-primary-container text-on-primary py-2.5 px-4 rounded-xl font-label-lg text-label-lg font-semibold shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98]" id="cta-pay" type="button">
+<span>Continuar a Pago</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Subtle guarantee footer -->
+<div class="flex items-center justify-center gap-1.5 text-slate-400 font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[12px] text-primary-fixed">lock</span>
+<span>Cancelación con reembolso hasta 4 hs antes del partido</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Slot button selection micro-interaction
+    const slotButtons = document.querySelectorAll('.slot-btn');
+    const summaryPitch = document.getElementById('summary-pitch');
+    const summaryTime = document.getElementById('summary-time');
+    const summaryTotal = document.getElementById('summary-total');
+    const summarySena = document.getElementById('summary-sena');
+    let selectedDate = 'Mié 24';
+
+    slotButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Deselect all
+        slotButtons.forEach(b => {
+          b.classList.remove('bg-primary', 'text-on-primary', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-surface');
+          b.classList.add('bg-surface-container-low', 'text-on-surface');
+          const icon = b.querySelector('.material-symbols-outlined');
+          if (icon) icon.remove();
+        });
+
+        // Select clicked
+        btn.classList.remove('bg-surface-container-low', 'text-on-surface');
+        btn.classList.add('bg-primary', 'text-on-primary', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-surface');
+
+        // Prepend check icon if missing
+        const labelBox = btn.querySelector('.font-label-md');
+        if (labelBox && !btn.querySelector('.material-symbols-outlined')) {
+          const icon = document.createElement('span');
+          icon.className = 'material-symbols-outlined text-[13px] mr-0.5 inline-block align-middle';
+          icon.textContent = 'check_circle';
+          labelBox.prepend(icon);
+        }
+
+        // Update floating drawer state
+        const pitch = btn.getAttribute('data-pitch');
+        const time = btn.getAttribute('data-time');
+        const sena = btn.getAttribute('data-sena');
+        const total = btn.getAttribute('data-total');
+
+        if (summaryPitch) summaryPitch.textContent = pitch;
+        if (summaryTime) summaryTime.textContent = selectedDate + ' · ' + time;
+        if (summaryTotal) summaryTotal.textContent = 'Total ARS $' + total;
+        if (summarySena) summarySena.textContent = 'ARS $' + sena;
+      });
+    });
+
+    // Date Chip Selector
+    const dateChips = document.querySelectorAll('.date-chip');
+    dateChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        dateChips.forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+          c.classList.add('bg-surface-container-low', 'text-on-surface');
+          const sub = c.querySelector('span:first-child');
+          if (sub) {
+            sub.classList.add('text-secondary');
+            sub.classList.remove('opacity-90');
+          }
+        });
+
+        chip.classList.remove('bg-surface-container-low', 'text-on-surface');
+        chip.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+        const sub = chip.querySelector('span:first-child');
+        if (sub) {
+          sub.classList.remove('text-secondary');
+          sub.classList.add('opacity-90');
+        }
+
+        const dateVal = chip.getAttribute('data-date');
+        if (dateVal) {
+          selectedDate = dateVal;
+          if (summaryTime) {
+            const currentParts = summaryTime.textContent.split('·');
+            const timePart = currentParts[1] ? currentParts[1].trim() : '21:00 hs';
+            summaryTime.textContent = selectedDate + ' · ' + timePart;
+          }
+        }
+      });
+    });
+
+    // Duration Toggle
+    const btn60 = document.getElementById('dur-60');
+    const btn120 = document.getElementById('dur-120');
+
+    if (btn60 && btn120) {
+      btn60.addEventListener('click', () => {
+        btn60.className = 'px-3 py-1 rounded-md bg-surface-container-lowest text-primary font-label-md text-label-md shadow-xs transition-all';
+        btn120.className = 'px-3 py-1 rounded-md text-secondary font-label-md text-label-md hover:text-on-surface transition-all';
+      });
+
+      btn120.addEventListener('click', () => {
+        btn120.className = 'px-3 py-1 rounded-md bg-surface-container-lowest text-primary font-label-md text-label-md shadow-xs transition-all';
+        btn60.className = 'px-3 py-1 rounded-md text-secondary font-label-md text-label-md hover:text-on-surface transition-all';
+      });
+    }
+
+    // Filter pills
+    const filterPills = document.querySelectorAll('.filter-pill');
+    filterPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        filterPills.forEach(p => {
+          p.className = 'filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md';
+        });
+        pill.className = 'filter-pill flex-shrink-0 px-3 py-1 rounded-full bg-on-secondary-fixed text-surface-container-lowest font-label-md text-label-md shadow-xs';
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)]" data-active-classes="text-primary-container font-semibold"><div class="flex justify-around items-center h-16 px-gutter-compact"><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 transition-colors text-primary-container font-semibold" data-path="reservar" href="#"><span class="material-symbols-outlined text-[22px]">sports_soccer</span><span class="font-label-sm text-label-sm tracking-tight">Reservar</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="mis-turnos" href="#"><span class="material-symbols-outlined text-[22px]">confirmation_number</span><span class="font-label-sm text-label-sm tracking-tight">Mis Turnos</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="operativa" href="#"><span class="material-symbols-outlined text-[22px]">analytics</span><span class="font-label-sm text-label-sm tracking-tight">Operativa</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="perfil" href="#"><span class="material-symbols-outlined text-[22px]">account_circle</span><span class="font-label-sm text-label-sm tracking-tight">Perfil</span></a></div></nav></body></html>

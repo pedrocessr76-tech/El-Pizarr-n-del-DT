@@ -98,10 +98,10 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   return (
     <div className="bg-background text-on-background min-h-screen pb-xl flex flex-col relative selection:bg-primary/30 selection:text-primary-fixed">
       {/* Sequential Header */}
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/5 px-gutter py-md flex items-center justify-between">
+      <header className="sticky top-16 md:top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/5 px-gutter py-md flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md group"
+          className="hidden md:flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md group"
         >
           <span className="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
           Atrás
@@ -172,7 +172,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
           {/* Tabla de torneos */}
           {user && !historyLoading && !historyError && (
             <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow">
-              <div className="grid grid-cols-6 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+              <div className="hidden md:grid grid-cols-6 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
                 <div className="col-span-1">Fecha</div>
                 <div className="col-span-1">Estado</div>
                 <div className="col-span-2">Ronda alcanzada</div>
@@ -186,15 +186,19 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
                 ) : (
                   history.map((t) => (
                     <div key={t.id} className="border-b border-white/5">
-                      <div className="grid grid-cols-6 gap-4 p-md items-center hover:bg-white/5 transition-colors">
-                        <div className="col-span-1 text-on-surface font-body-md text-body-md opacity-70">
-                          {new Date(t.createdAt).toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                      <div className="flex flex-col md:grid md:grid-cols-6 gap-2 md:gap-4 p-md items-stretch md:items-center hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="md:hidden text-[10px] uppercase tracking-wider text-on-surface-variant font-label-md">Fecha</span>
+                          <span className="text-on-surface font-body-md text-body-md opacity-70">
+                            {new Date(t.createdAt).toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
                         </div>
-                        <div className="col-span-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="md:hidden text-[10px] uppercase tracking-wider text-on-surface-variant font-label-md">Estado</span>
                           <span className={`px-2 py-1 rounded font-label-md text-[10px] uppercase border ${
                             t.status === 'IN_PROGRESS'
                               ? 'bg-primary/20 text-primary border-primary/30'
@@ -205,10 +209,14 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
                             {t.status === 'IN_PROGRESS' ? 'En curso' : t.status === 'COMPLETED' ? 'Completado' : 'Fallido'}
                           </span>
                         </div>
-                        <div className="col-span-2 font-headline-sm text-[16px] text-on-surface">
-                          {t.currentRound}
+                        <div className="col-span-2 flex items-center justify-between gap-2">
+                          <span className="md:hidden text-[10px] uppercase tracking-wider text-on-surface-variant font-label-md">Ronda</span>
+                          <span className="font-headline-sm text-[16px] text-on-surface">
+                            {t.currentRound}
+                          </span>
                         </div>
                         <div className="col-span-2 flex flex-col gap-1">
+                          <span className="md:hidden text-[10px] uppercase tracking-wider text-on-surface-variant font-label-md">Partidos</span>
                           {t.matches.map((m) => (
                             <button
                               key={m.id}

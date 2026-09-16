@@ -4,6 +4,7 @@ import { LoginModal } from './components/LoginModal';
 import { NotificationToast } from './components/NotificationToast';
 import { useNotificationSocket } from './services/notificationService';
 import { useNotificationStore } from './store/useNotificationStore';
+import { useAuthStore } from './store/useAuthStore';
 import { HomePage } from './pages/HomePage';
 import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { CatalogHistoryPage } from './pages/CatalogHistoryPage';
@@ -11,6 +12,23 @@ import { TournamentBracketPage } from './pages/TournamentBracketPage';
 import { getGuestSessionId } from './utils/session';
 import { B2bApp } from './pages/B2bApp';
 import { PwaOverlays } from './components/pwa/PwaOverlays';
+import { MobileTopBar } from './components/layout/MobileTopBar';
+import { MobileTabBar, type MobileTab } from './components/layout/MobileTabBar';
+
+const MOBILE_TITLES: Record<ActiveTab, string> = {
+  home: 'Inicio',
+  builder: 'Formación y Equipo',
+  catalog: 'Historial y Cartas',
+  history: 'Historial y Cartas',
+  bracket: 'Copa Élite',
+};
+
+const GAME_MOBILE_TABS: MobileTab<ActiveTab>[] = [
+  { id: 'home', label: 'Inicio', icon: 'sports_soccer' },
+  { id: 'builder', label: 'Equipo', icon: 'groups' },
+  { id: 'catalog', label: 'Cartas', icon: 'style' },
+  { id: 'bracket', label: 'Torneo', icon: 'emoji_events' },
+];
 
 function App() {
   const isB2bRoute = window.location.pathname.startsWith('/canchas');
@@ -29,6 +47,7 @@ function App() {
   // Suscripción única a notificaciones WebSocket para toda la app
   useNotificationSocket();
   const toasts = useNotificationStore((s) => s.toasts);
+  const { user, logout } = useAuthStore();
 
   // Al cerrar la página/sesión de invitado, limpiar datos en backend via beacon
   useEffect(() => {
@@ -67,15 +86,36 @@ function App() {
   return (
     <>
       <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] font-sans antialiased selection:bg-[#a5d0b9] selection:text-[#0e3727]">
-        {/* Sticky Glass Navbar*/}
-        <Navbar
-          activeTab={activeTab}
-          onSelectTab={(tab) => setActiveTab(tab)}
-          onOpenLogin={() => setIsLoginOpen(true)}
+        {/* Sticky Glass Navbar (desktop)*/}
+        <div className="hidden md:block">
+          <Navbar
+            activeTab={activeTab}
+            onSelectTab={(tab) => setActiveTab(tab)}
+            onOpenLogin={() => setIsLoginOpen(true)}
+          />
+        </div>
+
+        {/* Mobile shell: fixed top bar + bottom tabs */}
+        <MobileTopBar
+          variant="game"
+          brand="El Pizarrón del DT"
+          title={MOBILE_TITLES[activeTab]}
+          onBrandClick={() => setActiveTab('home')}
+          actions={
+            user
+              ? [{ icon: 'logout', label: 'Cerrar sesión', onClick: logout }]
+              : [{ icon: 'login', label: 'Iniciar sesión', onClick: () => setIsLoginOpen(true) }]
+          }
+        />
+        <MobileTabBar
+          variant="game"
+          tabs={GAME_MOBILE_TABS}
+          activeTab={activeTab === 'history' ? 'catalog' : activeTab}
+          onSelect={(tab) => setActiveTab(tab)}
         />
 
         {/* Main Page Content*/}
-        <main className="w-full">
+        <main className="w-full pt-16 md:pt-0 mobile-shell-pad">
           {renderActivePage()}
         </main>
 

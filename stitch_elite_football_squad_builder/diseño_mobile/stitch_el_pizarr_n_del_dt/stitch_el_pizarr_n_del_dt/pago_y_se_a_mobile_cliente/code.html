@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Sistema Canchas</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#faf8ff;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:calc(env(safe-area-inset-bottom,0px));}.pt-safe{padding-top:calc(env(safe-area-inset-top,0px));}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-background": "#131b2e", "inverse-on-surface": "#eef0ff", "on-tertiary": "#ffffff", "error-container": "#ffdad6", "primary-fixed": "#95f8a7", "on-primary-fixed-variant": "#005323", "on-primary-container": "#d3ffd5", "primary-fixed-dim": "#79db8d", "surface-container-highest": "#dae2fd", "on-secondary-fixed": "#0e1d28", "tertiary-fixed": "#ffdcc3", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb77d", "on-surface-variant": "#3f493f", "surface-tint": "#006d30", "error": "#ba1a1a", "on-primary": "#ffffff", "on-secondary-container": "#576673", "secondary-container": "#d5e4f4", "on-surface": "#131b2e", "on-secondary-fixed-variant": "#3a4855", "surface-container-low": "#f2f3ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#79db8d", "secondary": "#51606d", "background": "#faf8ff", "surface-container": "#eaedff", "surface-dim": "#d2d9f4", "on-tertiary-fixed-variant": "#6e3900", "surface-variant": "#dae2fd", "outline-variant": "#becabc", "on-tertiary-fixed": "#2f1500", "outline": "#6f7a6e", "surface-bright": "#faf8ff", "on-error-container": "#93000a", "inverse-surface": "#283044", "surface-container-high": "#e2e7ff", "on-primary-fixed": "#00210a", "primary": "#00652c", "primary-container": "#15803d", "tertiary-container": "#a95b00", "surface": "#faf8ff", "secondary-fixed": "#d5e4f4", "secondary-fixed-dim": "#b9c8d7", "tertiary": "#854600", "on-secondary": "#ffffff", "on-tertiary-container": "#fff1e9" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter-compact": "0.5rem", "margin-mobile": "0.75rem", "space-xs": "0.25rem", "gutter": "1rem", "space-md": "0.75rem", "space-sm": "0.5rem", "space-xl": "2rem", "space-lg": "1.25rem", "margin": "1.25rem" }, "fontFamily": { "body-md": ["Inter"], "label-lg": ["Inter"], "data-metric": ["Inter"], "headline-sm": ["Inter"], "data-tabular": ["Inter"], "headline-md": ["Inter"], "body-sm": ["Inter"], "label-md": ["Inter"], "headline-xl": ["Inter"], "headline-lg": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "data-metric": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "data-tabular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0 flex-1"><img alt="Brand logo. - Primary color: #15803d
+- Font: inter
+- Mode: light
+- Roundness: rounded-sm
+" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOd99K9Ib7UA9tExDc3kjRm-loFnnSardv6DhwyGOcooTHEB95ZTCYqVaujQav4QwOyNePaIoeA1vCwvxWohymBgjNlqtbimvpXQczWhEMf3kbRQbP2qnAOphyQ-P4nem2aIR_KtoPBOmqo0Jj7Y0LzaF-eX3JJySPgL3uWSQG0uK65VT1PVcEKwv3ngVsoKfnWtnaU_1pTVtzCguRzsqLkQnqWIvih2L-pMaF1FVtREiHxb-dam7Krw"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface truncate">Sistema Canchas</span><span class="material-symbols-outlined text-[16px] text-primary">verified</span></div><button class="flex items-center gap-space-xs text-left min-w-0 py-0.5 hover:opacity-80 transition-opacity"><span class="material-symbols-outlined text-[14px] text-primary flex-shrink-0">location_on</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">Complejo La Cancha · Palermo</span><span class="material-symbols-outlined text-[14px] text-secondary flex-shrink-0">expand_more</span></button></div></div><div class="flex items-center gap-space-xs flex-shrink-0"><div class="hidden"><span class="font-label-md text-label-md">Reservar</span></div><button aria-label="Notificaciones" class="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-[calc(100vh-4rem)]"><div class="flex flex-col w-full px-margin-mobile pb-28">
+<!-- Step Progress Indicator -->
+<section class="w-full pt-space-xs pb-space-md">
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between relative">
+<!-- Connecting Line Base -->
+<div class="absolute left-6 right-6 top-3.5 h-0.5 bg-surface-variant -z-0"></div>
+<div class="absolute left-6 right-1/2 top-3.5 h-0.5 bg-primary -z-0"></div>
+<!-- Step 1: Checked -->
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Cancha</span>
+</div>
+<!-- Step 2: Active -->
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-md animate-pulse">
+<span class="font-label-sm text-label-sm font-bold">2</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">Pago &amp; Seña</span>
+</div>
+<!-- Step 3: Pending -->
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-secondary flex items-center justify-center">
+<span class="font-label-sm text-label-sm">3</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Comprobante</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Reservation Summary Card -->
+<section class="w-full mb-space-md">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<div class="relative h-28 w-full bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Vibrant modern synthetic grass football pitch illuminated at night under stadium floodlights, lush green turf lines, high performance sports venue atmosphere in Buenos Aires" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIDvi2FHFDssdyQJzZpxImO8FjY1daDAOd5s30PydhlGPItjr52giUIDAceNvng5xjmbd01bxLHssHfbAuNjy-MtAB80UQ8j_Mu0V8LHMARB9oyx-Bw_XNHfQqVkIlwohfUz23MwJKvg2gr-7J9h66xTMYuTW2bw_OJipk4VzBqNGRevDNwwHBq8mAKEVlVEWj1-Q2YYFjdEz5k9V0NlBkRA9_tBsc9xU3cq_Q_qHhtms9Ds97c2gSQA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/30 to-transparent"></div>
+<div class="absolute top-2.5 left-3 bg-surface/90 backdrop-blur-md px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-primary text-[14px]">sports_soccer</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Cancha 3 · Fútbol 8</span>
+</div>
+<div class="absolute top-2.5 right-3 bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded-lg flex items-center gap-1 font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[13px]">wb_incandescent</span>
+<span>Iluminada</span>
+</div>
+<div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-surface">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm text-surface font-medium truncate">Complejo La Cancha · Palermo</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface/20 backdrop-blur-sm px-1.5 py-0.5 rounded text-surface">Hoy Mié 24 Oct</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col gap-space-sm bg-surface-container-lowest">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-surface">20:00 a 21:00 hs</p>
+<p class="font-body-sm text-body-sm text-secondary">Turno de 60 minutos</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider">Valor Cancha</p>
+<p class="font-headline-md text-headline-md text-on-surface font-bold">$28.000 <span class="font-label-sm text-label-sm text-secondary font-normal">ARS</span></p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 bg-surface-container-low px-3 py-2 rounded-lg">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">hourglass_top</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Lugar reservado por</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-tertiary-container font-bold bg-tertiary-fixed px-2 py-0.5 rounded" id="countdown-timer">
+            09:42 min
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Payment Modality Selector -->
+<section class="w-full mb-space-md">
+<div class="flex items-center justify-between mb-space-xs px-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">¿Cómo preferís abonar?</h2>
+<span class="font-label-sm text-label-sm text-secondary">Elegí tu modalidad</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Modality 1: Seña (Active Default) -->
+<label class="relative block rounded-xl bg-surface-container-lowest p-space-md shadow-sm transition-all duration-150 cursor-pointer overflow-hidden bg-primary/5" id="modality-deposit-card">
+<input checked="" class="sr-only" name="payment-modality" onchange="switchModality('deposit')" type="radio" value="deposit"/>
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2.5">
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-xs" id="radio-deposit-dot">
+<span class="material-symbols-outlined text-on-primary text-[14px]">check</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Pagar Seña Online</span>
+<span class="font-label-sm text-label-sm bg-primary-fixed text-on-primary-fixed-variant px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">Recomendado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Congelá el turno abonando un anticipo</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-headline-md text-headline-md text-primary font-bold">$10.000</span>
+<span class="block font-label-sm text-label-sm text-secondary">ARS hoy</span>
+</div>
+</div>
+<div class="mt-space-sm pt-2 bg-surface-container-low/70 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-secondary">payments</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Restante <strong class="text-on-surface">$18.000 ARS</strong> a abonar en la cancha antes de jugar.</p>
+</div>
+</label>
+<!-- Modality 2: Pago Total Anticipado -->
+<label class="relative block rounded-xl bg-surface-container-lowest p-space-md shadow-sm transition-all duration-150 cursor-pointer overflow-hidden opacity-90" id="modality-full-card">
+<input class="sr-only" name="payment-modality" onchange="switchModality('full')" type="radio" value="full"/>
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2.5">
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center" id="radio-full-dot">
+<span class="material-symbols-outlined text-transparent text-[14px]">check</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Pago Total Anticipado</span>
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant px-1.5 py-0.5 rounded font-bold uppercase">5% OFF</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Pagá el total y llegá directo a jugar</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-label-sm text-label-sm text-secondary line-through block">$28.000</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">$26.600</span>
+<span class="block font-label-sm text-label-sm text-primary font-semibold">Ahorrás $1.400</span>
+</div>
+</div>
+</label>
+</div>
+</section>
+<!-- Payment Methods List -->
+<section class="w-full mb-space-md">
+<div class="flex items-center justify-between mb-space-xs px-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Medio de Pago</h2>
+<span class="font-label-sm text-label-sm text-primary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">verified_user</span> Pago Seguro
+      </span>
+</div>
+<div class="flex flex-col gap-space-xs">
+<!-- Method 1: Mercado Pago (Selected) -->
+<label class="flex items-center justify-between p-space-md rounded-xl bg-surface-container-lowest shadow-sm cursor-pointer transition-colors bg-primary/5" id="method-mp">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="sr-only" name="payment-method" onchange="selectMethod('mp')" type="radio" value="mercadopago"/>
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-[22px]">account_balance_wallet</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">Mercado Pago</span>
+<span class="font-label-sm text-label-sm text-on-primary-fixed-variant bg-primary-fixed px-1 rounded text-[10px]">Instantáneo</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary truncate">Débito, Crédito o Dinero en cuenta</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 ml-2" id="check-mp">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</label>
+<!-- Method 2: Transferencia -->
+<label class="flex items-center justify-between p-space-md rounded-xl bg-surface-container-lowest shadow-sm cursor-pointer transition-colors" id="method-transf">
+<div class="flex items-center gap-3 min-w-0">
+<input class="sr-only" name="payment-method" onchange="selectMethod('transf')" type="radio" value="transfer"/>
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[22px]">currency_exchange</span>
+</div>
+<div class="min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">Transferencia Bancaria</span>
+<p class="font-body-sm text-body-sm text-secondary truncate">Alias / CVU con acreditación inmediata</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest text-transparent flex items-center justify-center flex-shrink-0 ml-2" id="check-transf">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</label>
+<!-- Method 3: Tarjetas -->
+<label class="flex items-center justify-between p-space-md rounded-xl bg-surface-container-lowest shadow-sm cursor-pointer transition-colors" id="method-cards">
+<div class="flex items-center gap-3 min-w-0">
+<input class="sr-only" name="payment-method" onchange="selectMethod('cards')" type="radio" value="cards"/>
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[22px]">credit_card</span>
+</div>
+<div class="min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">Tarjetas Bancarias</span>
+<p class="font-body-sm text-body-sm text-secondary truncate">Visa, Mastercard o Cabal</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest text-transparent flex items-center justify-center flex-shrink-0 ml-2" id="check-cards">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Reserva Holder Form -->
+<section class="w-full mb-space-md">
+<div class="flex items-center justify-between mb-space-xs px-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Datos del Titular</h2>
+<span class="font-label-sm text-label-sm text-secondary">Para envío de QR</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<!-- Nombre y Apellido -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center justify-between" for="holder-name">
+<span>Nombre y Apellido</span>
+<span class="font-body-sm text-body-sm text-secondary">Titular reserva</span>
+</label>
+<div class="relative flex items-center">
+<div class="absolute left-3 text-secondary flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+<input class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:shadow-xs transition-all" id="holder-name" type="text" value="Mateo Rossi"/>
+</div>
+</div>
+<!-- WhatsApp -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center justify-between" for="holder-phone">
+<span>WhatsApp de Confirmación</span>
+<span class="font-body-sm text-body-sm text-primary font-medium">Recibe el código de ingreso</span>
+</label>
+<div class="relative flex items-center">
+<div class="absolute left-3 text-primary flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</div>
+<input class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:shadow-xs transition-all" id="holder-phone" type="tel" value="+54 9 11 4920-8831"/>
+</div>
+</div>
+<!-- Email -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center justify-between" for="holder-email">
+<span>Correo Electrónico</span>
+<span class="font-body-sm text-body-sm text-secondary">Envío de factura</span>
+</label>
+<div class="relative flex items-center">
+<div class="absolute left-3 text-secondary flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+</div>
+<input class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:shadow-xs transition-all" id="holder-email" type="email" value="mateo.rossi@gmail.com"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Cancellation & Security Policy Hint -->
+<section class="w-full mb-space-sm">
+<div class="bg-surface-container-low rounded-xl p-space-md flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">lock_clock</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<p class="font-headline-sm text-headline-sm text-on-surface">Cancelación gratuita hasta 4 hs antes</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Si reprogramás o cancelás con más de 4 horas de anticipación, la seña queda acreditada como saldo a favor en tu perfil para cualquier día.</p>
+<a class="mt-1 inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold hover:underline" href="https://wa.me/5491149208831" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[15px]">help_center</span>
+<span>¿Dudas con la cancha? Chateá con administración</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Sticky Bottom Checkout Bar (Above Shell Navigation) -->
+<div class="fixed bottom-16 left-0 right-0 z-40 bg-surface/95 backdrop-blur-xl px-margin-mobile py-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+<div class="max-w-md mx-auto flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-body-sm text-body-sm text-secondary block">Total a pagar ahora:</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-headline-xl text-primary font-extrabold" id="cta-amount-display">$10.000</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">ARS</span>
+</div>
+</div>
+<div class="flex flex-col items-end text-right">
+<div class="flex items-center gap-1 text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>SSL 256 bits</span>
+</div>
+<span class="font-body-sm text-body-sm text-secondary truncate" id="cta-balance-caption">Resta $18.000 en el club</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-12 rounded-xl bg-primary-container hover:bg-primary active:scale-[0.99] text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md transition-all" id="pay-button" onclick="handlePaymentAction()">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+<span id="pay-btn-label">Pagar Seña con Mercado Pago $10.000 ARS</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  let currentModality = 'deposit';
+  let currentMethodName = 'Mercado Pago';
+
+  function switchModality(type) {
+    currentModality = type;
+    const depositCard = document.getElementById('modality-deposit-card');
+    const fullCard = document.getElementById('modality-full-card');
+    const radioDepositDot = document.getElementById('radio-deposit-dot');
+    const radioFullDot = document.getElementById('radio-full-dot');
+    const ctaAmount = document.getElementById('cta-amount-display');
+    const ctaCaption = document.getElementById('cta-balance-caption');
+    const btnLabel = document.getElementById('pay-btn-label');
+
+    if (type === 'deposit') {
+      depositCard.classList.add('bg-primary/5');
+      depositCard.classList.remove('opacity-90');
+      fullCard.classList.remove('bg-primary/5');
+      fullCard.classList.add('opacity-90');
+
+      radioDepositDot.className = 'w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-xs';
+      radioDepositDot.innerHTML = '<span class="material-symbols-outlined text-on-primary text-[14px]">check</span>';
+
+      radioFullDot.className = 'w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center';
+      radioFullDot.innerHTML = '<span class="material-symbols-outlined text-transparent text-[14px]">check</span>';
+
+      ctaAmount.textContent = '$10.000';
+      ctaCaption.textContent = 'Resta $18.000 en el club';
+      btnLabel.textContent = `Pagar Seña con ${currentMethodName} $10.000 ARS`;
+    } else {
+      fullCard.classList.add('bg-primary/5');
+      fullCard.classList.remove('opacity-90');
+      depositCard.classList.remove('bg-primary/5');
+      depositCard.classList.add('opacity-90');
+
+      radioFullDot.className = 'w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-xs';
+      radioFullDot.innerHTML = '<span class="material-symbols-outlined text-on-primary text-[14px]">check</span>';
+
+      radioDepositDot.className = 'w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center';
+      radioDepositDot.innerHTML = '<span class="material-symbols-outlined text-transparent text-[14px]">check</span>';
+
+      ctaAmount.textContent = '$26.600';
+      ctaCaption.textContent = 'Total saldado (5% OFF)';
+      btnLabel.textContent = `Pagar Total con ${currentMethodName} $26.600 ARS`;
+    }
+  }
+
+  function selectMethod(methodKey) {
+    const methods = [
+      { id: 'mp', name: 'Mercado Pago', labelEl: 'method-mp', checkEl: 'check-mp' },
+      { id: 'transf', name: 'Transferencia', labelEl: 'method-transf', checkEl: 'check-transf' },
+      { id: 'cards', name: 'Tarjeta', labelEl: 'method-cards', checkEl: 'check-cards' }
+    ];
+
+    methods.forEach(item => {
+      const card = document.getElementById(item.labelEl);
+      const check = document.getElementById(item.checkEl);
+      if (item.id === methodKey) {
+        currentMethodName = item.name;
+        card.classList.add('bg-primary/5');
+        check.className = 'w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 ml-2';
+        check.querySelector('span').classList.remove('text-transparent');
+      } else {
+        card.classList.remove('bg-primary/5');
+        check.className = 'w-5 h-5 rounded-full bg-surface-container-highest text-transparent flex items-center justify-center flex-shrink-0 ml-2';
+        check.querySelector('span').classList.add('text-transparent');
+      }
+    });
+
+    // Update CTA button label with the newly selected method
+    const amountStr = currentModality === 'deposit' ? '$10.000 ARS' : '$26.600 ARS';
+    const actionWord = currentModality === 'deposit' ? 'Pagar Seña con' : 'Pagar Total con';
+    document.getElementById('pay-btn-label').textContent = `${actionWord} ${currentMethodName} ${amountStr}`;
+  }
+
+  function handlePaymentAction() {
+    const btn = document.getElementById('pay-button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">sync</span><span>Redirigiendo a pasarela segura...</span>';
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">verified</span><span>¡Turno Pre-Confirmado!</span>';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }, 2500);
+    }, 1400);
+  }
+
+  // Visual countdown timer micro-interaction
+  (function initCountdown() {
+    let timeLeft = 9 * 60 + 42;
+    const timerElem = document.getElementById('countdown-timer');
+    setInterval(() => {
+      if (timeLeft <= 0) return;
+      timeLeft--;
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerElem.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} min`;
+    }, 1000);
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)]" data-active-classes="text-primary-container font-semibold"><div class="flex justify-around items-center h-16 px-gutter-compact"><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 transition-colors text-primary-container font-semibold" data-path="reservar" href="#"><span class="material-symbols-outlined text-[22px]">sports_soccer</span><span class="font-label-sm text-label-sm tracking-tight">Reservar</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="mis-turnos" href="#"><span class="material-symbols-outlined text-[22px]">confirmation_number</span><span class="font-label-sm text-label-sm tracking-tight">Mis Turnos</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="operativa" href="#"><span class="material-symbols-outlined text-[22px]">analytics</span><span class="font-label-sm text-label-sm tracking-tight">Operativa</span></a><a class="flex flex-col items-center justify-center gap-0.5 w-16 h-12 text-on-surface-variant transition-colors" data-path="perfil" href="#"><span class="material-symbols-outlined text-[22px]">account_circle</span><span class="font-label-sm text-label-sm tracking-tight">Perfil</span></a></div></nav></body></html>

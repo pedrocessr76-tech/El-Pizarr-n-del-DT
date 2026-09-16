@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDraftStore } from '../store/useDraftStore';
 
 interface HomePageProps {
   onNavigate: (tab: 'builder' | 'history' | 'catalog' | 'bracket') => void;
@@ -6,14 +7,21 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) => {
+  const team = useDraftStore((s) => s.team);
+  const formation = useDraftStore((s) => s.formation);
+  const squadSize = team.length;
+  const avgRating = squadSize > 0
+    ? Math.round(team.reduce((sum, player) => sum + (player.rating ?? 0), 0) / squadSize)
+    : 0;
+
   return (
-    <div className="bg-background text-on-background min-h-screen w-full overflow-hidden pitch-gradient relative flex flex-col justify-center items-center px-gutter transition-all duration-500">
+    <div className="bg-background text-on-background min-h-screen w-full overflow-hidden pitch-gradient relative flex flex-col justify-start md:justify-center items-center px-gutter py-lg md:py-0 transition-all duration-500">
       {/* Pitch Pattern Overlay */}
       <div className="absolute inset-0 pitch-pattern pointer-events-none opacity-50"></div>
 
-      {/* Top Right Action */}
-      <div className="absolute top-lg right-lg z-20">
-        <button 
+      {/* Top Right Action (desktop) */}
+      <div className="hidden md:block absolute top-lg right-lg z-20">
+        <button
           onClick={onOpenLogin}
           className="px-6 py-3 bg-surface-container-high border border-white/10 rounded-lg text-primary font-label-md hover:bg-surface-variant transition-colors flex items-center gap-2 group"
         >
@@ -22,8 +30,112 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
         </button>
       </div>
 
-      {/* Main Content Container */}
-      <div className="relative z-10 w-full flex flex-col justify-center items-center" id="main-content">
+      {/* ===== Mobile layout ===== */}
+      <div className="relative z-10 w-full max-w-md flex flex-col gap-5 md:hidden" id="main-content-mobile">
+        {/* Branding hero */}
+        <div className="flex flex-col items-center text-center pt-md pb-sm gap-3">
+          <div className="w-24 h-24 rounded-2xl bg-surface-container-low border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(165,208,185,0.25)]">
+            <span className="material-symbols-outlined text-[52px] text-primary">sports_soccer</span>
+          </div>
+          <div>
+            <h1 className="font-display-lg text-[34px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter">
+              EL PIZARRÓN
+            </h1>
+            <p className="font-label-md text-on-surface-variant uppercase tracking-widest mt-2">
+              Táctica Avanzada · Gestión Total
+            </p>
+          </div>
+        </div>
+
+        {/* Primary action */}
+        <button
+          onClick={() => onNavigate('builder')}
+          className="w-full bg-primary-container hover:bg-primary-container/80 active:scale-[0.98] text-on-primary-container rounded-xl py-5 flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all"
+        >
+          <span className="material-symbols-outlined text-[28px]">sports_soccer</span>
+          <span className="font-headline-md text-[20px] font-black uppercase tracking-wide">Jugar Partido</span>
+          <span className="material-symbols-outlined text-[22px]">arrow_forward</span>
+        </button>
+
+        {/* Secondary actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => onNavigate('history')}
+            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-4 rounded-lg text-on-surface shadow-md transition-all"
+          >
+            <span className="material-symbols-outlined text-secondary text-[20px]">history</span>
+            <span className="font-headline-sm text-[15px] font-bold uppercase">Historial</span>
+          </button>
+          <button
+            onClick={() => onNavigate('catalog')}
+            className="flex items-center justify-center gap-2 bg-surface-container-high active:scale-95 py-4 rounded-lg text-on-surface shadow-md transition-all"
+          >
+            <span className="material-symbols-outlined text-primary text-[20px]">style</span>
+            <span className="font-headline-sm text-[15px] font-bold uppercase">Mis Cartas</span>
+          </button>
+        </div>
+
+        {/* Squad summary */}
+        {squadSize > 0 ? (
+          <div className="bg-surface-container-low rounded-xl p-4 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary to-secondary"></div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
+                  <span className="material-symbols-outlined text-[24px]">shield</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="block font-headline-sm text-[16px] font-bold text-on-surface truncate">Mi Plantilla</span>
+                  <span className="font-label-md text-on-surface-variant text-[11px]">Plantilla Principal</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 bg-surface-container-high px-2.5 py-1 rounded-md shrink-0">
+                <span className="font-label-md text-[10px] text-on-surface-variant font-semibold">ESQ:</span>
+                <span className="font-label-md text-[10px] text-primary font-bold">{formation}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col items-center bg-surface-container-high p-3 rounded-lg">
+                <span className="font-label-md text-[10px] text-on-surface-variant uppercase">Media</span>
+                <span className="font-stat-value text-secondary text-[24px]">{avgRating}</span>
+                <span className="font-label-md text-[10px] text-secondary/70">OVR</span>
+              </div>
+              <div className="flex flex-col items-center bg-surface-container-high p-3 rounded-lg">
+                <span className="font-label-md text-[10px] text-on-surface-variant uppercase">Jugadores</span>
+                <span className="font-stat-value text-primary text-[24px]">{squadSize}</span>
+                <span className="font-label-md text-[10px] text-primary/70">/ 18</span>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('builder')}
+              className="w-full mt-3 bg-surface-container-high/60 active:bg-surface-container-high text-primary flex items-center justify-center gap-1.5 py-3 rounded-lg transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">schema</span>
+              <span className="font-label-md text-[11px] font-bold uppercase tracking-wider">Ajustar Táctica y Suplentes</span>
+            </button>
+          </div>
+        ) : (
+          <div className="bg-surface-container-low/70 rounded-xl p-5 border border-white/5 text-center">
+            <span className="material-symbols-outlined text-[36px] text-on-surface-variant">groups</span>
+            <p className="font-body-md text-on-surface-variant mt-2">Aún no armaste tu equipo.</p>
+            <p className="font-label-md text-on-surface-variant/70 text-[12px] mt-1">
+              Completa 11 titulares + 7 suplentes para jugar.
+            </p>
+          </div>
+        )}
+
+        {/* Login CTA (mobile) */}
+        <button
+          onClick={onOpenLogin}
+          className="w-full bg-surface-container-high/60 border border-white/10 rounded-xl py-3.5 text-primary font-label-md flex items-center justify-center gap-2 active:scale-95 transition-all"
+        >
+          <span className="material-symbols-outlined text-[20px]">login</span>
+          Iniciar Sesión
+        </button>
+      </div>
+
+      {/* ===== Desktop layout ===== */}
+      <div className="relative z-10 w-full hidden md:flex flex-col justify-center items-center" id="main-content">
         {/* Branding */}
         <div className="text-center mb-xl">
           <h1 className="font-display-lg text-display-lg text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary font-black tracking-tighter drop-shadow-2xl">
