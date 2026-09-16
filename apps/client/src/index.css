@@ -268,7 +268,9 @@
 }
 
 /* Sistema Canchas: operational B2B surface kept separate from the game theme. */
-.b2b-app { --b2b-ink: #0f172a; --b2b-muted: #64748b; --b2b-line: #e2e8f0; --b2b-green: #15803d; --b2b-petrol: #0f1e29; --b2b-canvas: #f8fafc; min-height: 100vh; background: var(--b2b-canvas); color: var(--b2b-ink); display: flex; font-family: Inter, sans-serif; }
+:root { --b2b-ink: #0f172a; --b2b-muted: #64748b; --b2b-line: #e2e8f0; --b2b-green: #15803d; --b2b-petrol: #0f1e29; --b2b-canvas: #f8fafc; }
+.b2b-app { min-height: 100vh; min-height: 100dvh; background: var(--b2b-canvas); color: var(--b2b-ink); display: flex; font-family: Inter, sans-serif; }
+.b2b-login { min-height: 100vh; min-height: 100dvh; color: var(--b2b-ink); }
 .b2b-sidebar { width: 244px; flex: 0 0 244px; min-height: 100vh; background: var(--b2b-petrol); color: #e2e8f0; display: flex; flex-direction: column; border-right: 1px solid #203544; }
 .b2b-brand { display: flex; align-items: center; gap: 12px; padding: 22px 18px; color: #fff; }
 .b2b-brand strong { display: block; font: 700 17px/18px Inter, sans-serif; letter-spacing: -0.03em; }
