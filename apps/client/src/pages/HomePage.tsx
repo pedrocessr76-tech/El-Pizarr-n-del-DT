@@ -42,33 +42,51 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
           </h1>
         </div>
 
-        {/* Primary action */}
-        <button
-          onClick={() => onNavigate('builder')}
-          className="w-full rounded-2xl bg-primary-container text-[#dff2e6] flex items-center justify-between px-5 py-6 shadow-lg shadow-black/25 border border-primary/25 active:scale-[0.98] transition-all"
-        >
-          <span className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[24px]">sports_soccer</span>
-          </span>
-          <span className="font-headline-md text-[18px] font-black uppercase tracking-wide">Jugar Partido</span>
-          <span className="material-symbols-outlined text-[24px] shrink-0">arrow_forward</span>
-        </button>
+        {/* Acciones principales: 3 tarjetas apiladas */}
+        <div className="flex flex-col gap-3">
+          {/* Jugar Partido */}
+          <button
+            onClick={() => onNavigate('builder')}
+            className="w-full rounded-2xl bg-primary-container text-[#dff2e6] border border-primary/30 px-4 py-5 flex items-center gap-4 shadow-lg shadow-black/25 active:scale-[0.98] transition-all text-left"
+          >
+            <span className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[26px]">sports_soccer</span>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-headline-md text-[17px] font-black uppercase tracking-wide leading-tight">Jugar Partido</span>
+              <span className="block font-label-md text-[11px] text-primary/80 mt-1">Enfrentate en el torneo Élite</span>
+            </span>
+            <span className="material-symbols-outlined text-[24px] shrink-0">arrow_forward</span>
+          </button>
 
-        {/* Secondary actions */}
-        <div className="grid grid-cols-2 gap-3">
+          {/* Ver Historial */}
           <button
             onClick={() => onNavigate('history')}
-            className="flex flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface-container-high border border-white/10 active:scale-95 py-6 min-h-[104px] text-on-surface shadow-md transition-all"
+            className="w-full rounded-2xl bg-surface-container-high border border-white/10 px-4 py-5 flex items-center gap-4 shadow-md active:scale-[0.98] transition-all text-left"
           >
-            <span className="material-symbols-outlined text-secondary text-[30px]">history</span>
-            <span className="font-headline-sm text-[14px] font-bold uppercase tracking-wide">Historial</span>
+            <span className="w-12 h-12 rounded-xl bg-secondary/15 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[26px] text-secondary">history</span>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-headline-sm text-[15px] font-bold uppercase tracking-wide leading-tight text-on-surface">Ver Historial</span>
+              <span className="block font-label-md text-[11px] text-on-surface-variant mt-1">Revisa tus últimos partidos</span>
+            </span>
+            <span className="material-symbols-outlined text-[24px] text-on-surface-variant shrink-0">chevron_right</span>
           </button>
+
+          {/* Ver Catálogo de Cartas */}
           <button
             onClick={() => onNavigate('catalog')}
-            className="flex flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface-container-high border border-white/10 active:scale-95 py-6 min-h-[104px] text-on-surface shadow-md transition-all"
+            className="w-full rounded-2xl bg-surface-container-high border border-white/10 px-4 py-5 flex items-center gap-4 shadow-md active:scale-[0.98] transition-all text-left"
           >
-            <span className="material-symbols-outlined text-primary text-[30px]">style</span>
-            <span className="font-headline-sm text-[14px] font-bold uppercase tracking-wide">Mis Cartas</span>
+            <span className="w-12 h-12 rounded-xl bg-tertiary/15 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[26px] text-tertiary">style</span>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-headline-sm text-[15px] font-bold uppercase tracking-wide leading-tight text-on-surface">Ver Catálogo de Cartas</span>
+              <span className="block font-label-md text-[11px] text-on-surface-variant mt-1">Explora tu colección de jugadores</span>
+            </span>
+            <span className="material-symbols-outlined text-[24px] text-on-surface-variant shrink-0">chevron_right</span>
           </button>
         </div>
 
