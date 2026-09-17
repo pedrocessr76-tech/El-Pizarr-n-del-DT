@@ -31,7 +31,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
       </div>
 
       {/* ===== Mobile layout ===== */}
-      <div className="relative z-10 w-full max-w-lg flex flex-col gap-4 md:hidden" id="main-content-mobile">
+      <div className="relative z-10 w-full flex flex-col gap-4 md:hidden" id="main-content-mobile">
         {/* Branding hero */}
         <div className="flex flex-col items-center text-center pt-2 pb-1 gap-2.5">
           <div className="w-20 h-20 rounded-2xl bg-surface-container-low border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(165,208,185,0.25)]">
