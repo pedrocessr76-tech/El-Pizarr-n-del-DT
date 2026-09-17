@@ -45,33 +45,35 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
         {/* Primary action */}
         <button
           onClick={() => onNavigate('builder')}
-          className="w-full rounded-2xl bg-primary-container active:scale-[0.98] text-on-primary-container flex items-center justify-center gap-3 py-5 shadow-xl shadow-primary/20 transition-all"
+          className="w-full rounded-2xl bg-primary-container text-[#dff2e6] flex items-center justify-between px-5 py-6 shadow-lg shadow-black/25 border border-primary/25 active:scale-[0.98] transition-all"
         >
-          <span className="material-symbols-outlined text-[24px]">sports_soccer</span>
-          <span className="font-headline-md text-[17px] font-black uppercase tracking-wide">Jugar Partido</span>
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          <span className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[24px]">sports_soccer</span>
+          </span>
+          <span className="font-headline-md text-[18px] font-black uppercase tracking-wide">Jugar Partido</span>
+          <span className="material-symbols-outlined text-[24px] shrink-0">arrow_forward</span>
         </button>
 
         {/* Secondary actions */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('history')}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface-container-high active:scale-95 py-5 text-on-surface shadow-md transition-all"
+            className="flex flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface-container-high border border-white/10 active:scale-95 py-6 min-h-[104px] text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-secondary text-[26px]">history</span>
-            <span className="font-headline-sm text-[13px] font-bold uppercase">Historial</span>
+            <span className="material-symbols-outlined text-secondary text-[30px]">history</span>
+            <span className="font-headline-sm text-[14px] font-bold uppercase tracking-wide">Historial</span>
           </button>
           <button
             onClick={() => onNavigate('catalog')}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface-container-high active:scale-95 py-5 text-on-surface shadow-md transition-all"
+            className="flex flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface-container-high border border-white/10 active:scale-95 py-6 min-h-[104px] text-on-surface shadow-md transition-all"
           >
-            <span className="material-symbols-outlined text-primary text-[26px]">style</span>
-            <span className="font-headline-sm text-[13px] font-bold uppercase">Mis Cartas</span>
+            <span className="material-symbols-outlined text-primary text-[30px]">style</span>
+            <span className="font-headline-sm text-[14px] font-bold uppercase tracking-wide">Mis Cartas</span>
           </button>
         </div>
 
-        {/* Squad summary */}
-        {squadSize > 0 ? (
+        {/* Squad summary (solo se muestra si hay plantilla guardada) */}
+        {squadSize > 0 && (
           <div className="bg-surface-container-low rounded-xl p-4 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary to-secondary"></div>
             <div className="flex items-center justify-between mb-4">
@@ -108,14 +110,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
               <span className="material-symbols-outlined text-[18px]">schema</span>
               <span className="font-label-md text-[11px] font-bold uppercase tracking-wider">Ajustar Táctica y Suplentes</span>
             </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface-container-low/70 border border-white/5 px-6 py-8 text-center">
-            <span className="material-symbols-outlined text-[40px] text-on-surface-variant">groups</span>
-            <p className="font-body-md text-on-surface-variant mt-1">Aún no armaste tu equipo.</p>
-            <p className="font-label-md text-on-surface-variant/70 text-[12px]">
-              Completa 11 titulares + 7 suplentes para jugar.
-            </p>
           </div>
         )}
 
