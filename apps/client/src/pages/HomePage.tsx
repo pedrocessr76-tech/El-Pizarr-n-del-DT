@@ -42,51 +42,55 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLogin }) =
           </h1>
         </div>
 
-        {/* Acciones principales: 3 tarjetas apiladas, tamaño fluido según pantalla */}
-        <div className="flex flex-col gap-3">
-          {/* Jugar Partido */}
+        {/* Acciones principales: lista agrupada profesional */}
+        <div className="w-full rounded-2xl border border-white/10 overflow-hidden shadow-lg shadow-black/25 bg-surface-container-high">
+          {/* Jugar Partido (destacado) */}
           <button
             onClick={() => onNavigate('builder')}
-            className="w-full rounded-2xl bg-primary-container text-[#dff2e6] border border-primary/40 px-[clamp(16px,4vw,28px)] py-[clamp(14px,3.8vw,24px)] min-h-[clamp(60px,16vw,88px)] flex items-center gap-[clamp(12px,3.5vw,20px)] shadow-lg shadow-black/25 active:scale-[0.98] transition-all text-left"
+            className="w-full flex items-center gap-3 px-4 h-16 bg-primary-container text-left active:brightness-110 transition-all"
           >
-            <span className="w-[clamp(44px,12vw,60px)] h-[clamp(44px,12vw,60px)] rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[clamp(24px,7vw,32px)]">sports_soccer</span>
+            <span className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px] text-primary">sports_soccer</span>
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block font-headline-md text-[clamp(16px,4.5vw,21px)] font-black uppercase tracking-wide leading-tight">Jugar Partido</span>
-              <span className="block font-label-md text-[clamp(10px,2.8vw,13px)] text-primary/80 mt-1">Enfrentate en el torneo Élite</span>
+              <span className="block font-headline-sm text-[15px] font-black uppercase tracking-wide truncate text-[#dff2e6]">Jugar Partido</span>
+              <span className="block font-label-md text-[11px] truncate text-[#86af99] mt-0.5">Enfrentate en el torneo Élite</span>
             </span>
-            <span className="material-symbols-outlined text-[clamp(24px,6vw,30px)] shrink-0">arrow_forward</span>
+            <span className="material-symbols-outlined text-[20px] text-secondary shrink-0">arrow_forward</span>
           </button>
+
+          <div className="border-t border-white/10"></div>
 
           {/* Ver Historial */}
           <button
             onClick={() => onNavigate('history')}
-            className="w-full rounded-2xl bg-surface-container-high border border-white/10 px-[clamp(16px,4vw,28px)] py-[clamp(14px,3.8vw,24px)] min-h-[clamp(60px,16vw,88px)] flex items-center gap-[clamp(12px,3.5vw,20px)] shadow-md active:scale-[0.98] transition-all text-left"
+            className="w-full flex items-center gap-3 px-4 h-16 text-left active:bg-surface-variant transition-colors"
           >
-            <span className="w-[clamp(44px,12vw,60px)] h-[clamp(44px,12vw,60px)] rounded-xl bg-secondary/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[clamp(24px,7vw,32px)] text-secondary">history</span>
+            <span className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px] text-secondary">history</span>
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block font-headline-sm text-[clamp(15px,4.2vw,20px)] font-bold uppercase tracking-wide leading-tight text-on-surface">Ver Historial</span>
-              <span className="block font-label-md text-[clamp(10px,2.8vw,13px)] text-on-surface-variant mt-1">Revisa tus últimos partidos</span>
+              <span className="block font-headline-sm text-[15px] font-bold uppercase tracking-wide truncate text-on-surface">Ver Historial</span>
+              <span className="block font-label-md text-[11px] truncate text-on-surface-variant mt-0.5">Revisa tus últimos partidos</span>
             </span>
-            <span className="material-symbols-outlined text-[clamp(22px,6vw,28px)] text-on-surface-variant shrink-0">chevron_right</span>
+            <span className="material-symbols-outlined text-[20px] text-on-surface-variant shrink-0">chevron_right</span>
           </button>
+
+          <div className="border-t border-white/10"></div>
 
           {/* Ver Catálogo de Cartas */}
           <button
             onClick={() => onNavigate('catalog')}
-            className="w-full rounded-2xl bg-surface-container-high border border-white/10 px-[clamp(16px,4vw,28px)] py-[clamp(14px,3.8vw,24px)] min-h-[clamp(60px,16vw,88px)] flex items-center gap-[clamp(12px,3.5vw,20px)] shadow-md active:scale-[0.98] transition-all text-left"
+            className="w-full flex items-center gap-3 px-4 h-16 text-left active:bg-surface-variant transition-colors"
           >
-            <span className="w-[clamp(44px,12vw,60px)] h-[clamp(44px,12vw,60px)] rounded-xl bg-tertiary/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[clamp(24px,7vw,32px)] text-tertiary">style</span>
+            <span className="w-10 h-10 rounded-lg bg-tertiary/20 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px] text-tertiary">style</span>
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block font-headline-sm text-[clamp(15px,4.2vw,20px)] font-bold uppercase tracking-wide leading-tight text-on-surface">Ver Catálogo de Cartas</span>
-              <span className="block font-label-md text-[clamp(10px,2.8vw,13px)] text-on-surface-variant mt-1">Explora tu colección de jugadores</span>
+              <span className="block font-headline-sm text-[15px] font-bold uppercase tracking-wide truncate text-on-surface">Ver Catálogo de Cartas</span>
+              <span className="block font-label-md text-[11px] truncate text-on-surface-variant mt-0.5">Explora tu colección de jugadores</span>
             </span>
-            <span className="material-symbols-outlined text-[clamp(22px,6vw,28px)] text-on-surface-variant shrink-0">chevron_right</span>
+            <span className="material-symbols-outlined text-[20px] text-on-surface-variant shrink-0">chevron_right</span>
           </button>
         </div>
 
