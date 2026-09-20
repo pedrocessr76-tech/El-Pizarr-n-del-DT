@@ -333,11 +333,13 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
 function SettingsView() {
   const [tab, setTab] = useState<'facilities' | 'courts' | 'rules'>('facilities');
   const [facilities, setFacilities] = useState<Array<{ id: string; name: string; address?: string | null; status: string }>>([]);
-  const [courts, setCourts] = useState<Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>>([]);
+  const [courts, setCourts] = useState<Array<{ id: string; facilityId: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>>([]);
   const [name, setName] = useState('');
   const [courtName, setCourtName] = useState('');
   const [courtPrice, setCourtPrice] = useState('');
   const [courtSportType, setCourtSportType] = useState('FUTBOL 7');
+  const [courtFacilityId, setCourtFacilityId] = useState('');
+  const [showCourtForm, setShowCourtForm] = useState(false);
   const [feedback, setFeedback] = useState('');
   useEffect(() => {
     Promise.all([b2bService.getFacilities(), b2bService.getCourts()]).then(([loadedFacilities, loadedCourts]) => {
@@ -357,13 +359,15 @@ function SettingsView() {
   const addCourt = async () => {
     const priceCents = Math.round(parseFloat(courtPrice) * 100);
     if (!courtName.trim() || !priceCents || priceCents <= 0) { setFeedback('Completá el nombre y un precio válido para la cancha.'); return; }
-    if (!facilities.length) { setFeedback('Creá primero un complejo para poder agregar canchas.'); return; }
+    if (!courtFacilityId) { setFeedback('Elegí el complejo donde vas a agregar la cancha.'); return; }
+    const facility = facilities.find((item) => item.id === courtFacilityId);
     try {
-      const created = await b2bService.createCourt(facilities[0].id, { name: courtName.trim(), sportType: courtSportType, defaultPriceCentsArs: priceCents });
+      const created = await b2bService.createCourt(courtFacilityId, { name: courtName.trim(), sportType: courtSportType, defaultPriceCentsArs: priceCents });
       setCourts((current) => [...current, created]);
       setCourtName('');
       setCourtPrice('');
-      setFeedback(`Cancha "${created.name}" agregada a ${facilities[0].name}.`);
+      setShowCourtForm(false);
+      setFeedback(`Cancha "${created.name}" agregada a ${facility?.name ?? 'tu complejo'}.`);
     } catch { setFeedback('No se pudo crear la cancha. Verificá que el complejo exista.'); }
   };
   const updateCourtPrice = async (court: { id: string; name: string; defaultPriceCentsArs: number }) => {
@@ -417,23 +421,34 @@ function SettingsView() {
         <section className="panel settings-panel">
           <div className="settings-panel-head">
             <div><h2>Canchas registradas</h2><small>Precios expresados en ARS.</small></div>
-            <div className="inline-form settings-court-form">
-              <input className="b2b-input" placeholder="Nombre de la cancha" value={courtName} onChange={(event) => setCourtName(event.target.value)} />
-              <input className="b2b-input" placeholder="Precio x hora (ARS)" value={courtPrice} onChange={(event) => setCourtPrice(event.target.value)} />
-              <select className="b2b-input" value={courtSportType} onChange={(event) => setCourtSportType(event.target.value)}>
-                <option value="FUTBOL 5">Fútbol 5</option>
-                <option value="FUTBOL 7">Fútbol 7</option>
-                <option value="FUTBOL 8">Fútbol 8</option>
-                <option value="FUTBOL 11">Fútbol 11</option>
-              </select>
-              <button className="primary-action" onClick={addCourt}>＋ Nueva cancha</button>
-            </div>
+            <button className="primary-action" onClick={() => setShowCourtForm((open) => !open)}>＋ Agregar cancha</button>
           </div>
+          {showCourtForm && (
+            <div className="settings-court-form-panel">
+              <span className="settings-form-title">Nueva cancha</span>
+              <div className="inline-form settings-court-form">
+                <input className="b2b-input" placeholder="Nombre de la cancha" value={courtName} onChange={(event) => setCourtName(event.target.value)} />
+                <select className="b2b-input" value={courtFacilityId} onChange={(event) => setCourtFacilityId(event.target.value)}>
+                  {facilities.length === 0 && <option value="">Sin complejos</option>}
+                  {facilities.map((facility) => <option key={facility.id} value={facility.id}>{facility.name}</option>)}
+                </select>
+                <select className="b2b-input" value={courtSportType} onChange={(event) => setCourtSportType(event.target.value)}>
+                  <option value="FUTBOL 5">Fútbol 5</option>
+                  <option value="FUTBOL 7">Fútbol 7</option>
+                  <option value="FUTBOL 8">Fútbol 8</option>
+                  <option value="FUTBOL 11">Fútbol 11</option>
+                </select>
+                <input className="b2b-input" placeholder="Precio x hora (ARS)" value={courtPrice} onChange={(event) => setCourtPrice(event.target.value)} />
+                <button className="primary-action" disabled={!facilities.length} onClick={addCourt}>Guardar cancha</button>
+              </div>
+              {!facilities.length && <p className="settings-feedback caveat">Primero creá un complejo para poder agregar canchas.</p>}
+            </div>
+          )}
           <div className="settings-list">
             {courts.map((court) => (
               <div className="settings-row" key={court.id}>
                 <span className="settings-icon"><Trophy size={16} /></span>
-                <span><strong>{court.name}</strong><small>{court.sportType} · Capacidad {court.capacity}</small></span>
+                <span><strong>{court.name}</strong><small>{facilities.find((item) => item.id === court.facilityId)?.name ?? '—'} · {court.sportType} · Capacidad {court.capacity}</small></span>
                 <strong className="settings-price">$ {(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</strong>
                 <button className="secondary-action" onClick={() => updateCourtPrice(court)}>Editar</button>
               </div>

@@ -17,7 +17,7 @@ import { B2bOrganizationEntity } from './entities/organization.entity';
 import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
-import { canChangeBookingStatus, isStaffRole, isValidShiftDuration } from './domain-policy';
+import { canChangeBookingStatus, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
 
 @Injectable()
 export class B2bManagementService {
@@ -68,12 +68,14 @@ export class B2bManagementService {
   async createCourt(user: B2bJwtUser, facilityId: string, input: { name: string; sportType?: string; capacity?: number; defaultPriceCentsArs: number }) {
     const facility = await this.facilities.findOneBy({ id: facilityId, organizationId: user.organizationId });
     if (!facility) throw new NotFoundException('Complejo no encontrado');
+    const sportType = input.sportType ?? 'FUTBOL 5';
+    if (!isValidCourtSize(sportType)) throw new BadRequestException('Tamaño de cancha inválido; usá Fútbol 5, 7, 8 u 11');
     return this.courts.save(this.courts.create({
       organizationId: user.organizationId,
       facilityId,
       name: input.name,
-      sportType: input.sportType || 'FUTBOL',
-      capacity: input.capacity || 10,
+      sportType,
+      capacity: input.capacity ?? deriveCourtCapacity(sportType),
       defaultPriceCentsArs: input.defaultPriceCentsArs,
     }));
   }
@@ -85,7 +87,13 @@ export class B2bManagementService {
   async updateCourt(user: B2bJwtUser, id: string, input: { name?: string; sportType?: string; capacity?: number; defaultPriceCentsArs?: number; status?: string }) {
     const court = await this.courts.findOneBy({ id, organizationId: user.organizationId });
     if (!court) throw new NotFoundException('Cancha no encontrada');
+    if (input.sportType !== undefined && !isValidCourtSize(input.sportType)) {
+      throw new BadRequestException('Tamaño de cancha inválido; usá Fútbol 5, 7, 8 u 11');
+    }
     Object.assign(court, input);
+    if (input.capacity === undefined && input.sportType !== undefined) {
+      court.capacity = deriveCourtCapacity(input.sportType);
+    }
     return this.courts.save(court);
   }
 

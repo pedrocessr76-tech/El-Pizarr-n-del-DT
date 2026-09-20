@@ -1,5 +1,23 @@
 import { BookingStatus, B2bRoleCode } from './entities/b2b.enums';
 
+export const B2B_COURT_SIZES = ['FUTBOL 5', 'FUTBOL 7', 'FUTBOL 8', 'FUTBOL 11'] as const;
+
+export type B2bCourtSize = (typeof B2B_COURT_SIZES)[number];
+
+export function isValidCourtSize(sportType: string): sportType is B2bCourtSize {
+  return (B2B_COURT_SIZES as readonly string[]).includes(sportType);
+}
+
+export function deriveCourtCapacity(sportType: B2bCourtSize | string | undefined): number {
+  switch (sportType) {
+    case 'FUTBOL 5': return 10;
+    case 'FUTBOL 7': return 14;
+    case 'FUTBOL 8': return 16;
+    case 'FUTBOL 11': return 22;
+    default: return 10;
+  }
+}
+
 export function isValidShiftDuration(durationHours: number): durationHours is 1 | 2 {
   return durationHours === 1 || durationHours === 2;
 }
