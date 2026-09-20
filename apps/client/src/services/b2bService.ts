@@ -54,10 +54,6 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/login', { email, password });
     return data;
   },
-  async register(input: { organizationName: string; slug: string; email: string; fullName: string; password: string }) {
-    const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register', input);
-    return data;
-  },
   async registerClient(input: { email: string; fullName: string; password: string }) {
     const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register-client', input);
     return data;

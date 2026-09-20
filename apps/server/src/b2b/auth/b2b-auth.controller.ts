@@ -5,14 +5,6 @@ import { CurrentB2bUser } from './b2b-auth.decorators';
 import { B2bAuthService } from './b2b-auth.service';
 import { B2bJwtUser } from './b2b-auth.types';
 
-class RegisterB2bDto {
-  @ApiProperty() organizationName!: string;
-  @ApiProperty() slug!: string;
-  @ApiProperty() email!: string;
-  @ApiProperty() fullName!: string;
-  @ApiProperty() password!: string;
-}
-
 class RegisterClientDto {
   @ApiProperty() email!: string;
   @ApiProperty() fullName!: string;
@@ -29,12 +21,6 @@ class LoginB2bDto {
 @ApiTags('B2B Auth')
 export class B2bAuthController {
   constructor(private readonly auth: B2bAuthService) {}
-
-  @Post('register')
-  @ApiOperation({ summary: 'Crear una organización B2B y su propietario' })
-  register(@Body() body: RegisterB2bDto) {
-    return this.auth.registerOrganization(body);
-  }
 
   @Post('register-client')
   @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })

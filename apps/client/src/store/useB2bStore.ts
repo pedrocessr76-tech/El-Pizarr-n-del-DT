@@ -1,21 +1,12 @@
 import { create } from 'zustand';
 import { b2bService, type B2bUser } from '../services/b2bService';
 
-interface B2bRegisterInput {
-  organizationName: string;
-  slug: string;
-  email: string;
-  fullName: string;
-  password: string;
-}
-
 interface B2bState {
   user: B2bUser | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (input: B2bRegisterInput) => Promise<boolean>;
   registerClient: (input: { email: string; fullName: string; password: string }) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
@@ -42,17 +33,6 @@ export const useB2bStore = create<B2bState>((set) => ({
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo iniciar sesión.' });
-      return false;
-    }
-  },
-  register: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await b2bService.register(input);
-      set({ ...persistAuth(response), isLoading: false });
-      return true;
-    } catch (error: any) {
-      set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta.' });
       return false;
     }
   },

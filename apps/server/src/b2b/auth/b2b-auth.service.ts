@@ -28,23 +28,6 @@ export class B2bAuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  async registerOrganization(input: { organizationName: string; slug: string; email: string; fullName: string; password: string }) {
-    const existing = await this.organizations.findOne({ where: { slug: input.slug } });
-    if (existing) throw new ConflictException('El slug de organización ya existe');
-    const organization = await this.organizations.save(
-      this.organizations.create({ name: input.organizationName, slug: input.slug }),
-    );
-    await this.ensureRoles();
-    const user = await this.users.save(this.users.create({
-      organizationId: organization.id,
-      email: input.email.toLowerCase(),
-      fullName: input.fullName,
-      passwordHash: await bcrypt.hash(input.password, 12),
-    }));
-    await this.userRoles.save({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.OWNER });
-    return this.issueToken(user, [B2bRoleCode.OWNER]);
-  }
-
   async login(email: string, password: string) {
     const user = await this.users.findOne({ where: { email: email.toLowerCase() } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {

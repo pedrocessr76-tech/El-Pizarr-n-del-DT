@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  ShieldCheck,
   SlidersHorizontal,
   Trophy,
   UserRound,
@@ -60,11 +59,10 @@ function formatRole(role: B2bRole) {
 
 export function B2bApp() {
   const [view, setView] = useState<B2bView>('login');
-  const [role, setRole] = useState<B2bRole>('ADMIN');
+  const [role, setRole] = useState<B2bRole>('CLIENT');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const login = useB2bStore((state) => state.login);
-  const register = useB2bStore((state) => state.register);
   const registerClient = useB2bStore((state) => state.registerClient);
 
       const isStaff = role !== 'CLIENT';
@@ -84,19 +82,10 @@ export function B2bApp() {
   const enterB2b = async (email: string, password: string) => {
     const authenticated = await login(email, password);
     if (!authenticated) return;
-        // Navegamos según los roles reales autenticados.
     const roles = useB2bStore.getState().user?.roles.map((item) => item.toUpperCase()) ?? [];
-    const isClient = roles.includes('CLIENT') || (roles.length === 0 && role === 'CLIENT');
+    const isClient = roles.includes('CLIENT');
     setRole(isClient ? 'CLIENT' : 'ADMIN');
     navigate(isClient ? 'portal' : 'dashboard');
-  };
-
-  const registerOrganization = async (input: { organizationName: string; slug: string; fullName: string; email: string; password: string }) => {
-    const created = await register(input);
-    if (!created) return;
-    // Un propietario recién registrado es personal: entra al panel de gestión.
-    setRole('ADMIN');
-    navigate('dashboard');
   };
 
   const registerClientAccount = async (input: { email: string; fullName: string; password: string }) => {
@@ -108,7 +97,7 @@ export function B2bApp() {
   };
 
   if (view === 'login') {
-    return <B2bLogin role={role} onRoleChange={setRole} onEnter={enterB2b} onRegister={registerOrganization} onRegisterClient={registerClientAccount} />;
+    return <B2bLogin onEnter={enterB2b} onRegisterClient={registerClientAccount} />;
   }
 
   const mobileTabs: MobileTab<B2bView>[] = isStaff
@@ -162,19 +151,14 @@ export function B2bApp() {
   );
 }
 
-function B2bLogin({ role, onRoleChange, onEnter, onRegister, onRegisterClient }: {
-  role: B2bRole;
-  onRoleChange: (role: B2bRole) => void;
+function B2bLogin({ onEnter, onRegisterClient }: {
   onEnter: (email: string, password: string) => Promise<void>;
-  onRegister: (input: { organizationName: string; slug: string; fullName: string; email: string; password: string }) => Promise<void>;
   onRegisterClient: (input: { email: string; fullName: string; password: string }) => Promise<void>;
 }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
-  const [slug, setSlug] = useState('');
   const [fullName, setFullName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const authError = useB2bStore((state) => state.error);
@@ -182,11 +166,6 @@ function B2bLogin({ role, onRoleChange, onEnter, onRegister, onRegisterClient }:
   const clearError = useB2bStore((state) => state.clearError);
 
   const isRegister = mode === 'register';
-  const isClientRegister = isRegister && role === 'CLIENT';
-
-  const slugify = (value: string) =>
-    value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
   const switchMode = () => {
     clearError();
@@ -202,28 +181,11 @@ function B2bLogin({ role, onRoleChange, onEnter, onRegister, onRegisterClient }:
 
     if (mode === 'register') {
       // Registro de CLIENTE: se suma al sistema y luego elige en qué complejo reservar.
-      if (isClientRegister) {
-        if (fullName.trim().length < 3) { setValidationError('Ingresá tu nombre completo.'); return; }
-        if (email.trim().length < 3 || !email.includes('@')) { setValidationError('Ingresá un email válido.'); return; }
-        if (password.length < 6) { setValidationError('La contraseña debe tener al menos 6 caracteres.'); return; }
-        if (password !== confirmPassword) { setValidationError('Las contraseñas no coinciden.'); return; }
-        await onRegisterClient({ email: email.trim(), fullName: fullName.trim(), password });
-        return;
-      }
-
-      // Registro de propietario/staff: crea una nueva organización + propietario.
-      if (organizationName.trim().length < 3) { setValidationError('Ingresá el nombre de tu complejo u organización.'); return; }
       if (fullName.trim().length < 3) { setValidationError('Ingresá tu nombre completo.'); return; }
       if (email.trim().length < 3 || !email.includes('@')) { setValidationError('Ingresá un email válido.'); return; }
       if (password.length < 6) { setValidationError('La contraseña debe tener al menos 6 caracteres.'); return; }
       if (password !== confirmPassword) { setValidationError('Las contraseñas no coinciden.'); return; }
-      await onRegister({
-        organizationName: organizationName.trim(),
-        slug: slug.trim() || slugify(organizationName),
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password,
-      });
+      await onRegisterClient({ email: email.trim(), fullName: fullName.trim(), password });
       return;
     }
 
@@ -239,20 +201,12 @@ function B2bLogin({ role, onRoleChange, onEnter, onRegister, onRegisterClient }:
           <div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div>
         </div>
         <div className="b2b-login-copy">
-          <span>{isRegister ? (isClientRegister ? 'Cuenta de cliente' : 'Nueva organización') : 'Acceso seguro'}</span>
-          <h1>{isRegister ? (isClientRegister ? (<>Tu cancha,<br /><em>a un clic.</em></>) : (<>Tu complejo,<br /><em>listo para operar.</em></>)) : (<>Tu complejo,<br /><em>bajo control.</em></>)}</h1>
-          <p>{isRegister ? (isClientRegister ? 'Creá tu cuenta para reservar turnos en cualquier complejo.' : 'Creá tu organización y empezá a gestionar canchas y reservas.') : 'Gestioná canchas, reservas y recaudación desde un solo lugar.'}</p>
+          <span>{isRegister ? 'Cuenta de cliente' : 'Acceso seguro'}</span>
+          <h1>{isRegister ? (<>Tu cancha,<br /><em>a un clic.</em></>) : (<>Tu complejo,<br /><em>bajo control.</em></>)}</h1>
+          <p>{isRegister ? 'Creá tu cuenta para reservar turnos en cualquier complejo.' : 'Gestioná canchas, reservas y recaudación desde un solo lugar.'}</p>
         </div>
 
-        <div className="profile-picker"><label>{isRegister ? 'Registrarme como' : 'Ingresar como'}</label><div>{(['OWNER', 'ADMIN', 'OPERATOR', 'CLIENT'] as B2bRole[]).map((item) => <button key={item} className={role === item ? 'selected' : ''} onClick={() => onRoleChange(item)}><span className="profile-icon">{item === 'CLIENT' ? <UserRound size={18} /> : <ShieldCheck size={18} />}</span><span>{formatRole(item)}</span>{role === item && <Check size={16} />}</button>)}</div></div>
-
         <form className="b2b-login-form" onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
-          {isRegister && !isClientRegister && <label className="field-label">Nombre del complejo u organización</label>}
-          {isRegister && !isClientRegister && <input className="b2b-input" type="text" placeholder="Ej: Complejo La Cancha" value={organizationName} onChange={(event) => { const value = event.target.value; setOrganizationName(value); if (slug.length === 0) setSlug(slugify(value)); }} />}
-
-          {isRegister && !isClientRegister && <label className="field-label">Identificador (URL)</label>}
-          {isRegister && !isClientRegister && <input className="b2b-input" type="text" placeholder="Ej: complejo-la-cancha" value={slug} onChange={(event) => setSlug(event.target.value)} />}
-
           {isRegister && <label className="field-label">Nombre y apellido</label>}
           {isRegister && <input className="b2b-input" type="text" placeholder="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} />}
 
@@ -268,7 +222,7 @@ function B2bLogin({ role, onRoleChange, onEnter, onRegister, onRegisterClient }:
           {(validationError || authError) && <p className="login-error" role="alert">{validationError || authError}</p>}
 
           <button type="submit" className="primary-action wide" disabled={isLoading}>
-            {isLoading ? 'Procesando...' : isRegister ? (isClientRegister ? 'Crear mi cuenta' : 'Crear organización') : 'Ingresar al sistema'}
+            {isLoading ? 'Procesando...' : isRegister ? 'Crear mi cuenta' : 'Ingresar al sistema'}
           </button>
         </form>
 
