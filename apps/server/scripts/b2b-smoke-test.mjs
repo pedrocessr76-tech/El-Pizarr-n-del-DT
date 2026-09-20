@@ -15,9 +15,10 @@
  *   B2B_API_URL=https://api-de-pruebas.midominio.com npm run test:b2b
  *
  * Requiere un servidor ya levantado (`npm run start:dev`) apuntando a una base B2B.
- * El script se autoabastece: registra una organización con slug único
- * (`smoke-<timestamp>`) y su propio cliente, así no depende de B2B_SEED ni toca
- * los datos del complejo demo. Al terminar archiva el complejo creado.
+ * El staff (organización + administrador demo) lo crea el seed por código
+ * (`B2B_SEED=true`): el script sólo valida login de ese staff, registra su propio
+ * cliente (`register-client`), crea un complejo/cancha de prueba y lo archiva al
+ * terminar. La creación pública de organizaciones/staff ya no existe.
  *
  * Nota de zona horaria: los turnos se generan por día de la semana, por lo que el
  * servidor y este script deben compartir zona horaria (caso normal: misma máquina).
@@ -28,7 +29,8 @@
 const BASE_URL = (process.env.B2B_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
 const UNIQUE = Date.now().toString(36);
 const SLUG = 'smoke-' + UNIQUE;
-const OWNER_EMAIL = 'owner+' + UNIQUE + '@smoke.test';
+const STAFF_EMAIL = process.env.B2B_SEED_EMAIL || 'admin@lacancha.com.ar';
+const STAFF_PASSWORD = process.env.B2B_SEED_PASSWORD || 'canchas-demo';
 const CLIENT_EMAIL = 'cliente+' + UNIQUE + '@smoke.test';
 const PASSWORD = 'smoke-password-2026';
 
@@ -134,37 +136,31 @@ async function main() {
   }
 
   /* ---------- 1) Registro y login ---------- */
-  section('1) Registro y login de organización');
-  const registered = await api('POST', '/api/v1/auth/register', {
+  section('1) Registro y login');
+  // La creación pública de organizaciones/staff fue retirada: el endpoint ya no existe.
+  const orgRegister = await api('POST', '/api/v1/auth/register', {
     body: {
       organizationName: 'Smoke Test Complejo',
       slug: SLUG,
-      email: OWNER_EMAIL,
-      fullName: 'Owner Smoke',
+      email: 'staff+' + UNIQUE + '@smoke.test',
+      fullName: 'Staff Smoke',
       password: PASSWORD,
     },
   });
-  if (!expectStatus('POST /api/v1/auth/register', registered, 201)) return finish();
-  const ownerToken = registered.data.accessToken;
-  check('register devuelve accessToken', Boolean(ownerToken));
-  check('register asigna el rol OWNER', registered.data.user?.roles?.includes('OWNER'), JSON.stringify(registered.data.user?.roles));
+  expectStatus('POST /api/v1/auth/register ya no existe (staff por código)', orgRegister, 404);
 
-  const duplicateSlug = await api('POST', '/api/v1/auth/register', {
-    body: {
-      organizationName: 'Complejo duplicado',
-      slug: SLUG,
-      email: 'otro+' + UNIQUE + '@smoke.test',
-      fullName: 'Otro',
-      password: PASSWORD,
-    },
-  });
-  expectStatus('registrar un slug duplicado falla', duplicateSlug, 409);
+  // El staff (admin demo) lo crea el seed por código: aquí sólo se valida su login.
+  const login = await api('POST', '/api/v1/auth/login', { body: { email: STAFF_EMAIL, password: STAFF_PASSWORD } });
+  if (!expectStatus('POST /api/v1/auth/login (staff seed)', login, 201)) return finish();
+  const staffToken = login.data.accessToken;
+  check('login devuelve accessToken', Boolean(staffToken));
+  check(
+    'el staff tiene rol de gestión',
+    login.data.user?.roles?.some((role) => ['OWNER', 'ADMIN', 'OPERATOR'].includes(role)),
+    JSON.stringify(login.data.user?.roles),
+  );
 
-  const login = await api('POST', '/api/v1/auth/login', { body: { email: OWNER_EMAIL, password: PASSWORD } });
-  if (!expectStatus('POST /api/v1/auth/login', login, 201)) return finish();
-  check('login devuelve accessToken', Boolean(login.data.accessToken));
-
-  const badLogin = await api('POST', '/api/v1/auth/login', { body: { email: OWNER_EMAIL, password: 'password-incorrecta' } });
+  const badLogin = await api('POST', '/api/v1/auth/login', { body: { email: STAFF_EMAIL, password: 'password-incorrecta' } });
   expectStatus('login con password incorrecta falla', badLogin, 401);
 
   /* ---------- 2) Autorización ---------- */
@@ -173,9 +169,13 @@ async function main() {
   expectStatus('GET /api/v1/facilities sin token', await api('GET', '/api/v1/facilities'), 401);
   expectStatus('GET /api/v1/bookings con token inválido', await api('GET', '/api/v1/bookings', { token: 'no-es-un-jwt' }), 401);
 
-  const meOwner = await api('GET', '/api/v1/auth/me', { token: ownerToken });
-  if (expectStatus('GET /api/v1/auth/me con token OWNER', meOwner, 200)) {
-    check('el token identifica al OWNER', meOwner.data.roles?.includes('OWNER'), JSON.stringify(meOwner.data.roles));
+  const meStaff = await api('GET', '/api/v1/auth/me', { token: staffToken });
+  if (expectStatus('GET /api/v1/auth/me con token staff', meStaff, 200)) {
+    check(
+      'el token identifica al staff',
+      meStaff.data.roles?.some((role) => ['OWNER', 'ADMIN', 'OPERATOR'].includes(role)),
+      JSON.stringify(meStaff.data.roles),
+    );
   }
 
   const clientRegister = await api('POST', '/api/v1/auth/register-client', {
@@ -183,15 +183,15 @@ async function main() {
       email: CLIENT_EMAIL,
       fullName: 'Cliente Smoke',
       password: PASSWORD,
-      organizationId: meOwner.data.organizationId,
+      organizationId: meStaff.data.organizationId,
     },
   });
   if (!expectStatus('POST /api/v1/auth/register-client', clientRegister, 201)) return finish();
   const clientToken = clientRegister.data.accessToken;
   check('register-client asigna el rol CLIENT', clientRegister.data.user?.roles?.includes('CLIENT'), JSON.stringify(clientRegister.data.user?.roles));
   check(
-    'el cliente queda en la organización del complejo',
-    clientRegister.data.user?.organizationId === meOwner.data.organizationId,
+    'el cliente queda en la organización del staff',
+    clientRegister.data.user?.organizationId === meStaff.data.organizationId,
     clientRegister.data.user?.organizationId,
   );
 
@@ -213,23 +213,33 @@ async function main() {
   /* ---------- 3) Disponibilidad ---------- */
   section('3) Disponibilidad y generación de turnos');
   const facility = await api('POST', '/api/v1/facilities', {
-    token: ownerToken,
-    body: { name: 'Sede Smoke', address: 'Av. Test 123' },
+    token: staffToken,
+    body: { name: 'Sede Smoke ' + UNIQUE, address: 'Av. Test 123' },
   });
   if (!expectStatus('POST /api/v1/facilities (OWNER)', facility, 201)) return finish();
   const facilityId = facility.data.id;
 
+  expectStatus(
+    'tamaño de cancha inválido es rechazado (400)',
+    await api('POST', '/api/v1/facilities/' + facilityId + '/courts', {
+      token: staffToken,
+      body: { name: 'Cancha Invalida', sportType: 'FUTBOL 9', defaultPriceCentsArs: 1000 },
+    }),
+    400,
+  );
+
   const court = await api('POST', '/api/v1/facilities/' + facilityId + '/courts', {
-    token: ownerToken,
-    body: { name: 'Cancha Smoke', sportType: 'FUTBOL 5', capacity: 10, defaultPriceCentsArs: 1500000 },
+    token: staffToken,
+    body: { name: 'Cancha Smoke', sportType: 'FUTBOL 7', defaultPriceCentsArs: 1500000 },
   });
   if (!expectStatus('POST /api/v1/facilities/:id/courts', court, 201)) return finish();
   const courtId = court.data.id;
+  check('la capacidad se deriva del tamaño (Fútbol 7 → 14)', court.data.capacity === 14, 'capacidad ' + court.data.capacity);
 
   expectStatus(
     'una regla de 3 horas es rechazada (sólo 1 o 2h)',
     await api('POST', '/api/v1/courts/' + courtId + '/shift-rules', {
-      token: ownerToken,
+      token: staffToken,
       body: { weekday: 1, startTime: '10:00', endTime: '13:00', durationHours: 3, priceCentsArs: 1500000 },
     }),
     400,
@@ -240,7 +250,7 @@ async function main() {
   expectStatus(
     'crear regla de turnos de 1h',
     await api('POST', '/api/v1/courts/' + courtId + '/shift-rules', {
-      token: ownerToken,
+      token: staffToken,
       body: { weekday: dayA.getDay(), startTime: '10:00', endTime: '11:00', durationHours: 1, priceCentsArs: 1500000 },
     }),
     201,
@@ -248,13 +258,13 @@ async function main() {
   expectStatus(
     'crear segunda regla de turnos de 1h',
     await api('POST', '/api/v1/courts/' + courtId + '/shift-rules', {
-      token: ownerToken,
+      token: staffToken,
       body: { weekday: dayB.getDay(), startTime: '11:00', endTime: '12:00', durationHours: 1, priceCentsArs: 1600000 },
     }),
     201,
   );
 
-  const rules = await api('GET', '/api/v1/courts/' + courtId + '/shift-rules', { token: ownerToken });
+  const rules = await api('GET', '/api/v1/courts/' + courtId + '/shift-rules', { token: staffToken });
   if (expectStatus('GET /api/v1/courts/:id/shift-rules', rules, 200)) {
     check('lista las 2 reglas creadas', Array.isArray(rules.data) && rules.data.length === 2, 'n=' + rules.data?.length);
   }
@@ -265,7 +275,7 @@ async function main() {
   const toIso = windowTo.toISOString();
 
   const generated = await api('POST', '/api/v1/courts/' + courtId + '/shifts/generate', {
-    token: ownerToken,
+    token: staffToken,
     body: { from: fromIso, to: toIso },
   });
   if (!expectStatus('POST /api/v1/courts/:id/shifts/generate', generated, 201)) return finish();
@@ -273,7 +283,7 @@ async function main() {
 
   const availabilityPath =
     '/api/v1/availability?courtId=' + courtId + '&from=' + encodeURIComponent(fromIso) + '&to=' + encodeURIComponent(toIso);
-  const availability = await api('GET', availabilityPath, { token: ownerToken });
+  const availability = await api('GET', availabilityPath, { token: staffToken });
   if (!expectStatus('GET /api/v1/availability', availability, 200)) return finish();
   check('la disponibilidad lista los turnos generados', availability.data.length === generated.data.length, 'n=' + availability.data?.length);
   const totalShifts = availability.data.length;
@@ -287,7 +297,7 @@ async function main() {
   expectStatus(
     'crear un bloqueo de disponibilidad',
     await api('POST', '/api/v1/courts/' + courtId + '/availability-blocks', {
-      token: ownerToken,
+      token: staffToken,
       body: { startsAt: blockedFrom, endsAt: blockedTo, reason: 'Mantenimiento smoke' },
     }),
     201,
@@ -295,7 +305,7 @@ async function main() {
   expectStatus(
     'un bloqueo con rango invertido es rechazado',
     await api('POST', '/api/v1/courts/' + courtId + '/availability-blocks', {
-      token: ownerToken,
+      token: staffToken,
       body: { startsAt: blockedTo, endsAt: blockedFrom, reason: 'Rango inválido' },
     }),
     400,
@@ -303,6 +313,14 @@ async function main() {
 
   /* ---------- 4) Reservas ---------- */
   section('4) Transacciones de reservas');
+  // Línea base de métricas: el smoke corre sobre la org compartida del seed, que puede
+  // tener reservas históricas. Se comparan deltas, no valores absolutos.
+  const metricsBefore = await api('GET', '/api/v1/metrics/summary', { token: staffToken });
+  if (expectStatus('GET /api/v1/metrics/summary (línea base)', metricsBefore, 200)) {
+    check('línea base de reservas confirmadas', typeof metricsBefore.data.confirmedBookings === 'number', String(metricsBefore.data.confirmedBookings));
+  }
+  const baselineConfirmed = metricsBefore.status === 200 ? metricsBefore.data.confirmedBookings : 0;
+
   const booking = await api('POST', '/api/v1/bookings', {
     token: clientToken,
     body: { courtId, shiftId: firstShift.id, notes: 'Reserva smoke' },
@@ -318,7 +336,7 @@ async function main() {
     409,
   );
 
-  const availabilityAfterBooking = await api('GET', availabilityPath, { token: ownerToken });
+  const availabilityAfterBooking = await api('GET', availabilityPath, { token: staffToken });
   check(
     'el turno reservado sale de la disponibilidad',
     availabilityAfterBooking.data.length === totalShifts - 1,
@@ -331,7 +349,7 @@ async function main() {
     403,
   );
 
-  const ownerConfirms = await api('POST', '/api/v1/bookings/' + bookingId + '/confirm', { token: ownerToken });
+  const ownerConfirms = await api('POST', '/api/v1/bookings/' + bookingId + '/confirm', { token: staffToken });
   if (expectStatus('OWNER confirma la reserva', ownerConfirms, 201)) {
     check('la reserva pasa a CONFIRMED', ownerConfirms.data.status === 'CONFIRMED', ownerConfirms.data.status);
   }
@@ -343,7 +361,7 @@ async function main() {
   if (expectStatus('CLIENT reprograma su reserva a otro turno', reschedule, 201)) {
     check('la reserva apunta al nuevo turno', reschedule.data.shiftId === secondShift.id, reschedule.data.shiftId);
   }
-  const availabilityAfterReschedule = await api('GET', availabilityPath, { token: ownerToken });
+  const availabilityAfterReschedule = await api('GET', availabilityPath, { token: staffToken });
   check(
     'reprogramar libera el turno original',
     availabilityAfterReschedule.data.some((shift) => shift.id === firstShift.id),
@@ -355,13 +373,13 @@ async function main() {
     'n=' + availabilityAfterReschedule.data?.length,
   );
 
-  const ownerCompletes = await api('POST', '/api/v1/bookings/' + bookingId + '/complete', { token: ownerToken });
+  const ownerCompletes = await api('POST', '/api/v1/bookings/' + bookingId + '/complete', { token: staffToken });
   if (expectStatus('OWNER completa la reserva', ownerCompletes, 201)) {
     check('la reserva pasa a COMPLETED', ownerCompletes.data.status === 'COMPLETED', ownerCompletes.data.status);
   }
   expectStatus(
     'no se puede cancelar una reserva COMPLETED (estado terminal)',
-    await api('POST', '/api/v1/bookings/' + bookingId + '/cancel', { token: ownerToken }),
+    await api('POST', '/api/v1/bookings/' + bookingId + '/cancel', { token: staffToken }),
     403,
   );
 
@@ -374,7 +392,7 @@ async function main() {
     if (expectStatus('CLIENT cancela su propia reserva', cancelled, 201)) {
       check('la reserva pasa a CANCELLED', cancelled.data.status === 'CANCELLED', cancelled.data.status);
     }
-    const availabilityAfterCancel = await api('GET', availabilityPath, { token: ownerToken });
+    const availabilityAfterCancel = await api('GET', availabilityPath, { token: staffToken });
     check(
       'cancelar devuelve el turno a la disponibilidad',
       availabilityAfterCancel.data.some((shift) => shift.id === firstShift.id),
@@ -391,22 +409,26 @@ async function main() {
     );
   }
 
-  const metrics = await api('GET', '/api/v1/metrics/summary', { token: ownerToken });
+  const metrics = await api('GET', '/api/v1/metrics/summary', { token: staffToken });
   if (expectStatus('GET /api/v1/metrics/summary (OWNER)', metrics, 200)) {
     const fields = ['totalShifts', 'occupiedShifts', 'availableShifts', 'pendingBookings', 'confirmedBookings', 'cancelledBookings', 'revenueCentsArs'];
     check('las métricas traen todos los campos esperados', fields.every((field) => field in metrics.data), Object.keys(metrics.data || {}).join(','));
     check('la facturación incluye la reserva completada', metrics.data.revenueCentsArs >= secondShift.priceCentsArs, String(metrics.data.revenueCentsArs));
-    check('la reserva completada no queda como confirmada', metrics.data.confirmedBookings === 0, String(metrics.data.confirmedBookings));
+    check(
+      'la reserva completada no queda como confirmada',
+      metrics.data.confirmedBookings === baselineConfirmed,
+      String(metrics.data.confirmedBookings) + ' vs línea base ' + baselineConfirmed,
+    );
   }
 
   /* ---------- 5) Limpieza ---------- */
   section('5) Limpieza');
   expectStatus(
     'DELETE /api/v1/facilities/:id archiva el complejo de prueba',
-    await api('DELETE', '/api/v1/facilities/' + facilityId, { token: ownerToken }),
+    await api('DELETE', '/api/v1/facilities/' + facilityId, { token: staffToken }),
     200,
   );
-  console.log('  (la organización de prueba queda registrada con el slug "' + SLUG + '")');
+  console.log('  (el staff usa la organización del seed; el test archiva solo su complejo/cancha)');
 
   return finish();
 }
