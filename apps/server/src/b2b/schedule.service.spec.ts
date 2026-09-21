@@ -24,11 +24,17 @@ describe('Horarios y bloqueos', () => {
       find: jest.fn(async () => savedBlocks),
     };
     const bookings = { findOne: jest.fn().mockResolvedValue(null), save: jest.fn(), create: jest.fn() };
+    const notifications = {
+      notifyStaff: jest.fn().mockResolvedValue([]),
+      notifyUser: jest.fn().mockResolvedValue([]),
+      getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test'),
+    };
     const service = new B2bManagementService(
       {} as never, {} as never, courts as never, rules as never,
       shifts as never, blocks as never, bookings as never, {} as never,
+      notifications as never,
     );
-    return { service, shifts, blocks, bookings, generated };
+    return { service, shifts, blocks, bookings, generated, notifications };
   }
 
   it('excluye un turno generado después de bloquearlo y rechaza reservarlo', async () => {

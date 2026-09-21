@@ -2,10 +2,11 @@
 /**
  * Smoke test E2E del backend B2B (Sistema Canchas).
  *
- * Cubre las tres áreas pedidas en las OpenSpec (tasks 4.3 / task 8.10):
+ * Cubre las áreas pedidas en las OpenSpec (tasks 4.3 / task 8.10 / 6.4):
  *   1. Autorización: 401 sin token, 403 con rol insuficiente, aislamiento por rol.
  *   2. Disponibilidad: reglas de turnos, generación de turnos y liberación al cancelar.
  *   3. Transacciones de reservas: crear, confirmar, reprogramar, completar, cancelar.
+ *   4. Notificaciones B2B: PENDING/CONFIRMED/RESCHEDULED/COMPLETED/CANCELLED y read/read-all.
  *
  * ⚠ ESCRIBE DATOS: crea una organización temporal, su cliente, un complejo, una
  * cancha y reservas. Usalo contra un entorno de pruebas, nunca contra producción.
@@ -421,8 +422,67 @@ async function main() {
     );
   }
 
-  /* ---------- 5) Limpieza ---------- */
-  section('5) Limpieza');
+  /* ---------- 5) Notificaciones ---------- */
+  section('5) Notificaciones');
+  const staffNotifs = await api('GET', '/api/v1/notifications', { token: staffToken });
+  if (expectStatus('GET /api/v1/notifications (staff)', staffNotifs, 200)) {
+    const staffItems = Array.isArray(staffNotifs.data?.items) ? staffNotifs.data.items : [];
+    check(
+      'el staff recibió la notificación PENDING de la reserva principal',
+      staffItems.some((notif) => notif.type === 'b2b_booking_pending' && notif.metadata?.bookingId === bookingId),
+      JSON.stringify(staffItems).slice(0, 160),
+    );
+    check(
+      'el staff recibió la notificación RESCHEDULED de la reserva principal',
+      staffItems.some((notif) => notif.type === 'b2b_booking_rescheduled' && notif.metadata?.bookingId === bookingId),
+      JSON.stringify(staffItems).slice(0, 160),
+    );
+    check(
+      'el staff recibió la notificación CANCELLED por la cancelación del cliente',
+      staffItems.some((notif) => notif.type === 'b2b_booking_cancelled' && notif.metadata?.bookingId === cancellable.data?.id),
+      JSON.stringify(staffItems).slice(0, 160),
+    );
+  }
+
+  const clientNotifs = await api('GET', '/api/v1/notifications', { token: clientToken });
+  if (expectStatus('GET /api/v1/notifications (cliente)', clientNotifs, 200)) {
+    const clientItems = Array.isArray(clientNotifs.data?.items) ? clientNotifs.data.items : [];
+    check(
+      'el cliente recibió el CONFIRMED de su reserva',
+      clientItems.some((notif) => notif.type === 'b2b_booking_confirmed' && notif.metadata?.bookingId === bookingId),
+      JSON.stringify(clientItems).slice(0, 160),
+    );
+    check(
+      'el cliente recibió el COMPLETED de su reserva',
+      clientItems.some((notif) => notif.type === 'b2b_booking_completed' && notif.metadata?.bookingId === bookingId),
+      JSON.stringify(clientItems).slice(0, 160),
+    );
+    const confirmedNotif = clientItems.find((notif) => notif.type === 'b2b_booking_confirmed');
+    if (confirmedNotif) {
+      expectStatus(
+        'POST /api/v1/notifications/:id/read marca una como leída',
+        await api('POST', '/api/v1/notifications/' + confirmedNotif.id + '/read', { token: clientToken }),
+        201,
+      );
+      const afterRead = await api('GET', '/api/v1/notifications', { token: clientToken });
+      check(
+        'el unreadCount del cliente baja tras marcar una como leída',
+        afterRead.data?.unreadCount === clientNotifs.data?.unreadCount - 1,
+        'unread ' + afterRead.data?.unreadCount + ' vs ' + clientNotifs.data?.unreadCount,
+      );
+    }
+  }
+
+  expectStatus(
+    'POST /api/v1/notifications/read-all (cliente)',
+    await api('POST', '/api/v1/notifications/read-all', { token: clientToken }),
+    201,
+  );
+  const afterReadAll = await api('GET', '/api/v1/notifications', { token: clientToken });
+  check('read-all deja el unreadCount del cliente en 0', afterReadAll.data?.unreadCount === 0, 'unread ' + afterReadAll.data?.unreadCount);
+
+  /* ---------- 6) Limpieza ---------- */
+  section('6) Limpieza');
   expectStatus(
     'DELETE /api/v1/facilities/:id archiva el complejo de prueba',
     await api('DELETE', '/api/v1/facilities/' + facilityId, { token: staffToken }),

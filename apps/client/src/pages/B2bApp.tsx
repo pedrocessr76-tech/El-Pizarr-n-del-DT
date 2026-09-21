@@ -24,6 +24,9 @@ import { useB2bStore } from '../store/useB2bStore';
 import { b2bService, type B2bOrganizationOption } from '../services/b2bService';
 import { MobileTopBar } from '../components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from '../components/layout/MobileTabBar';
+import { useB2bNotificationSocket } from '../services/b2bNotificationSocket';
+import { B2bNotificationBell } from '../components/b2b/B2bNotificationBell';
+import { B2bNotificationToasts } from '../components/b2b/B2bNotificationToasts';
 
 type B2bRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'CLIENT';
 type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'portal' | 'payment';
@@ -58,6 +61,7 @@ function formatRole(role: B2bRole) {
 }
 
 export function B2bApp() {
+  useB2bNotificationSocket();
   const [view, setView] = useState<B2bView>('login');
   const [role, setRole] = useState<B2bRole>('CLIENT');
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -142,11 +146,12 @@ export function B2bApp() {
         <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span><LogOut size={16} /></div></div>
       </aside>
       <main className="b2b-main">
-        <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><button className="icon-button" title="Notificaciones">♧</button><button className="profile-button" onClick={() => navigate('login')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
+        <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell /><button className="profile-button" onClick={() => navigate('login')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
         {isStaff ? <StaffView view={view} onNavigate={navigate} onSelectBooking={setSelectedBooking} /> : <RealClientView view={view} onNavigate={navigate} />}
       </main>
       <MobileTabBar variant="canchas" tabs={mobileTabs} activeTab={view} onSelect={(next) => navigate(next)} />
       {selectedBooking && <BookingDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} onAction={async (action) => { if (selectedBooking.id) { if (action === 'confirm') await b2bService.confirmBooking(selectedBooking.id); if (action === 'cancel') await b2bService.cancelBooking(selectedBooking.id); } setSelectedBooking(null); }} />}
+      <B2bNotificationToasts />
     </div>
   );
 }

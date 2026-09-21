@@ -16,9 +16,12 @@ export class CreateB2bSchema1710000000000 implements MigrationInterface {
     await queryRunner.query(`CREATE TABLE IF NOT EXISTS b2b_bookings (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), "organizationId" uuid NOT NULL REFERENCES b2b_organizations(id) ON DELETE CASCADE, "courtId" uuid NOT NULL REFERENCES b2b_courts(id), "shiftId" uuid NOT NULL REFERENCES b2b_shifts(id), "clientUserId" uuid NOT NULL REFERENCES b2b_users(id), status varchar(20) NOT NULL DEFAULT 'PENDING', "priceCentsArs" integer NOT NULL, notes varchar(500), "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
     await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS b2b_active_booking_per_shift ON b2b_bookings ("shiftId") WHERE status IN ('PENDING', 'CONFIRMED')`);
     await queryRunner.query(`CREATE TABLE IF NOT EXISTS b2b_booking_events (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), "bookingId" uuid NOT NULL REFERENCES b2b_bookings(id) ON DELETE CASCADE, "actorUserId" uuid NOT NULL REFERENCES b2b_users(id), "fromStatus" varchar(20), "toStatus" varchar(20) NOT NULL, metadata jsonb NOT NULL DEFAULT '{}', "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+    await queryRunner.query(`CREATE TABLE IF NOT EXISTS b2b_notifications (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), "organizationId" uuid NOT NULL REFERENCES b2b_organizations(id) ON DELETE CASCADE, "recipientUserId" uuid NOT NULL REFERENCES b2b_users(id) ON DELETE CASCADE, type varchar(40) NOT NULL, severity varchar(12) NOT NULL, title varchar(255) NOT NULL, body varchar(500) NOT NULL, metadata jsonb NOT NULL DEFAULT '{}', read boolean NOT NULL DEFAULT false, "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_b2b_notifications_recipient_created ON b2b_notifications ("recipientUserId", "createdAt")`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_b2b_notifications_recipient_read ON b2b_notifications ("recipientUserId", read)`);
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE IF EXISTS b2b_booking_events, b2b_bookings, b2b_availability_blocks, b2b_shifts, b2b_shift_rules, b2b_courts, b2b_facilities, b2b_user_roles, b2b_users, b2b_roles, b2b_organizations CASCADE');
+    await queryRunner.query('DROP TABLE IF EXISTS b2b_booking_events, b2b_bookings, b2b_availability_blocks, b2b_shifts, b2b_shift_rules, b2b_courts, b2b_facilities, b2b_user_roles, b2b_users, b2b_roles, b2b_organizations, b2b_notifications CASCADE');
   }
 }

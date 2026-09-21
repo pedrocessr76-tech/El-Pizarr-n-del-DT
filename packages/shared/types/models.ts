@@ -76,7 +76,13 @@ export type NotificationType =
   | 'tournament_start'
   | 'tournament_end'
   | 'achievement_unlocked'
-  | 'system_maintenance';
+  | 'system_maintenance'
+  | 'b2b_booking_pending'
+  | 'b2b_booking_confirmed'
+  | 'b2b_booking_cancelled'
+  | 'b2b_booking_completed'
+  | 'b2b_booking_rescheduled'
+  | 'b2b_org_announcement';
 
 export type Severity = 'info' | 'success' | 'warning' | 'error';
 
@@ -87,4 +93,12 @@ export interface NotificationPayload {
   body: string;
   timestamp: number;
   metadata?: Record<string, any>;
+}
+
+// Payload extendido para Sistema Canchas (B2B): agrega identidad de la fila
+// persistida (b2b_notifications) para que el cliente evite duplicados.
+export interface B2bNotificationPayload extends NotificationPayload {
+  id: string;
+  read: boolean;
+  createdAt: string;
 }
