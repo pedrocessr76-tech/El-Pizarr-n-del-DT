@@ -2,9 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Match, RoundName, Team, Tournament } from '../../../../packages/shared/types/models';
 import type { ActiveTab } from '../components/Navbar';
 import { matchService } from '../services/matchService';
-import { useAuthStore } from '../store/useAuthStore';
 import { useDraftStore } from '../store/useDraftStore';
-import { getGuestSessionId } from '../utils/session';
 import { LiveMatchOverlay } from '../components/LiveMatchOverlay';
 import { DefeatOverlay } from '../components/DefeatOverlay';
 
@@ -62,7 +60,6 @@ const getErrorMessage = (err: any, fallback: string): string => {
 };
 
 export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ onBack, onNavigate }) => {
-  const { user } = useAuthStore();
   const teamId = useDraftStore((s) => s.teamId);
   const tournament = useDraftStore((s) => s.tournament);
   const setTournament = useDraftStore((s) => s.setTournament);
@@ -98,16 +95,14 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
           const refreshed = await matchService.getTournament(tournament.id);
           setTournament({ ...refreshed, rounds: normalizeRounds(refreshed.rounds) });
         } else {
-          const sessionId = !user ? getGuestSessionId() ?? undefined : undefined;
-          const created = await matchService.createTournament(teamId, user?.id, sessionId);
+          const created = await matchService.createTournament(teamId);
           setTournament({ ...created, rounds: normalizeRounds(created.rounds) });
         }
       } catch (err: any) {
         if (tournament) {
           // El torneo guardado ya no existe → crear uno nuevo limpio (el backend limpia residuales).
           try {
-            const sessionId = !user ? getGuestSessionId() ?? undefined : undefined;
-            const created = await matchService.createTournament(teamId, user?.id, sessionId);
+            const created = await matchService.createTournament(teamId);
             setTournament({ ...created, rounds: normalizeRounds(created.rounds) });
           } catch (err2: any) {
             setError(getErrorMessage(err2, 'Error al iniciar el torneo. Verifica el backend.'));
@@ -183,8 +178,7 @@ export const TournamentBracketPage: React.FC<TournamentBracketPageProps> = ({ on
     setIsLoading(true);
     setError(null);
     try {
-      const sessionId = !user ? getGuestSessionId() ?? undefined : undefined;
-      const created = await matchService.createTournament(teamId, user?.id, sessionId);
+      const created = await matchService.createTournament(teamId);
       setTournament({ ...created, rounds: normalizeRounds(created.rounds) });
       setActiveMatch(null);
       setShowDefeat(false);

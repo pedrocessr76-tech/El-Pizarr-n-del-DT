@@ -92,6 +92,20 @@ export class MatchService {
     };
   }
 
+  /**
+   * Lectura de un equipo por id restringida por ownership: permite ver equipos
+   * propios y rivales IA (isReal, sin dueño), pero NUNCA equipos de otros usuarios.
+   */
+  async getTeamByIdForUser(teamId: string, userId: string): Promise<Team> {
+    const teamEntity = await this.teamRepo.findOne({ where: { id: teamId } });
+    if (!teamEntity || (teamEntity.userId && teamEntity.userId !== userId)) {
+      throw new NotFoundException('Equipo no encontrado.');
+    }
+    const team = await this.getTeamById(teamId);
+    if (!team) throw new NotFoundException('Equipo no encontrado.');
+    return team;
+  }
+
     private shuffle<T>(input: T[]): T[] {
       const arr = [...input];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -143,9 +157,23 @@ export class MatchService {
       };
     }
 
-    async simulateMatch(matchId: string): Promise<Match> {
+    async simulateMatch(matchId: string, userId: string): Promise<Match> {
       const matchEntity = await this.matchRepo.findOne({ where: { id: matchId } });
       if (!matchEntity) throw new NotFoundException('Partido no encontrado.');
+
+      // Ownership estricto: el partido debe pertenecer a un torneo de la identidad
+      // del token (404 genérico para no revelar la existencia de recursos ajenos).
+      const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: matchEntity.tournamentId } });
+      if (!tournamentEntity || tournamentEntity.userId !== userId) {
+        throw new NotFoundException('Partido no encontrado.');
+      }
+
+      // Un partido ya jugado tiene resultado persistido: re-ejecutarlo permitiría
+      // cambiar el marcador a voluntad (cheat detectado en la auditoría).
+      if (matchEntity.status === 'FINISHED') {
+        throw new BadRequestException('El partido ya fue jugado y su resultado está guardado.');
+      }
+
       const result = await this.simulateAndPersistMatch(matchEntity);
 
       // La notificación de resultado (match_end) se emite desde el frontend
@@ -155,19 +183,18 @@ export class MatchService {
       return result;
     }
 
-    async createTournament(userTeamId: string, userId?: string, sessionId?: string): Promise<Tournament> {
-
-    // Validar identidad: o userId o sessionId
-    if (!userId && !sessionId) {
-      throw new NotFoundException('Se requiere identidad (usuario o sesión) para crear un torneo.');
+    async createTournament(userTeamId: string, userId: string): Promise<Tournament> {
+    // El equipo debe ser de la identidad del token (404 genérico si es ajeno).
+    const ownedTeam = await this.teamRepo.findOne({ where: { id: userTeamId } });
+    if (!ownedTeam || ownedTeam.userId !== userId) {
+      throw new NotFoundException('Equipo de usuario no encontrado.');
     }
 
     const userTeam = await this.getTeamById(userTeamId);
     if (!userTeam) throw new NotFoundException('Equipo de usuario no encontrado.');
 
     // 1) Limpiar estado residual: torneos previos SIN terminar de la misma identidad.
-    const identityWhere = userId ? { userId } : { sessionId };
-    const previousTournaments = await this.tournamentRepo.find({ where: { ...identityWhere, status: 'IN_PROGRESS' } });
+    const previousTournaments = await this.tournamentRepo.find({ where: { userId, status: 'IN_PROGRESS' } });
     if (previousTournaments.length) {
       const previousIds = previousTournaments.map((t) => t.id);
       await this.matchRepo.delete({ tournamentId: In(previousIds) });
@@ -208,7 +235,6 @@ export class MatchService {
     const tournamentEntity = new TournamentEntity();
     tournamentEntity.id = tournamentId;
     tournamentEntity.userId = userId;
-    tournamentEntity.sessionId = sessionId;
     tournamentEntity.userTeamId = userTeamId;
     tournamentEntity.status = 'IN_PROGRESS';
     tournamentEntity.currentRound = 'OCTAVOS';
@@ -228,7 +254,6 @@ export class MatchService {
       matchEntity.tournamentId = tournamentId;
       matchEntity.round = 'OCTAVOS';
       matchEntity.userId = userId;
-      matchEntity.sessionId = sessionId;
       matchEntity.homeTeamId = home.id;
       matchEntity.awayTeamId = away.id;
       matchEntity.homeScore = 0;
@@ -247,7 +272,7 @@ export class MatchService {
     }
 
     // 5) Avisar al usuario / sesión de que el torneo comenzó.
-    this.notifications.notify(userId, sessionId, {
+    this.notifications.notify(userId, undefined, {
       type: 'tournament_start',
       severity: 'info',
       title: '¡Torneo iniciado!',
@@ -266,9 +291,12 @@ export class MatchService {
   }
 
 
-  async getTournament(tournamentId: string): Promise<Tournament> {
+  async getTournament(tournamentId: string, userId: string): Promise<Tournament> {
     const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
-    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+    // Sólo el dueño puede leer el torneo (404 genérico para no revelar existencia)
+    if (!tournamentEntity || tournamentEntity.userId !== userId) {
+      throw new NotFoundException('Torneo no encontrado.');
+    }
 
     const matches = await this.matchRepo.find({ where: { tournamentId } });
     const rounds: Record<RoundName, Match[]> = { OCTAVOS: [], CUARTOS: [], SEMIS: [], FINAL: [] };
@@ -309,12 +337,14 @@ export class MatchService {
    *  - Genera la siguiente ronda (OCTAVOS → CUARTOS → SEMIS → FINAL).
    *  - Si la Gran Final termina, marca el torneo como COMPLETADO.
    */
-  async advanceTournament(tournamentId: string): Promise<Tournament> {
+  async advanceTournament(tournamentId: string, userId: string): Promise<Tournament> {
     const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
-    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+    if (!tournamentEntity || tournamentEntity.userId !== userId) {
+      throw new NotFoundException('Torneo no encontrado.');
+    }
 
     if (tournamentEntity.status === 'COMPLETED') {
-      return this.getTournament(tournamentId);
+      return this.getTournament(tournamentId, userId);
     }
 
     const currentRound = tournamentEntity.currentRound as RoundName;
@@ -350,14 +380,14 @@ export class MatchService {
     if (currentRound === 'FINAL') {
       tournamentEntity.status = 'COMPLETED';
       await this.tournamentRepo.save(tournamentEntity);
-this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+this.notifications.notify(tournamentEntity.userId, undefined, {
         type: 'tournament_end',
         severity: 'success',
         title: '¡Campeón de la Copa Élite!',
         body: 'Tu equipo se coronó campeón del torneo. ¡Felicidades!',
         metadata: { tournamentId },
       });
-      return this.getTournament(tournamentId);
+      return this.getTournament(tournamentId, userId);
     }
 
     const currentIdx = ROUND_ORDER.indexOf(currentRound);
@@ -379,7 +409,6 @@ this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
         nextEntity.tournamentId = tournamentId;
         nextEntity.round = nextRound;
         nextEntity.userId = tournamentEntity.userId;
-        nextEntity.sessionId = tournamentEntity.sessionId;
         nextEntity.homeTeamId = home.id;
         nextEntity.awayTeamId = away.id;
         nextEntity.homeScore = 0;
@@ -392,25 +421,27 @@ this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
     tournamentEntity.currentRound = nextRound;
     await this.tournamentRepo.save(tournamentEntity);
 
-this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+this.notifications.notify(tournamentEntity.userId, undefined, {
         type: 'round_advance',
         severity: 'info',
         title: 'Avance de ronda: ' + nextRound,
         body: 'Tu equipo superó ' + currentRound + '. Descubrí tus nuevos rivales.',
         metadata: { tournamentId, round: nextRound },
       });
-    return this.getTournament(tournamentId);
+    return this.getTournament(tournamentId, userId);
   }
 
   /** Marca un torneo como COMPLETADO (usado al finalizar por derrota). */
-  async completeTournament(tournamentId: string): Promise<{ success: boolean }> {
+  async completeTournament(tournamentId: string, userId: string): Promise<{ success: boolean }> {
     const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
-    if (!tournamentEntity) throw new NotFoundException('Torneo no encontrado.');
+    if (!tournamentEntity || tournamentEntity.userId !== userId) {
+      throw new NotFoundException('Torneo no encontrado.');
+    }
     if (tournamentEntity.status !== 'COMPLETED') {
       tournamentEntity.status = 'COMPLETED';
       await this.tournamentRepo.save(tournamentEntity);
     }
-this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
+this.notifications.notify(tournamentEntity.userId, undefined, {
         type: 'tournament_end',
         severity: 'warning',
         title: 'Torneo finalizado',
@@ -420,8 +451,9 @@ this.notifications.notify(tournamentEntity.userId, tournamentEntity.sessionId, {
     return { success: true };
   }
 
-  async getHistory(userId?: string, sessionId?: string): Promise<{ tournaments: any[] }> {
-    // Solo usuarios logueados tienen historial. Invitados siempre devuelven vacío.
+  async getHistory(userId: string): Promise<{ tournaments: any[] }> {
+    // La identidad viene del token (usuario registrado o invitado anónimo),
+    // por lo que el historial es siempre el de esa identidad.
     if (!userId) {
       return { tournaments: [] };
     }

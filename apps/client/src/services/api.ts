@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearGuestSession, getGuestToken } from '../utils/session';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/',
@@ -8,7 +9,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || getGuestToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -21,6 +22,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      clearGuestSession();
     }
     return Promise.reject(error);
   }

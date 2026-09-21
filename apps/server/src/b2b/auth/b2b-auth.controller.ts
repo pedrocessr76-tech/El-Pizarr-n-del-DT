@@ -1,20 +1,47 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { B2bJwtGuard } from './b2b-jwt.guard';
 import { CurrentB2bUser } from './b2b-auth.decorators';
 import { B2bAuthService } from './b2b-auth.service';
 import { B2bJwtUser } from './b2b-auth.types';
 
 class RegisterClientDto {
-  @ApiProperty() email!: string;
-  @ApiProperty() fullName!: string;
-  @ApiProperty() password!: string;
-  @ApiProperty({ required: false }) organizationId?: string;
+  @ApiProperty({ example: 'cliente@correo.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
+
+  @ApiProperty({ example: 'Martina López' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  fullName!: string;
+
+  @ApiProperty({ example: 'claveSegura123' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  password!: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
 }
 
 class LoginB2bDto {
-  @ApiProperty() email!: string;
-  @ApiProperty() password!: string;
+  @ApiProperty({ example: 'cliente@correo.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
+
+  @ApiProperty({ example: 'claveSegura123' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  password!: string;
 }
 
 @Controller('api/v1/auth')
@@ -22,6 +49,7 @@ class LoginB2bDto {
 export class B2bAuthController {
   constructor(private readonly auth: B2bAuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register-client')
   @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })
   registerClient(@Body() body: RegisterClientDto) {
@@ -40,6 +68,7 @@ export class B2bAuthController {
     return this.auth.listPublicCourts(organizationId);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión en Sistema Canchas' })
   login(@Body() body: LoginB2bDto) {

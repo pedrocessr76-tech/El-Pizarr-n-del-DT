@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { requireB2bJwtSecret } from '../../config/env';
 import { B2bAuthModule } from '../auth/b2b-auth.module';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
@@ -13,7 +14,7 @@ import { B2bNotificationsService } from './b2b-notifications.service';
   imports: [
     TypeOrmModule.forFeature([B2bNotificationEntity, B2bUserRoleEntity, B2bUserEntity], 'b2b'),
     JwtModule.register({
-      secret: process.env.B2B_JWT_SECRET || 'sistema-canchas-secret',
+      secret: requireB2bJwtSecret(),
     }),
     B2bAuthModule,
   ],

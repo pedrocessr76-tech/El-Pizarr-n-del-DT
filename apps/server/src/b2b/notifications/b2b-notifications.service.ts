@@ -35,11 +35,11 @@ export interface B2bNotifyResult {
  *
  * El fan-out de un aviso general del complejo crea UNA fila por integrante de
  * la organización (staff incluido, el actor inclusive, y los clientes), para
- * que "marcar como leída" siga siendo por usuario y la bandeja del staff
- * persista el anuncio con su propio id. En el push en vivo:
- *  - el staff (incl. el actor) recibe su copia con id por su canal personal;
- *  - los clientes reciben el payload BASE (sin id) por el canal de la org y
- *    deduplican por contenido contra su copia persistida.
+ * que "marcar como leída" siga siendo por usuario y la bandeja persista cada
+ * anuncio con su propio id. En el push en vivo cada destinatario recibe su
+ * copia con id por su canal PERSONAL (el cliente solo está en su canal, nunca
+ * ve eventos de terceros); además el payload base sin id se emite por el canal
+ * de la org, que solo alcanza al staff (visión general del complejo).
  */
 @Injectable()
 export class B2bNotificationsService {
@@ -62,7 +62,7 @@ export class B2bNotificationsService {
   ): Promise<B2bNotifyResult> {
     const staffUserIds = await this.getStaffUserIds(organizationId);
     const recipients = actorUserId ? staffUserIds.filter((id) => id !== actorUserId) : staffUserIds;
-    return this.deliver(organizationId, recipients, opts, true);
+    return this.deliver(organizationId, recipients, opts);
   }
 
   /** Notifica a un usuario puntual (fila + push id'd personal). */
@@ -75,14 +75,13 @@ export class B2bNotificationsService {
     if (actorUserId && actorUserId === userId) {
       return { payloads: [], saved: [] };
     }
-    return this.deliver(organizationId, [userId], opts, true);
+    return this.deliver(organizationId, [userId], opts);
   }
 
   /**
    * Aviso general de la organización (staff publishing only): fila por CADA
    * integrante excepto el actor (staff y clientes, para que bandeja/read sean
-   * por usuario), push id'd SOLO al staff y base sin id por el canal de org
-   * para los clientes (dedupe por contenido).
+   * por usuario). Cada destinatario recibe su copia id'd por su canal personal.
    */
   async broadcastToOrganization(
     organizationId: string,
@@ -92,7 +91,7 @@ export class B2bNotificationsService {
     const assignments = await this.userRoles.find({ where: { organizationId } });
     const userSet = Array.from(new Set(assignments.map((assignment) => assignment.userId)));
     const recipients = actorUserId ? userSet.filter((userId) => userId !== actorUserId) : userSet;
-    return this.deliver(organizationId, recipients, opts, false);
+    return this.deliver(organizationId, recipients, opts);
   }
 
   /** Ids de los integrantes staff (OWNER/ADMIN/OPERATOR) de una organización. */
@@ -147,18 +146,16 @@ export class B2bNotificationsService {
   // ------------------------------------------------------------------
 
   /**
-   * Crea las filas y las entrega. Con `personalPush = true` cada destinatario
-   * recibe el payload id'd por su canal personal (staff en `notifyStaff`,
-   * cliente en `notifyUser`); con `false` (anuncios por `broadcastToOrganization`)
-   * sólo el staff recibe su copia id'd y los clientes deduplican el payload base
-   * del canal de la org. En cualquier caso el payload base sin id se emite al
-   * canal de la org.
+   * Crea las filas y las entrega. CADA destinatario (staff y clientes) recibe su
+   * copia id'd por su CANAL PERSONAL — los clientes solo están en su canal
+   * personal, así reciben únicamente sus propios eventos y nunca el de terceros.
+   * El payload base (sin id) se emite igual por el canal de la organización,
+   * que hoy solo alcanza al STAFF (visión general del complejo en vivo).
    */
   private async deliver(
     organizationId: string,
     recipientUserIds: string[],
     opts: B2bNotifyOptions,
-    personalPush: boolean,
   ): Promise<B2bNotifyResult> {
     if (recipientUserIds.length === 0) {
       return { payloads: [], saved: [] };
@@ -176,17 +173,8 @@ export class B2bNotificationsService {
     );
     const saved = await this.notifications.save(rows);
     const payloads = saved.map((row) => this.toRowPayload(opts, row));
-    if (!personalPush) {
-      const staffUserIds = await this.getStaffUserIds(organizationId);
-      for (let i = 0; i < payloads.length; i++) {
-        if (staffUserIds.includes(saved[i].recipientUserId)) {
-          this.gateway.emitToUser(saved[i].recipientUserId, payloads[i]);
-        }
-      }
-    } else {
-      for (let i = 0; i < payloads.length; i++) {
-        this.gateway.emitToUser(saved[i].recipientUserId, payloads[i]);
-      }
+    for (let i = 0; i < payloads.length; i++) {
+      this.gateway.emitToUser(saved[i].recipientUserId, payloads[i]);
     }
     this.gateway.emitToOrganization(organizationId, this.toBasePayload(opts));
     return { payloads, saved };

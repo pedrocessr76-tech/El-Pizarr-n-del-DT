@@ -1,39 +1,23 @@
-const GUEST_SESSION_KEY = 'epdt_guest_session';
-const GUEST_TEAM_KEY = 'epdt_guest_team';
+const GUEST_TOKEN_KEY = 'epdt_guest_token';
 
 /**
- * Obtiene o crea un sessionId único para la sesión de invitado (se pierde al cerrar la pestaña).
+ * Token de identidad anónima (invitado), emitido por el SERVIDOR vía POST /auth/guest
+ * y guardado en sessionStorage. A diferencia del viejo `sessionId` (inventado por el
+ * cliente), este token viaja firmado y la autorización la decide el backend.
  */
-export function getOrCreateGuestSessionId(): string {
-  let id = sessionStorage.getItem(GUEST_SESSION_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem(GUEST_SESSION_KEY, id);
-    // Avisar a notificaciones para que (re)conecten con la sesión invitado recién creada.
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('epdt:guest-session', { detail: id }));
-    }
-  }
-  return id;
+export function getGuestToken(): string | null {
+  return sessionStorage.getItem(GUEST_TOKEN_KEY);
 }
 
-export function getGuestSessionId(): string | null {
-  return sessionStorage.getItem(GUEST_SESSION_KEY);
+export function setGuestToken(token: string): void {
+  sessionStorage.setItem(GUEST_TOKEN_KEY, token);
 }
 
-export function setGuestTeamId(teamId: string | null) {
-  if (teamId) {
-    sessionStorage.setItem(GUEST_TEAM_KEY, teamId);
-  } else {
-    sessionStorage.removeItem(GUEST_TEAM_KEY);
-  }
+/** Token efectivo para las peticiones: usuario logueado o invitado anónimo. */
+export function getAuthToken(): string | null {
+  return localStorage.getItem('token') || getGuestToken();
 }
 
-export function getGuestTeamId(): string | null {
-  return sessionStorage.getItem(GUEST_TEAM_KEY);
-}
-
-export function clearGuestSession() {
-  sessionStorage.removeItem(GUEST_SESSION_KEY);
-  sessionStorage.removeItem(GUEST_TEAM_KEY);
+export function clearGuestSession(): void {
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
 }

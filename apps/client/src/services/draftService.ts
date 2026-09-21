@@ -31,13 +31,13 @@ export const draftService = {
     return data;
   },
 
-  async createTeam(userId?: string, sessionId?: string): Promise<CreateTeamResponse> {
-    const { data } = await api.post<CreateTeamResponse>('/draft/team', { userId, sessionId });
+  async createTeam(): Promise<CreateTeamResponse> {
+    const { data } = await api.post<CreateTeamResponse>('/draft/team');
     return data;
   },
 
-  async cleanupSession(sessionId: string): Promise<void> {
-    await api.post('/draft/session/cleanup', { sessionId });
+  async cleanupData(): Promise<void> {
+    await api.delete('/draft/data');
   },
 
   async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<TeamActionResponse> {

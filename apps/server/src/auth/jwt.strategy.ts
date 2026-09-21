@@ -3,7 +3,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { requireJwtSecret } from '../config/env';
 import { UserEntity } from '../user/user.entity';
+import { GUEST_ID_PREFIX } from './auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -14,11 +16,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'el-pizarron-dt-secret-key',
+      secretOrKey: requireJwtSecret(),
     });
   }
 
   async validate(payload: { sub: string; username: string }) {
+    // Invitados: el sub lo generó el servidor (`guest-<uuid>`) y no existe fila
+    // en la tabla de usuarios; se acepta sin lookup contra la DB.
+    if (payload.sub.startsWith(GUEST_ID_PREFIX)) {
+      return { id: payload.sub, username: payload.username ?? 'Invitado' };
+    }
     const user = await this.userRepo.findOne({ where: { id: payload.sub } });
     if (!user) {
       throw new UnauthorizedException();

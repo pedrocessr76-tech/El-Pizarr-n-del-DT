@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Player } from '../../../../packages/shared/types/models';
 import { draftService } from '../services/draftService';
-import { useAuthStore } from '../store/useAuthStore';
 import { useDraftStore } from '../store/useDraftStore';
 import { PlayerMiniCard } from '../components/PlayerCard';
 import type { ActiveTab } from '../components/Navbar';
@@ -553,20 +552,11 @@ export const TeamBuilderPage: React.FC<TeamBuilderPageProps> = ({ onNavigate }) 
 
     void (async () => {
       try {
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser) {
-          const response = await draftService.createTeam(currentUser.id);
-          useDraftStore.getState().setTeamId(response.teamId);
-          // Vaciar el equipo persistido para poder armarlo de cero tras una partida.
-          await draftService.resetTeam(response.teamId);
-        } else {
-          const { getOrCreateGuestSessionId, setGuestTeamId } = await import('../utils/session');
-          const sessionId = getOrCreateGuestSessionId();
-          const response = await draftService.createTeam(undefined, sessionId);
-          useDraftStore.getState().setTeamId(response.teamId);
-          setGuestTeamId(response.teamId);
-          await draftService.resetTeam(response.teamId);
-        }
+        // La identidad (usuario O invitado) viene del token: el backend decide.
+        const response = await draftService.createTeam();
+        useDraftStore.getState().setTeamId(response.teamId);
+        // Vaciar el equipo persistido para poder armarlo de cero tras una partida.
+        await draftService.resetTeam(response.teamId);
       } catch (err) {
         console.error('Error creando equipo:', err);
       }

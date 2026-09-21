@@ -38,6 +38,35 @@ function makeService() {
   return { repo, jwt, service };
 }
 
+describe('AuthService - getGuestToken', () => {
+  it('emite un token anónimo con sub generado por el servidor (prefijo guest-)', async () => {
+    const { service } = makeService();
+
+    const result = await service.getGuestToken();
+
+    expect(result.user.username).toBe('Invitado');
+    expect(result.user.id.startsWith('guest-')).toBe(true);
+    expect(result.accessToken).toBeTruthy();
+  });
+
+  it('cada llamada genera una identidad anónima distinta', async () => {
+    const { service } = makeService();
+
+    const first = await service.getGuestToken();
+    const second = await service.getGuestToken();
+
+    expect(first.user.id).not.toBe(second.user.id);
+  });
+
+  it('el payload firmado usa el sub del invitado', async () => {
+    const { service, jwt } = makeService();
+
+    const result = await service.getGuestToken();
+    const payload = jwt.verify<{ sub: string; username: string }>(result.accessToken);
+    expect(payload).toMatchObject({ sub: result.user.id, username: 'Invitado' });
+  });
+});
+
 describe('AuthService - register', () => {
   it('crea el usuario y devuelve un accessToken', async () => {
     const { service, jwt } = makeService();

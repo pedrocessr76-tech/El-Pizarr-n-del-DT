@@ -7,9 +7,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable, Logger } from '@nestjs/common';
+import { requireJwtSecret } from '../config/env';
+import { wsOriginCheck } from '../config/cors';
 import type { NotificationPayload } from '../../../../packages/shared/types/models';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'el-pizarron-dt-secret-key';
+const JWT_SECRET = requireJwtSecret();
 
 /** Canal sobre el cual recibe notificaciones un receptor (usuario o sesión invitado). */
 const channelOf = (userId?: string, sessionId?: string): string | null =>
@@ -20,13 +22,13 @@ const channelOf = (userId?: string, sessionId?: string): string | null =>
  *
  * Handshake:
  *  - Usuario logueado: `auth.token` = JWT de la app (`{ sub, username }`).
- *  - Invitado: `query.sessionId` = id de sesión invitado generado en el cliente.
+ *  - Invitado: `auth.token` = JWT anónimo emitido por POST /auth/guest (`sub = guest-*`).
  *
- * Cada conexión se suscribe a su canal `notification:<userId|sessionId>` y recibe
- * el evento `'notification'`. Al desconectarse se limpia la suscripción (huérfanas).
+ * Cada conexión se suscribe a su canal `notification:<sub>` y recibe el evento
+ * `'notification'`. Al desconectarse se limpia la suscripción (huérfanas).
  */
 @Injectable()
-@WebSocketGateway({ cors: { origin: '*', credentials: true }, path: '/socket.io' })
+@WebSocketGateway({ cors: { origin: wsOriginCheck, credentials: true }, path: '/socket.io' })
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(NotificationsGateway.name);
 

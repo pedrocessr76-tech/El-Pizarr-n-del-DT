@@ -7,11 +7,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable, Logger } from '@nestjs/common';
+import { requireB2bJwtSecret } from '../../config/env';
+import { wsOriginCheck } from '../../config/cors';
 import type { NotificationPayload } from '../../../../../packages/shared/types/models';
 import { B2bJwtUser } from '../auth/b2b-auth.types';
+import { B2bAuthService } from '../auth/b2b-auth.service';
 import { B2bRoleCode } from '../entities/b2b.enums';
 
-const B2B_JWT_SECRET = process.env.B2B_JWT_SECRET || 'sistema-canchas-secret';
+const B2B_JWT_SECRET = requireB2bJwtSecret();
 
 /** Canales B2B (prefijados para no colisionar con los del juego). */
 export const b2bOrgChannel = (organizationId: string) => `b2b:org:${organizationId}`;
@@ -23,18 +26,22 @@ const isStaffRole = (role: string): boolean =>
 /**
  * Gateway de notificaciones WebSocket para Sistema Canchas (B2B).
  *
- * Handshake: `auth.token` = JWT de Sistema Canchas (`B2B_JWT_SECRET`) con
- * payload `{ userId, organizationId, email, roles }`.
+ * Handshake: `auth.token` = JWT de Sistema Canchas (`B2B_JWT_SECRET`). La
+ * identidad (roles y status) se REVALIDA contra la BD vía B2bAuthService en cada
+ * conexión, por lo que un usuario desactivado o degradado queda aislado de
+ * inmediato.
  *
- * - Staff (OWNER/ADMIN/OPERATOR): se suscribe al canal de su organización
- *   (`b2b:org:<organizationId>`) y a su canal personal (`b2b:user:<userId>`).
- * - Cliente (CLIENT): se suscribe solo a su canal personal.
+ * Suscripciones:
+ *  - Staff (OWNER/ADMIN/OPERATOR): canal de su organización (`b2b:org:<org>`)
+ *    + canal personal (`b2b:user:<userId>`).
+ *  - Cliente (CLIENT): SOLO su canal personal. Nunca entra al canal de la org:
+ *    así no recibe reservas/eventos de terceros (aislamiento por identidad).
  *
  * Convive en el mismo servidor socket.io que el gateway del juego; los canales
  * `b2b:*` están prefijados para no colisionar con `notification:*`.
  */
 @Injectable()
-@WebSocketGateway({ cors: { origin: '*', credentials: true }, path: '/socket.io' })
+@WebSocketGateway({ cors: { origin: wsOriginCheck, credentials: true }, path: '/socket.io' })
 export class B2bNotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(B2bNotificationsGateway.name);
 
@@ -43,7 +50,10 @@ export class B2bNotificationsGateway implements OnGatewayConnection, OnGatewayDi
 
   private readonly online = new Map<string, { userId: string; organizationId: string }>();
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly authService: B2bAuthService,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     const token = client.handshake.auth?.token;
@@ -53,29 +63,36 @@ export class B2bNotificationsGateway implements OnGatewayConnection, OnGatewayDi
       return;
     }
 
-    let user: B2bJwtUser;
+    let claims: B2bJwtUser;
     try {
-      user = await this.jwtService.verifyAsync<B2bJwtUser>(token, {
+      claims = await this.jwtService.verifyAsync<B2bJwtUser>(token, {
         secret: B2B_JWT_SECRET,
       });
-      if (!user?.userId || !user?.organizationId || !Array.isArray(user.roles)) {
-        throw new Error('payload B2B incompleto');
-      }
     } catch {
       this.logger.warn(`B2B WS ${client.id}: token JWT inválido, rechazado.`);
       client.disconnect();
       return;
     }
 
+    // Revalidación contra la BD: roles/status frescos, token revocado de inmediato.
+    let user: B2bJwtUser;
+    try {
+      user = await this.authService.resolveUserFromToken(claims);
+    } catch {
+      this.logger.warn(`B2B WS ${client.id}: sesión ya no es válida, rechazado.`);
+      client.disconnect();
+      return;
+    }
+
+    const isStaff = user.roles.some(isStaffRole);
     await client.join(b2bUserChannel(user.userId));
-    // Todo miembro (staff o cliente) ingresa además al canal de la organización:
-    // por ahí llega la copia base sin id (dedupe por contenido en el cliente) y
-    // el staff recibe su copia id'd por su canal personal.
-    await client.join(b2bOrgChannel(user.organizationId));
+    if (isStaff) {
+      await client.join(b2bOrgChannel(user.organizationId));
+    }
 
     this.online.set(client.id, { userId: user.userId, organizationId: user.organizationId });
     this.logger.log(
-      `B2B WS conectado → ${b2bUserChannel(user.userId)}${user.roles.some(isStaffRole) ? `, ${b2bOrgChannel(user.organizationId)}` : ''} (${client.id})`,
+      `B2B WS conectado → ${b2bUserChannel(user.userId)}${isStaff ? `, ${b2bOrgChannel(user.organizationId)}` : ''} (${client.id})`,
     );
   }
 

@@ -9,7 +9,8 @@ import { HomePage } from './pages/HomePage';
 import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { CatalogHistoryPage } from './pages/CatalogHistoryPage';
 import { TournamentBracketPage } from './pages/TournamentBracketPage';
-import { getGuestSessionId } from './utils/session';
+import { ensureGuestToken } from './services/authService';
+import { getGuestToken } from './utils/session';
 import { B2bApp } from './pages/B2bApp';
 import { PwaOverlays } from './components/pwa/PwaOverlays';
 import { MobileTopBar } from './components/layout/MobileTopBar';
@@ -49,13 +50,24 @@ function App() {
   const toasts = useNotificationStore((s) => s.toasts);
   const { user, logout } = useAuthStore();
 
-  // Al cerrar la página/sesión de invitado, limpiar datos en backend via beacon
+  // Identidad anónima del servidor: garantiza un guest-token firmado desde el arranque.
+  useEffect(() => {
+    void ensureGuestToken().catch((err) => console.warn('No se pudo crear el token de invitado:', err));
+  }, []);
+
+  // Al cerrar la página con identidad de INVITADO, limpiar sus datos en backend.
+  // fetch keepalive permite el header Authorization que sendBeacon no soporta.
   useEffect(() => {
     const cleanup = () => {
-      const sessionId = getGuestSessionId();
-      if (!sessionId) return;
-      const payload = JSON.stringify({ sessionId });
-      navigator.sendBeacon('/draft/session/cleanup', new Blob([payload], { type: 'application/json' }));
+      if (localStorage.getItem('token')) return;
+      const guestToken = getGuestToken();
+      if (!guestToken) return;
+      const base = (import.meta.env.VITE_API_URL as string | undefined) || '';
+      fetch(`${base}/draft/data`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${guestToken}` },
+        keepalive: true,
+      }).catch(() => {});
     };
     window.addEventListener('pagehide', cleanup);
     return () => window.removeEventListener('pagehide', cleanup);

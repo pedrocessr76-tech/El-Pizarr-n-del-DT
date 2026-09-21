@@ -140,21 +140,28 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     }
   }
 
-  function seedTeam(repos: ReturnType<typeof makeRepos>, teamId: string) {
-    repos.teams.push({ id: teamId, name: 'Mi Equipo', isReal: false } as TeamEntity);
+  function seedTeam(repos: ReturnType<typeof makeRepos>, teamId: string, userId = 'user-1') {
+    repos.teams.push({ id: teamId, name: 'Mi Equipo', isReal: false, userId } as TeamEntity);
   }
 
   it('rechaza un equipo inexistente', async () => {
     const repos = makeRepos([makePlayerEntity({ id: 'p1' })]);
 
-    await expect(repos.service.addPlayerToTeam('no-existe', 'p1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(repos.service.addPlayerToTeam('no-existe', 'p1', true, 'user-1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rechaza operar sobre el equipo de OTRO usuario (IDOR → 404 genérico)', async () => {
+    const repos = makeRepos([makePlayerEntity({ id: 'p1' })]);
+    seedTeam(repos, 'team-1', 'user-otro');
+
+    await expect(repos.service.addPlayerToTeam('team-1', 'p1', true, 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza un jugador inexistente', async () => {
     const repos = makeRepos([]);
     seedTeam(repos, 'team-1');
 
-    await expect(repos.service.addPlayerToTeam('team-1', 'no-existe')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(repos.service.addPlayerToTeam('team-1', 'no-existe', true, 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza un jugador que ya está en el equipo', async () => {
@@ -162,7 +169,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     repos.teamPlayers.push({ teamId: 'team-1', playerId: 'p1', isStarter: true } as TeamPlayerEntity);
 
-    await expect(repos.service.addPlayerToTeam('team-1', 'p1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(repos.service.addPlayerToTeam('team-1', 'p1', true, 'user-1')).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rechaza superar los 18 jugadores de la plantilla', async () => {
@@ -170,7 +177,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     seedRoster(repos.teamPlayers, 'team-1', 11, 7);
 
-    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo')).rejects.toThrow(/18 jugadores/);
+    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo', true, 'user-1')).rejects.toThrow(/18 jugadores/);
   });
 
   it('rechaza un doceavo titular', async () => {
@@ -178,7 +185,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     seedRoster(repos.teamPlayers, 'team-1', 11, 0);
 
-    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo', true)).rejects.toThrow(/11 jugadores titulares/);
+    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo', true, 'user-1')).rejects.toThrow(/11 jugadores titulares/);
   });
 
   it('rechaza un octavo suplente', async () => {
@@ -186,7 +193,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     seedRoster(repos.teamPlayers, 'team-1', 0, 7);
 
-    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo', false)).rejects.toThrow(/7 jugadores suplentes/);
+    await expect(repos.service.addPlayerToTeam('team-1', 'nuevo', false, 'user-1')).rejects.toThrow(/7 jugadores suplentes/);
   });
 
   it('agrega un titular asignando slotIndex según los titulares existentes', async () => {
@@ -194,7 +201,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     seedRoster(repos.teamPlayers, 'team-1', 3, 0);
 
-    const result = await repos.service.addPlayerToTeam('team-1', 'nuevo', true);
+    const result = await repos.service.addPlayerToTeam('team-1', 'nuevo', true, 'user-1');
 
     expect(result.success).toBe(true);
     const added = repos.teamPlayers.find((tp) => tp.playerId === 'nuevo');
@@ -208,7 +215,7 @@ describe('DraftService - addPlayerToTeam (tope de plantilla)', () => {
     seedTeam(repos, 'team-1');
     seedRoster(repos.teamPlayers, 'team-1', 11, 2);
 
-    const result = await repos.service.addPlayerToTeam('team-1', 'nuevo', false);
+    const result = await repos.service.addPlayerToTeam('team-1', 'nuevo', false, 'user-1');
 
     expect(result.success).toBe(true);
     expect(repos.teamPlayers.find((tp) => tp.playerId === 'nuevo')?.slotIndex).toBe(2);
@@ -303,43 +310,19 @@ describe('DraftService - getPack (franjas de rating)', () => {
     expect(new Set(pack.players.map((player) => player.id)).size).toBe(5);
   });
 });
-describe('DraftService - createTeam (sesión invitado vs. usuario)', () => {
-  it('crea un equipo nuevo para una sesión de invitado', async () => {
+describe('DraftService - createTeam (identidad del token)', () => {
+  it('crea un equipo nuevo para el userId del token', async () => {
     const repos = makeRepos();
 
-    const result = await repos.service.createTeam(undefined, 'session-1');
+    const result = await repos.service.createTeam('user-1');
 
     expect(result.teamId).toBeTruthy();
     const created = repos.teams.find((team) => team.id === result.teamId);
-    expect(created?.sessionId).toBe('session-1');
+    expect(created?.userId).toBe('user-1');
     expect(created?.isReal).toBe(false);
-    expect(created?.userId).toBeUndefined();
   });
 
-  it('reutiliza el equipo ya creado por la misma sesión de invitado', async () => {
-    const repos = makeRepos();
-
-    const first = await repos.service.createTeam(undefined, 'session-1');
-    const second = await repos.service.createTeam(undefined, 'session-1');
-
-    expect(second.teamId).toBe(first.teamId);
-    expect(repos.teams).toHaveLength(1);
-  });
-
-  it('adopta el equipo de invitado cuando el usuario se loguea en mitad de la sesión', async () => {
-    const repos = makeRepos();
-    const guest = await repos.service.createTeam(undefined, 'session-1');
-
-    const adopted = await repos.service.createTeam('user-1', 'session-1');
-
-    expect(adopted.teamId).toBe(guest.teamId);
-    const team = repos.teams.find((item) => item.id === guest.teamId);
-    expect(team?.userId).toBe('user-1');
-    expect(team?.sessionId).toBeNull();
-    expect(repos.teams).toHaveLength(1);
-  });
-
-  it('reutiliza el último equipo del usuario logueado en lugar de crear otro', async () => {
+  it('reutiliza el último equipo del mismo userId en lugar de crear otro', async () => {
     const repos = makeRepos();
 
     const first = await repos.service.createTeam('user-1');
@@ -347,6 +330,16 @@ describe('DraftService - createTeam (sesión invitado vs. usuario)', () => {
 
     expect(second.teamId).toBe(first.teamId);
     expect(repos.teams).toHaveLength(1);
+  });
+
+  it('no reutiliza equipos de otros usuarios (aislamiento por identidad)', async () => {
+    const repos = makeRepos();
+    repos.teams.push({ id: 'team-otro', name: 'Mi Equipo', isReal: false, userId: 'user-2' } as TeamEntity);
+
+    const result = await repos.service.createTeam('user-1');
+
+    expect(result.teamId).not.toBe('team-otro');
+    expect(repos.teams.find((team) => team.id === result.teamId)?.userId).toBe('user-1');
   });
 
   it('el equipo del usuario nunca se marca como rival IA real', async () => {
@@ -358,38 +351,55 @@ describe('DraftService - createTeam (sesión invitado vs. usuario)', () => {
   });
 });
 
-describe('DraftService - removePlayerFromTeam y resetTeam', () => {
-  it('quita un jugador del equipo', async () => {
+describe('DraftService - removePlayerFromTeam y resetTeam (ownership)', () => {
+  it('quita un jugador del equipo propio', async () => {
     const repos = makeRepos();
+    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false, userId: 'user-1' } as TeamEntity);
     repos.teamPlayers.push({ teamId: 'team-1', playerId: 'p1', isStarter: true } as TeamPlayerEntity);
 
-    const result = await repos.service.removePlayerFromTeam('team-1', 'p1');
+    const result = await repos.service.removePlayerFromTeam('team-1', 'p1', 'user-1');
 
     expect(result.success).toBe(true);
     expect(repos.teamPlayers).toHaveLength(0);
+  });
+
+  it('rechaza quitar jugadores de un equipo ajeno (IDOR → 404 genérico)', async () => {
+    const repos = makeRepos();
+    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false, userId: 'user-otro' } as TeamEntity);
+    repos.teamPlayers.push({ teamId: 'team-1', playerId: 'p1', isStarter: true } as TeamPlayerEntity);
+
+    await expect(repos.service.removePlayerFromTeam('team-1', 'p1', 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza quitar un jugador que no está en el equipo', async () => {
     const repos = makeRepos();
+    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false, userId: 'user-1' } as TeamEntity);
 
-    await expect(repos.service.removePlayerFromTeam('team-1', 'p1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(repos.service.removePlayerFromTeam('team-1', 'p1', 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('resetea el equipo vaciando titulares y suplentes', async () => {
+  it('resetea el equipo propio vaciando titulares y suplentes', async () => {
     const repos = makeRepos();
-    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false } as TeamEntity);
+    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false, userId: 'user-1' } as TeamEntity);
     repos.teamPlayers.push({ teamId: 'team-1', playerId: 'p1', isStarter: true } as TeamPlayerEntity);
     repos.teamPlayers.push({ teamId: 'team-1', playerId: 'p2', isStarter: false } as TeamPlayerEntity);
 
-    const result = await repos.service.resetTeam('team-1');
+    const result = await repos.service.resetTeam('team-1', 'user-1');
 
     expect(result.success).toBe(true);
     expect(repos.teamPlayers).toHaveLength(0);
+  });
+
+  it('rechaza resetear un equipo ajeno (IDOR → 404 genérico)', async () => {
+    const repos = makeRepos();
+    repos.teams.push({ id: 'team-1', name: 'Mi Equipo', isReal: false, userId: 'user-otro' } as TeamEntity);
+
+    await expect(repos.service.resetTeam('team-1', 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza resetear un equipo inexistente', async () => {
     const repos = makeRepos();
 
-    await expect(repos.service.resetTeam('no-existe')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(repos.service.resetTeam('no-existe', 'user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

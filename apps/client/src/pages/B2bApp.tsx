@@ -60,10 +60,19 @@ function formatRole(role: B2bRole) {
   return roleLabels[role];
 }
 
+function resolveRole(user: { roles?: string[] } | null): B2bRole {
+  if (!user) return 'CLIENT';
+  return (user.roles ?? []).some((r) => r.toUpperCase() === 'CLIENT') ? 'CLIENT' : 'ADMIN';
+}
+
 export function B2bApp() {
   useB2bNotificationSocket();
-  const [view, setView] = useState<B2bView>('login');
-  const [role, setRole] = useState<B2bRole>('CLIENT');
+  const [view, setView] = useState<B2bView>(() => {
+    const stored = useB2bStore.getState().user;
+    if (!stored) return 'login';
+    return resolveRole(stored) === 'CLIENT' ? 'portal' : 'dashboard';
+  });
+  const [role, setRole] = useState<B2bRole>(() => resolveRole(useB2bStore.getState().user));
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const login = useB2bStore((state) => state.login);
@@ -86,10 +95,9 @@ export function B2bApp() {
   const enterB2b = async (email: string, password: string) => {
     const authenticated = await login(email, password);
     if (!authenticated) return;
-    const roles = useB2bStore.getState().user?.roles.map((item) => item.toUpperCase()) ?? [];
-    const isClient = roles.includes('CLIENT');
-    setRole(isClient ? 'CLIENT' : 'ADMIN');
-    navigate(isClient ? 'portal' : 'dashboard');
+    const nextRole = resolveRole(useB2bStore.getState().user);
+    setRole(nextRole);
+    navigate(nextRole === 'CLIENT' ? 'portal' : 'dashboard');
   };
 
   const registerClientAccount = async (input: { email: string; fullName: string; password: string }) => {
@@ -124,7 +132,7 @@ export function B2bApp() {
         variant="canchas"
         brand="Sistema Canchas"
         title={orgName || 'Sistema Canchas'}
-        actions={[{ icon: 'logout', label: 'Salir', onClick: () => navigate('login') }]}
+        actions={[{ icon: 'logout', label: 'Salir', onClick: () => { useB2bStore.getState().logout(); navigate('login'); } }]}
       />
       <aside className={`b2b-sidebar ${mobileMenu ? 'is-open' : ''}`}>
         <div className="b2b-brand">

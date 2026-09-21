@@ -59,6 +59,11 @@ services:
       - B2B_DB_PASSWORD=canchas
       - B2B_DB_NAME=sistema_canchas
       - B2B_DB_SYNCHRONIZE=true
+      # Secrets JWT obligatorios (hallazgo P0 del informe): se toman del .env del
+      # repo (docker compose la lee automáticamente). Sin ellos el contenedor
+      # falla con un error claro en lugar de firmar tokens con una clave pública.
+      - JWT_SECRET=${JWT_SECRET:?Definí JWT_SECRET en .env (más de 32 caracteres)}
+      - B2B_JWT_SECRET=${B2B_JWT_SECRET:?Definí B2B_JWT_SECRET en .env (más de 32 caracteres)}
       - B2B_SEED=true
       - B2B_SEED_EMAIL=admin@lacancha.com.ar
       - B2B_SEED_PASSWORD=canchas-demo

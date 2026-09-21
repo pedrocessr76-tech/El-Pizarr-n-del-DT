@@ -34,8 +34,8 @@ export interface HistoryTournamentItem {
 }
 
 export const matchService = {
-  async createTournament(userTeamId: string, userId?: string, sessionId?: string): Promise<CreateTournamentResponse> {
-    const { data } = await api.post<CreateTournamentResponse>('/match/tournament/create', { userTeamId, userId, sessionId });
+  async createTournament(userTeamId: string): Promise<CreateTournamentResponse> {
+    const { data } = await api.post<CreateTournamentResponse>('/match/tournament/create', { userTeamId });
     return data;
   },
 
@@ -59,11 +59,8 @@ export const matchService = {
     return data;
   },
 
-  async getHistory(userId?: string, sessionId?: string): Promise<{ tournaments: HistoryTournamentItem[] }> {
-    const params: Record<string, string> = {};
-    if (userId) params.userId = userId;
-    if (sessionId) params.sessionId = sessionId;
-    const { data } = await api.get<{ tournaments: HistoryTournamentItem[] }>('/match/history', { params });
+  async getHistory(): Promise<{ tournaments: HistoryTournamentItem[] }> {
+    const { data } = await api.get<{ tournaments: HistoryTournamentItem[] }>('/match/history');
     return data;
   },
 

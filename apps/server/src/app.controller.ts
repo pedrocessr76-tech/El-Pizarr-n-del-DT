@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, NotFoundException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -34,6 +34,12 @@ export class AppController {
   @Get('debug/positions')
   @ApiOperation({ summary: 'Verificar posiciones en la base de datos' })
   async getPositions() {
+    // Endpoint de depuración: inhabilitado en producción (hallazgo MEDIO del informe).
+    // Swagger (/docs) se apaga en main.ts; esta ruta se defiende acá para que
+    // no exista un contrato público que liste las posiciones de la base.
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotFoundException();
+    }
     const positions = await this.appService.getPlayerPositions();
     return {
       message: 'Posiciones actuales en la base de datos',

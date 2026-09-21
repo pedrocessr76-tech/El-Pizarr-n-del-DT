@@ -1,5 +1,6 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import { B2bJwtGuard } from '../auth/b2b-jwt.guard';
 import { B2bRolesGuard } from '../auth/b2b-roles.guard';
 import { B2bRoles, CurrentB2bUser } from '../auth/b2b-auth.decorators';
@@ -8,8 +9,17 @@ import { B2bRoleCode } from '../entities/b2b.enums';
 import { B2bNotificationsService } from './b2b-notifications.service';
 
 class AnnouncementDto {
-  @ApiProperty({ example: 'Torneo relámpago este sábado' }) title!: string;
-  @ApiProperty({ example: 'Inscribite en recepción. Cupos limitados.' }) body!: string;
+  @ApiProperty({ example: 'Torneo relámpago este sábado' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  title!: string;
+
+  @ApiProperty({ example: 'Inscribite en recepción. Cupos limitados.' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  body!: string;
 }
 
 @Controller('api/v1/notifications')

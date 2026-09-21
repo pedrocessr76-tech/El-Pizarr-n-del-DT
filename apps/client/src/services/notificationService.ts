@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNotificationStore } from '../store/useNotificationStore';
 import type { NotificationPayload } from '../../../../packages/shared/types/models';
 import { useAuthStore } from '../store/useAuthStore';
-import { getGuestSessionId } from '../utils/session';
+import { getGuestToken } from '../utils/session';
 
 const API_URL = import.meta.env.VITE_API_URL as string | undefined;
 const WS_URL = import.meta.env.VITE_WS_URL as string | undefined;
@@ -32,8 +32,7 @@ const SOCKET_URL = resolveSocketUrl();
 /**
  * Hook que suscribe a notificaciones en tiempo real vía WebSocket.
  *
- * - Usuario logueado: envía el JWT como auth.token.
- * - Invitado: envía sessionId por query.
+ * Envía el token efectivo (JWT de usuario O de invitado) como auth.token.
  *
  * Debe montarse una única vez (ideal en App root). Recibe el evento
  * notification con un NotificationPayload y lo ingresa al store.
@@ -41,34 +40,28 @@ const SOCKET_URL = resolveSocketUrl();
 export function useNotificationSocket() {
     const addNotification = useNotificationStore((s) => s.addNotification);
     const token = useAuthStore((s) => s.token);
-    const [guestSessionRev, setGuestSessionRev] = useState(0);
+    const [guestTokenRev, setGuestTokenRev] = useState(0);
 
     useEffect(() => {
-        const onGuestSession = () => setGuestSessionRev((r) => r + 1);
-        window.addEventListener('epdt:guest-session', onGuestSession);
-        return () => window.removeEventListener('epdt:guest-session', onGuestSession);
+        const onGuestToken = () => setGuestTokenRev((r) => r + 1);
+        window.addEventListener('epdt:guest-token', onGuestToken);
+        return () => window.removeEventListener('epdt:guest-token', onGuestToken);
     }, []);
 
     useEffect(() => {
         if (!SOCKET_URL) return;
 
-        const currentToken = useAuthStore.getState().token;
-        const sessionId = getGuestSessionId();
+        const currentToken = useAuthStore.getState().token || getGuestToken();
 
-        if (!currentToken && !sessionId) return;
+        if (!currentToken) return;
 
         const wsOptions: Record<string, any> = {
             path: '/socket.io',
             transports: ['polling', 'websocket'],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            auth: { token: currentToken },
         };
-
-        if (currentToken) {
-            wsOptions.auth = { token: currentToken };
-        } else if (sessionId) {
-            wsOptions.query = { sessionId };
-        }
 
         const s = io(SOCKET_URL, wsOptions) as Socket;
 
@@ -90,5 +83,5 @@ export function useNotificationSocket() {
         return () => {
             s.disconnect();
         };
-    }, [addNotification, token, guestSessionRev]);
+    }, [addNotification, token, guestTokenRev]);
 }

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PlayerCard } from '../components/PlayerCard';
 import { playerService } from '../services/playerService';
 import { matchService } from '../services/matchService';
-import { useAuthStore } from '../store/useAuthStore';
 import type { Player, Position, PlayerMatchStats } from '../../../../packages/shared/types/models';
 import type { HistoryTournamentItem } from '../services/matchService';
 
@@ -42,7 +41,6 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
   };
 
   // Estado de historial real
-  const { user } = useAuthStore();
   const [history, setHistory] = useState<HistoryTournamentItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -78,13 +76,9 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
     const loadHistory = async () => {
       setHistoryLoading(true);
       setHistoryError(null);
-      if (!user) {
-        setHistory([]);
-        setHistoryLoading(false);
-        return;
-      }
       try {
-        const data = await matchService.getHistory(user.id);
+        // La identidad (usuario O invitado) viaja en el token: el backend decide de quién es el historial.
+        const data = await matchService.getHistory();
         setHistory(data.tournaments);
       } catch (err: any) {
         setHistoryError(err.response?.data?.message || 'Error al cargar el historial.');
@@ -93,7 +87,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
       }
     };
     loadHistory();
-  }, [activeView, user]);
+  }, [activeView]);
 
   return (
     <div className="bg-background text-on-background min-h-screen pb-xl flex flex-col relative selection:bg-primary/30 selection:text-primary-fixed">
@@ -134,23 +128,8 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
       {/* Screen 3: Match History — dinámico desde backend */}
       {activeView === 'history' && (
         <main className="max-w-5xl mx-auto w-full px-gutter mt-lg flex-1">
-          {/* Sin sesión iniciada */}
-          {!user && (
-            <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow p-xl text-center">
-              <div className="flex flex-col items-center gap-4 py-12">
-                <span className="material-symbols-outlined text-[48px] text-on-surface-variant">history</span>
-                <p className="font-headline-sm text-headline-sm text-on-surface-variant">
-                  Inicia sesión para guardar tu historial de partidas
-                </p>
-                <p className="font-body-md text-body-md text-on-surface-variant/70">
-                  Los torneos que juegues se guardarán automáticamente en tu perfil.
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Cargando historial */}
-          {user && historyLoading && (
+          {historyLoading && (
             <div className="flex items-center justify-center py-16">
               <div className="flex flex-col items-center gap-4 text-on-surface-variant">
                 <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -160,7 +139,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
           )}
 
           {/* Error */}
-          {user && !historyLoading && historyError && (
+          {!historyLoading && historyError && (
             <div className="flex items-center justify-center py-16">
               <div className="text-center text-error">
                 <span className="material-symbols-outlined text-[48px] mb-2">error</span>
@@ -170,7 +149,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
           )}
 
           {/* Tabla de torneos */}
-          {user && !historyLoading && !historyError && (
+          {!historyLoading && !historyError && (
             <div className="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden deep-field-shadow">
               <div className="hidden md:grid grid-cols-6 gap-4 p-md bg-surface-container-high/50 border-b border-white/5 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
                 <div className="col-span-1">Fecha</div>
@@ -181,7 +160,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
               <div className="flex flex-col">
                 {history.length === 0 ? (
                   <div className="p-md text-center text-on-surface-variant font-body-md text-body-md py-8">
-                    {user ? 'Aún no has jugado ningún torneo.' : ''}
+                    Aún no has jugado ningún torneo.
                   </div>
                 ) : (
                   history.map((t) => (

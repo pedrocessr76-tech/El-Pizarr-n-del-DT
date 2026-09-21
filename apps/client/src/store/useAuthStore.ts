@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { authService, type AuthUser } from '../services/authService';
-import { draftService } from '../services/draftService';
 import { useDraftStore } from './useDraftStore';
-import { getGuestSessionId, clearGuestSession } from '../utils/session';
+import { clearGuestSession } from '../utils/session';
 
 interface AuthState {
   user: AuthUser | null;
@@ -32,14 +31,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       localStorage.setItem('user', JSON.stringify(response.user));
       set({ user: response.user, token: response.accessToken, isLoading: false });
 
-      // Si había una sesión invitado, adoptar su equipo
-      const sessionId = getGuestSessionId();
-      if (sessionId) {
-        try {
-          const { teamId } = await draftService.createTeam(response.user.id, sessionId);
-          useDraftStore.getState().setTeamId(teamId);
-        } catch { /* ignorar */ }
-        clearGuestSession();
+      // Si había un token invitado, descartarlo: la identidad nueva es la del usuario.
+      const hadGuest = Boolean(sessionStorage.getItem('epdt_guest_token'));
+      clearGuestSession();
+      if (hadGuest) {
+        useDraftStore.getState().setTeamId(null);
       }
 
       return true;
@@ -58,14 +54,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       localStorage.setItem('user', JSON.stringify(response.user));
       set({ user: response.user, token: response.accessToken, isLoading: false });
 
-      // Si había una sesión invitado, adoptar su equipo
-      const sessionId = getGuestSessionId();
-      if (sessionId) {
-        try {
-          const { teamId } = await draftService.createTeam(response.user.id, sessionId);
-          useDraftStore.getState().setTeamId(teamId);
-        } catch { /* ignorar */ }
-        clearGuestSession();
+      // Si había un token invitado, descartarlo: la identidad nueva es la del usuario.
+      const hadGuest = Boolean(sessionStorage.getItem('epdt_guest_token'));
+      clearGuestSession();
+      if (hadGuest) {
+        useDraftStore.getState().setTeamId(null);
       }
 
       return true;
@@ -77,12 +70,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    // Limpiar datos de sesión invitado (best-effort)
-    const sessionId = getGuestSessionId();
-    if (sessionId) {
-      try { await draftService.cleanupSession(sessionId); } catch { /* ignorar */ }
-    }
-    // Limpiar localStorage y stores
+    // No se borran datos del servidor al salir: la identidad queda como está. Los
+    // equipos de INVITADOS se limpian con DELETE /draft/data al cerrar la pestaña
+    // (pagehide), nunca con el token de un usuario logueado.
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     clearGuestSession();

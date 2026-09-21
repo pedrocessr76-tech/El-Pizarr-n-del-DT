@@ -135,6 +135,23 @@ describe('B2bNotificationsService', () => {
     expect(gateway.emitToOrganization).toHaveBeenCalledWith(org, expect.objectContaining({ type: 'b2b_org_announcement' }));
   });
 
+  it('un CLIENTE destinatario recibe su copia con id por su canal personal (aislamiento por identidad)', async () => {
+    const { service, gateway } = setup([
+      { userId: 'staff1', organizationId: org, roleId: B2bRoleCode.OWNER },
+      { userId: 'client1', organizationId: org, roleId: B2bRoleCode.CLIENT },
+    ]);
+    const payloads = await service.broadcastToOrganization(
+      org,
+      { ...opts, type: 'b2b_org_announcement', severity: 'info', title: 'Aviso', body: 'Cambio de horario' },
+      'staff1', // el actor es staff: el cliente SÍ es destinatario
+    );
+
+    const clientPayload = payloads.payloads.find((p) => p.id);
+    expect(payloads.saved.length).toBe(1);
+    expect(payloads.saved[0].recipientUserId).toBe('client1');
+    expect(gateway.emitToUser).toHaveBeenCalledWith('client1', expect.objectContaining({ id: clientPayload?.id }));
+  });
+
   it('listForUser devuelve el historial y el conteo de no leídas', async () => {
     const { service } = setup([]);
     const result = await service.listForUser({ userId: 'staff1', organizationId: org, email: 'a@b.c', roles: [B2bRoleCode.OWNER] });

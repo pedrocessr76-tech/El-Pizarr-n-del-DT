@@ -130,49 +130,32 @@ export class DraftService {
     };
   }
 
-  async createTeam(userId?: string, sessionId?: string): Promise<{ teamId: string }> {
-    // 1) Sesión invitado: reusar equipo existente de esta sesión
-    if (sessionId && !userId) {
-      const existing = await this.teamRepo.findOne({ where: { sessionId } });
-      if (existing) return { teamId: existing.id };
-    }
+  async createTeam(userId: string): Promise<{ teamId: string }> {
+    // La identidad (logueado o invitado) viene del token: reusar su último equipo
+    // o crear uno nuevo bajo su userId. Nunca se acepta identidad del cliente.
+    const existing = await this.teamRepo.findOne({
+      where: { userId, isReal: false },
+      order: { createdAt: 'DESC' },
+    });
+    if (existing) return { teamId: existing.id };
 
-    // 2) Usuario logueado adopta equipo invitado (login en mitad de sesión)
-    if (userId && sessionId) {
-      const sessionTeam = await this.teamRepo.findOne({ where: { sessionId } });
-      if (sessionTeam) {
-        sessionTeam.userId = userId;
-        sessionTeam.sessionId = null;
-        await this.teamRepo.save(sessionTeam);
-        return { teamId: sessionTeam.id };
-      }
-    }
-
-    // 3) Usuario logueado: reusar su último equipo (evita "más de un mi equipo")
-    if (userId) {
-      const existing = await this.teamRepo.findOne({ where: { userId, isReal: false }, order: { createdAt: 'DESC' } });
-      if (existing) return { teamId: existing.id };
-    }
-
-    // 4) Crear equipo nuevo
     const team = new TeamEntity();
     team.id = crypto.randomUUID();
     team.name = 'Mi Equipo';
     team.userId = userId;
-    team.sessionId = sessionId;
     team.isReal = false; // El equipo del usuario nunca es un oponente IA real
     await this.teamRepo.save(team);
     return { teamId: team.id };
   }
 
-  async cleanupSession(sessionId: string): Promise<{ success: boolean; cleaned: number }> {
-    const teams = await this.teamRepo.find({ where: { sessionId } });
-    const teamIds = teams.map(t => t.id);
+  async cleanupUserData(userId: string): Promise<{ success: boolean; cleaned: number }> {
+    const teams = await this.teamRepo.find({ where: { userId } });
+    const teamIds = teams.map((t) => t.id);
     if (teamIds.length === 0) return { success: true, cleaned: 0 };
 
-    // Torneos del invitado
-    const tournaments = await this.tournamentRepo.find({ where: { userTeamId: In(teamIds) } });
-    const tournamentIds = tournaments.map(t => t.id);
+    // Torneos de la identidad
+    const tournaments = await this.tournamentRepo.find({ where: { userId } });
+    const tournamentIds = tournaments.map((t) => t.id);
     if (tournamentIds.length) {
       await this.matchRepo.delete({ tournamentId: In(tournamentIds) });
       await this.tournamentRepo.delete(tournamentIds);
@@ -185,9 +168,15 @@ export class DraftService {
     return { success: true, cleaned: teamIds.length };
   }
 
-  async addPlayerToTeam(teamId: string, playerId: string, isStarter = true): Promise<{ success: boolean; message: string }> {
+  async addPlayerToTeam(
+    teamId: string,
+    playerId: string,
+    isStarter = true,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const team = await this.teamRepo.findOne({ where: { id: teamId } });
-    if (!team) {
+    // El equipo debe pertenecer a la identidad del token (404 genérico para no revelar existencia).
+    if (!team || team.userId !== userId) {
       throw new NotFoundException('Equipo no encontrado.');
     }
 
@@ -229,7 +218,12 @@ export class DraftService {
     return { success: true, message: isStarter ? 'Jugador agregado al equipo.' : 'Suplente agregado al equipo.' };
   }
 
-  async removePlayerFromTeam(teamId: string, playerId: string): Promise<{ success: boolean; message: string }> {
+  async removePlayerFromTeam(teamId: string, playerId: string, userId: string): Promise<{ success: boolean; message: string }> {
+    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    if (!team || team.userId !== userId) {
+      throw new NotFoundException('Equipo no encontrado.');
+    }
+
     const tp = await this.teamPlayerRepo.findOne({ where: { teamId, playerId } });
     if (!tp) {
       throw new NotFoundException('El jugador no está en el equipo.');
@@ -239,9 +233,9 @@ export class DraftService {
     return { success: true, message: 'Jugador eliminado del equipo.' };
   }
 
-  async resetTeam(teamId: string): Promise<{ success: boolean; message: string }> {
+  async resetTeam(teamId: string, userId: string): Promise<{ success: boolean; message: string }> {
     const team = await this.teamRepo.findOne({ where: { id: teamId } });
-    if (!team) {
+    if (!team || team.userId !== userId) {
       throw new NotFoundException('Equipo no encontrado.');
     }
 

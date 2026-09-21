@@ -9,6 +9,7 @@ import { B2bCourtEntity } from '../entities/court.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
+import { B2bJwtUser } from './b2b-auth.types';
 
 const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OWNER]: 'Propietario',
@@ -85,5 +86,39 @@ export class B2bAuthService {
   private issueToken(user: B2bUserEntity, roles: B2bRoleCode[]) {
     const payload = { userId: user.id, organizationId: user.organizationId, email: user.email, roles };
     return { accessToken: this.jwt.sign(payload), user: payload };
+  }
+
+  /**
+   * Revalida una identidad B2B contra la BD (ALTO: roles y status no se confían
+   * al JWT):
+   *  - el usuario debe existir, pertenecer a la org del token y estar ACTIVE;
+   *  - el complejo debe existir y estar ACTIVE;
+   *  - los roles se recalculan desde b2b_user_roles (nunca desde el token).
+   *
+   * Lanza UnauthorizedException si algo no cuadra. Lo usan la estrategia
+   * passport (REST) y el handshake del gateway de WS, para que un cambio de
+   * rol/status se aplique sin esperar a que expire el JWT (7 días).
+   */
+  async resolveUserFromToken(payload: B2bJwtUser): Promise<B2bJwtUser> {
+    const invalid = () => new UnauthorizedException('Sesión B2B inválida');
+    if (!payload?.userId || !payload?.organizationId) throw invalid();
+
+    const user = await this.users.findOne({
+      where: { id: payload.userId, organizationId: payload.organizationId, status: B2bRecordStatus.ACTIVE },
+    });
+    if (!user) throw invalid();
+
+    const organization = await this.organizations.findOne({
+      where: { id: payload.organizationId, status: B2bRecordStatus.ACTIVE },
+    });
+    if (!organization) throw invalid();
+
+    const assignments = await this.userRoles.find({
+      where: { userId: user.id, organizationId: user.organizationId },
+    });
+    const roles = Array.from(new Set(assignments.map((assignment) => assignment.roleId)));
+    if (roles.length === 0) throw invalid();
+
+    return { userId: user.id, organizationId: user.organizationId, email: user.email, roles };
   }
 }

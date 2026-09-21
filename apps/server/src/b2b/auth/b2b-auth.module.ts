@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { requireB2bJwtSecret } from '../../config/env';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
 import { B2bCourtEntity } from '../entities/court.entity';
@@ -16,7 +17,7 @@ import { B2bRolesGuard } from './b2b-roles.guard';
   imports: [
     TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity], 'b2b'),
     PassportModule,
-    JwtModule.register({ secret: process.env.B2B_JWT_SECRET || 'sistema-canchas-secret', signOptions: { expiresIn: '7d' } }),
+    JwtModule.register({ secret: requireB2bJwtSecret(), signOptions: { expiresIn: '7d' } }),
   ],
   controllers: [B2bAuthController],
   providers: [B2bAuthService, B2bJwtStrategy, B2bRolesGuard],

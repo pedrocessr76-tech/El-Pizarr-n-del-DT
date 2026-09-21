@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -32,6 +34,11 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
 
 @Module({
   imports: [
+    // Rate limiting global (Fase 3): 100 peticiones/min por IP por defecto.
+    // Los endpoints sensibles (login/register, reservas, generación de turnos)
+    // fijan límites estrictos con @Throttle en sus controllers.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -82,7 +89,10 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
     B2bModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
 
