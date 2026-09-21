@@ -37,11 +37,14 @@ const isStaffRole = (role: string): boolean =>
  *  - Cliente (CLIENT): SOLO su canal personal. Nunca entra al canal de la org:
  *    así no recibe reservas/eventos de terceros (aislamiento por identidad).
  *
- * Convive en el mismo servidor socket.io que el gateway del juego; los canales
- * `b2b:*` están prefijados para no colisionar con `notification:*`.
+ * Convive con el gateway del juego en el MISMO servidor socket.io pero en un
+ * NAMESPACE propio (`/b2b`): así cada conexión solo la ve y valida su gateway.
+ * Sin namespace, el handleConnection del juego vería las conexiones B2B y las
+ * cortaría (un token B2B no pasa el secreto JWT del juego), y viceversa. Los
+ * canales `b2b:*` siguen prefijados para no colisionar con `notification:*`.
  */
 @Injectable()
-@WebSocketGateway({ cors: { origin: wsOriginCheck, credentials: true }, path: '/socket.io' })
+@WebSocketGateway({ namespace: '/b2b', cors: { origin: wsOriginCheck, credentials: true }, path: '/socket.io' })
 export class B2bNotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(B2bNotificationsGateway.name);
 

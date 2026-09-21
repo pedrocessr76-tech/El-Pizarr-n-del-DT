@@ -24,8 +24,9 @@ const SOCKET_URL = resolveSocketUrl();
 /**
  * Suscribe al canal B2B en tiempo real.
  *
- * - Logueado con token B2B: envía el JWT como auth.token (mismo servidor socket.io
- *   que el juego, el gateway B2B lo valida con B2B_JWT_SECRET).
+ * - Logueado con token B2B: envía el JWT como auth.token dentro del NAMESPACE
+ *   `/b2b` (mismo servidor socket.io que el juego, pero aislado: el gateway del
+ *   juego no valida tokens B2B y los cortaría si compartieran namespace).
  * - Al conectar (y reconectar) hidrata el historial persistido desde la API REST.
  * - Recibe `notification` con un B2bNotificationPayload y lo ingresa al store,
  *   deduplicando por clave de contenido (los eventos del canal del complejo llegan
@@ -44,7 +45,7 @@ export function useB2bNotificationSocket() {
         }
         if (!SOCKET_URL) return;
 
-        const s = io(SOCKET_URL, {
+        const s = io(SOCKET_URL + '/b2b', {
             path: '/socket.io',
             transports: ['polling', 'websocket'],
             reconnectionAttempts: 5,
