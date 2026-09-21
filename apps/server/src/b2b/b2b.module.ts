@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
+import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
@@ -15,6 +16,7 @@ import { B2bAuthModule } from './auth/b2b-auth.module';
 import { B2bManagementController } from './b2b-management.controller';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
+import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
 
 export const B2B_ENTITIES = [
   B2bOrganizationEntity,
@@ -28,10 +30,11 @@ export const B2B_ENTITIES = [
   B2bAvailabilityBlockEntity,
   B2bBookingEntity,
   B2bBookingEventEntity,
+  B2bNotificationEntity,
 ];
 
 @Module({
-  imports: [TypeOrmModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule],
+  imports: [TypeOrmModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule],
   controllers: [B2bManagementController],
   providers: [B2bManagementService, B2bSeedService],
   exports: [B2bManagementService, TypeOrmModule],

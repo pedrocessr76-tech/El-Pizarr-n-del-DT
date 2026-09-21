@@ -2,7 +2,7 @@ import React from 'react';
 import { useNotificationStore, NotificationItem, NotificationType, Severity } from '../store/useNotificationStore';
 import { formatDistanceToNow } from '../utils/time';
 
-const ICON_BY_TYPE: Record<NotificationType, string> = {
+const ICON_BY_TYPE: Partial<Record<NotificationType, string>> = {
   goal: 'sports_soccer',
   match_end: 'emoji_events',
   round_advance: 'trending_flat',

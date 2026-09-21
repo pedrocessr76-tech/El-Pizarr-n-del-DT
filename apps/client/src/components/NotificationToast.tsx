@@ -20,6 +20,12 @@ const ICON_BY_TYPE: Record<NonNullable<NotificationItem['type']>, string> = {
   tournament_end: 'military_tech',
   achievement_unlocked: 'celebration',
   system_maintenance: 'report',
+  b2b_booking_pending: 'event_available',
+  b2b_booking_confirmed: 'verified',
+  b2b_booking_cancelled: 'event_busy',
+  b2b_booking_completed: 'task_alt',
+  b2b_booking_rescheduled: 'update',
+  b2b_org_announcement: 'campaign',
 };
 
 export const NotificationToast: React.FC<{ item: NotificationItem }> = ({ item }) => {

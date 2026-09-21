@@ -20,9 +20,15 @@ describe('Gestión de canchas', () => {
         return row;
       }),
     };
+    const notifications = {
+      notifyStaff: jest.fn().mockResolvedValue([]),
+      notifyUser: jest.fn().mockResolvedValue([]),
+      getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test'),
+    };
     const service = new B2bManagementService(
       {} as never, facilities as never, courts as never,
       {} as never, {} as never, {} as never, {} as never, {} as never,
+      notifications as never,
     );
     return { service, courts, savedCourts };
   }
@@ -68,6 +74,7 @@ describe('Gestión de canchas', () => {
     const other = new B2bManagementService(
       {} as never, otherFacilities as never, courts as never,
       {} as never, {} as never, {} as never, {} as never, {} as never,
+      { notifyStaff: jest.fn(), notifyUser: jest.fn(), getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test') } as never,
     );
     await expect(other.createCourt(user, 'facility', { name: 'Cancha Y', sportType: 'FUTBOL 5', defaultPriceCentsArs: 9000 }))
       .rejects.toThrow(NotFoundException);

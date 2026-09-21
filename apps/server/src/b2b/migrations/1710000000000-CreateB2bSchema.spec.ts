@@ -63,6 +63,7 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
       'b2b_bookings',
       'b2b_courts',
       'b2b_facilities',
+      'b2b_notifications',
       'b2b_organizations',
       'b2b_roles',
       'b2b_shift_rules',

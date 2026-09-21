@@ -18,6 +18,7 @@ import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
 import { canChangeBookingStatus, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
+import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-notifications.service';
 
 @Injectable()
 export class B2bManagementService {
@@ -30,6 +31,7 @@ export class B2bManagementService {
     @InjectRepository(B2bAvailabilityBlockEntity, 'b2b') private readonly blocks: Repository<B2bAvailabilityBlockEntity>,
     @InjectRepository(B2bBookingEntity, 'b2b') private readonly bookings: Repository<B2bBookingEntity>,
     @InjectRepository(B2bBookingEventEntity, 'b2b') private readonly bookingEvents: Repository<B2bBookingEventEntity>,
+    private readonly notifications: B2bNotificationsService,
   ) {}
 
   async getOrganization(user: B2bJwtUser) {
@@ -244,6 +246,11 @@ export class B2bManagementService {
     shift.status = ShiftStatus.BOOKED;
     await this.shifts.save(shift);
     await this.recordEvent(booking.id, user.userId, null, BookingStatus.PENDING);
+    await this.notifications.notifyStaff(
+      user.organizationId,
+      await this.bookingNotification(booking, 'b2b_booking_pending', 'info'),
+      user.userId,
+    );
     return booking;
   }
 
@@ -260,6 +267,30 @@ export class B2bManagementService {
       await this.shifts.update({ id: booking.shiftId }, { status: ShiftStatus.AVAILABLE });
     }
     await this.recordEvent(booking.id, user.userId, previous, status);
+
+    if (status === BookingStatus.CONFIRMED) {
+      await this.notifications.notifyUser(
+        booking.clientUserId,
+        booking.organizationId,
+        await this.bookingNotification(booking, 'b2b_booking_confirmed', 'success'),
+        user.userId,
+      );
+    } else if (status === BookingStatus.COMPLETED) {
+      await this.notifications.notifyUser(
+        booking.clientUserId,
+        booking.organizationId,
+        await this.bookingNotification(booking, 'b2b_booking_completed', 'success'),
+        user.userId,
+      );
+    } else if (status === BookingStatus.CANCELLED) {
+      const notification = await this.bookingNotification(booking, 'b2b_booking_cancelled', 'warning');
+      if (isStaff) {
+        await this.notifications.notifyUser(booking.clientUserId, booking.organizationId, notification, user.userId);
+      } else {
+        await this.notifications.notifyStaff(booking.organizationId, notification, user.userId);
+      }
+    }
+
     return saved;
   }
 
@@ -279,6 +310,12 @@ export class B2bManagementService {
     await this.shifts.update({ id: shift.id }, { status: ShiftStatus.BOOKED });
     const saved = await this.bookings.save(booking);
     await this.recordEvent(booking.id, user.userId, booking.status, booking.status);
+    const notification = await this.bookingNotification(booking, 'b2b_booking_rescheduled', 'info');
+    if (isStaff) {
+      await this.notifications.notifyUser(booking.clientUserId, booking.organizationId, notification, user.userId);
+    } else {
+      await this.notifications.notifyStaff(booking.organizationId, notification, user.userId);
+    }
     return saved;
   }
 
@@ -287,6 +324,47 @@ export class B2bManagementService {
     if (blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt)) {
       throw new ConflictException('El turno está bloqueado');
     }
+  }
+
+  private async bookingNotification(
+    booking: B2bBookingEntity,
+    type: 'b2b_booking_pending' | 'b2b_booking_confirmed' | 'b2b_booking_cancelled' | 'b2b_booking_completed' | 'b2b_booking_rescheduled',
+    severity: 'info' | 'success' | 'warning',
+  ): Promise<B2bNotifyOptions> {
+    const [shift, court] = await Promise.all([
+      this.shifts.findOneBy({ id: booking.shiftId }),
+      this.courts.findOneBy({ id: booking.courtId }),
+    ]);
+    const titles: Record<string, string> = {
+      b2b_booking_pending: 'Nueva reserva',
+      b2b_booking_confirmed: 'Reserva confirmada',
+      b2b_booking_cancelled: 'Reserva cancelada',
+      b2b_booking_completed: 'Reserva completada',
+      b2b_booking_rescheduled: 'Reserva reprogramada',
+    };
+    const courtName = court?.name ?? 'la cancha';
+    const clientName = await this.notifications.getUserDisplayName(booking.clientUserId);
+    return {
+      type,
+      severity,
+      title: `${titles[type]} — ${courtName}`,
+      body: `${this.formatShiftTime(shift)} • cliente ${clientName}`,
+      metadata: {
+        bookingId: booking.id,
+        courtId: booking.courtId,
+        courtName,
+        shiftStartsAt: shift?.startsAt.toISOString() ?? null,
+        clientUserId: booking.clientUserId,
+      },
+    };
+  }
+
+  private formatShiftTime(shift: B2bShiftEntity | undefined | null): string {
+    if (!shift) return 'sin horario definido';
+    return `${shift.startsAt.toLocaleDateString('es-AR')} ${shift.startsAt.toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
   }
 
   private async recordEvent(bookingId: string, actorUserId: string, fromStatus: string | null, toStatus: string) {
