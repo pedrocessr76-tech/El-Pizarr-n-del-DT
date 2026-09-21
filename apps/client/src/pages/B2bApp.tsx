@@ -321,14 +321,24 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [duration, setDuration] = useState<1 | 2>(1);
   const [selectedShift, setSelectedShift] = useState<{ courtName: string; courtId: string; shiftId?: string; label: string; priceCents: number } | null>(null);
-  if (view === 'payment') return <PaymentView onNavigate={onNavigate} />;
+  const finishPayment = () => {
+    setSelectedDate('');
+    setSelectedShift(null);
+    setDuration(1);
+    setMessage('Reserva registrada. El complejo confirmará tu turno.');
+    onNavigate('portal');
+  };
+  if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} />;
     const demoCourts = courts.length ? courts : [{ id: 'placeholder', name: 'Sin canchas todavía', sportType: 'Seleccioná un complejo', defaultPriceCentsArs: 0 }];
   const reserve = async (courtId: string, shiftId?: string) => {
-    if (shiftId) {
-      const result = await b2bService.createBooking({ courtId, shiftId }).catch(() => null);
-      setMessage(result ? 'Turno reservado correctamente.' : 'No se pudo reservar el turno. Intentalo de nuevo.');
+    if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
+    const result = await b2bService.createBooking({ courtId, shiftId }).catch(() => null);
+    if (result) {
+      setMessage('Turno reservado correctamente.');
+      onNavigate('payment');
+    } else {
+      setMessage('No se pudo reservar el turno. Intentalo de nuevo.');
     }
-    onNavigate('payment');
   };
   const toDayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const weekDays = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
@@ -337,7 +347,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
   const selectedTotalCents = selectedShift ? selectedShift.priceCents * duration : 0;
   const confirmSelection = () => {
     if (selectedShift) void reserve(selectedShift.courtId, selectedShift.shiftId);
-    else onNavigate('payment');
+    else setMessage('Seleccioná un turno disponible para continuar al pago.');
   };
   return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)}>{organizations.length === 0 && <option value="">Cargando complejos…</option>}{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDays.map((d) => { const key = toDayKey(d); const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' })}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(new Date(shift.startsAt)) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = new Date(shift.startsAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
 
@@ -475,11 +485,10 @@ function SettingsView() {
 }
 
 
-function PaymentView({ onNavigate }: { onNavigate: (view: B2bView) => void }) {
+function PaymentView({ onNavigate, onComplete }: { onNavigate: (view: B2bView) => void; onComplete: () => void }) {
   const [modality, setModality] = useState<'deposit' | 'total'>('deposit');
   const [method, setMethod] = useState<'mercadopago' | 'transfer'>('mercadopago');
   const [holder, setHolder] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
   const label = modality === 'deposit' ? 'Pagar seña (30%)' : 'Pagar total';
   return (
     <div className="b2b-content client-content">
@@ -496,12 +505,11 @@ function PaymentView({ onNavigate }: { onNavigate: (view: B2bView) => void }) {
           <div className="selector-block"><label>Medio de pago</label><div className="duration-toggle"><button className={method === 'mercadopago' ? 'active' : ''} onClick={() => setMethod('mercadopago')}>Mercado Pago</button><button className={method === 'transfer' ? 'active' : ''} onClick={() => setMethod('transfer')}>Transferencia</button></div></div>
           <div className="selector-block"><label>Nombre del titular</label><input className="b2b-input" placeholder="Como figura en la tarjeta" value={holder} onChange={(event) => setHolder(event.target.value)} /></div>
           <div className="receipt-total"><span>Total</span><strong>{label}</strong></div>
-          {confirmed && <p className="settings-feedback">Pago registrado. Te enviaremos la confirmación del turno.</p>}
-          <button className="primary-action wide hidden md:inline-flex" onClick={() => setConfirmed(true)}><Check size={16} /> {label}</button>
+          <button className="primary-action wide hidden md:inline-flex" onClick={onComplete}><Check size={16} /> {label}</button>
           <p className="payment-note">La integración con una pasarela de pagos se agregará en una etapa posterior.</p>
         </section>
       </div>
-      <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500">Modalidad</div><div className="font-bold text-[#15803d]">{label}</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={() => setConfirmed(true)}>{label}</button></div>
+      <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500">Modalidad</div><div className="font-bold text-[#15803d]">{label}</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={onComplete}>{label}</button></div>
     </div>
   );
 }
