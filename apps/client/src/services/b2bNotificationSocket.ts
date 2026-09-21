@@ -45,14 +45,9 @@ export function useB2bNotificationSocket() {
         }
         if (!SOCKET_URL) return;
 
-        const s = io(SOCKET_URL + '/b2b', {
-            path: '/socket.io',
-            transports: ['polling', 'websocket'],
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            auth: { token },
-        }) as Socket;
-
+        // Hidrata el historial persistido apenas hay token (no depende de que el
+        // socket conecte: una instancia Free dormida u otro fallo de WS no deja
+        // el campanario vacío). Al conectar se re-hidrata por si cambió en vuelo.
         const hydrate = async () => {
             try {
                 const { items } = await b2bNotificationService.list();
@@ -61,6 +56,16 @@ export function useB2bNotificationSocket() {
                 console.warn('[b2b/socket] No se pudo hidratar el historial de notificaciones:', err);
             }
         };
+
+        void hydrate();
+
+        const s = io(SOCKET_URL + '/b2b', {
+            path: '/socket.io',
+            transports: ['polling', 'websocket'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            auth: { token },
+        }) as Socket;
 
         s.on('connect', () => void hydrate());
 

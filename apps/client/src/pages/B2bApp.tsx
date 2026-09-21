@@ -293,6 +293,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
   const [courts, setCourts] = useState<Array<{ id: string; name: string; sportType: string; defaultPriceCentsArs: number }>>([]);
   const [shifts, setShifts] = useState<Array<{ id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number }>>([]);
   const [message, setMessage] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     b2bService.getPublicOrganizations()
       .then((items) => {
@@ -316,7 +317,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
         setShifts(results.filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled').flatMap((result) => result.value));
       })
       .catch(() => setMessage('No se pudieron cargar las canchas de este complejo.'));
-  }, [organizationId]);
+  }, [organizationId, reloadKey]);
     const selectedOrgName = organizations.find((org) => org.id === organizationId)?.name ?? '';
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [duration, setDuration] = useState<1 | 2>(1);
@@ -325,6 +326,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
     setSelectedDate('');
     setSelectedShift(null);
     setDuration(1);
+    setReloadKey((key) => key + 1);
     setMessage('Reserva registrada. El complejo confirmará tu turno.');
     onNavigate('portal');
   };
@@ -332,12 +334,15 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
     const demoCourts = courts.length ? courts : [{ id: 'placeholder', name: 'Sin canchas todavía', sportType: 'Seleccioná un complejo', defaultPriceCentsArs: 0 }];
   const reserve = async (courtId: string, shiftId?: string) => {
     if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
-    const result = await b2bService.createBooking({ courtId, shiftId }).catch(() => null);
-    if (result) {
+    try {
+      const result = await b2bService.createBooking({ courtId, shiftId });
       setMessage('Turno reservado correctamente.');
       onNavigate('payment');
-    } else {
-      setMessage('No se pudo reservar el turno. Intentalo de nuevo.');
+      return result;
+    } catch (error: any) {
+      const reason = error?.response?.data?.message;
+      setMessage(typeof reason === 'string' && reason ? reason : 'No se pudo reservar el turno. Intentalo de nuevo.');
+      return null;
     }
   };
   const toDayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -506,7 +511,7 @@ function PaymentView({ onNavigate, onComplete }: { onNavigate: (view: B2bView) =
           <div className="selector-block"><label>Nombre del titular</label><input className="b2b-input" placeholder="Como figura en la tarjeta" value={holder} onChange={(event) => setHolder(event.target.value)} /></div>
           <div className="receipt-total"><span>Total</span><strong>{label}</strong></div>
           <button className="primary-action wide hidden md:inline-flex" onClick={onComplete}><Check size={16} /> {label}</button>
-          <p className="payment-note">La integración con una pasarela de pagos se agregará en una etapa posterior.</p>
+          <p className="payment-note">Pago SIMULADO: la integración con una pasarela de pagos se agregará en una etapa posterior.</p>
         </section>
       </div>
       <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500">Modalidad</div><div className="font-bold text-[#15803d]">{label}</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={onComplete}>{label}</button></div>

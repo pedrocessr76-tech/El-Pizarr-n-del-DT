@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -22,6 +23,7 @@ import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-n
 
 @Injectable()
 export class B2bManagementService {
+  private readonly logger = new Logger(B2bManagementService.name);
   constructor(
     @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
     @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
@@ -245,12 +247,22 @@ export class B2bManagementService {
     }));
     shift.status = ShiftStatus.BOOKED;
     await this.shifts.save(shift);
-    await this.recordEvent(booking.id, user.userId, null, BookingStatus.PENDING);
-    await this.notifications.notifyStaff(
-      user.organizationId,
-      await this.bookingNotification(booking, 'b2b_booking_pending', 'info'),
-      user.userId,
-    );
+    // Los efectos posteriores al alta (evento + notificación al staff) nunca
+    // deben tumbar la reserva ya creada: si fallan, se registran y la reserva
+    // queda igual (PENDING). Antes, un fallo aquí devolvía 500 al cliente
+    // aunque la reserva ya existiera en el admin.
+    try {
+      await this.recordEvent(booking.id, user.userId, null, BookingStatus.PENDING);
+      await this.notifications.notifyStaff(
+        user.organizationId,
+        await this.bookingNotification(booking, 'b2b_booking_pending', 'info'),
+        user.userId,
+      );
+    } catch (error) {
+      this.logger.error(
+        `createBooking ${booking.id}: reserva creada pero fallaron los efectos (evento/notificación): ${(error as Error)?.message ?? error}`,
+      );
+    }
     return booking;
   }
 

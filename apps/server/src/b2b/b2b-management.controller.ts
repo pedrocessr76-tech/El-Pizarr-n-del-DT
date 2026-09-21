@@ -86,7 +86,7 @@ export class B2bManagementController {
   @Get('availability') availability(@CurrentB2bUser() user: B2bJwtUser, @Query('courtId') courtId: string, @Query('from') from: string, @Query('to') to: string) { return this.service.availability(user, courtId, from, to); }
   @Get('bookings') listBookings(@CurrentB2bUser() user: B2bJwtUser) { return this.service.listBookings(user); }
   @Get('metrics/summary') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) metricsSummary(@CurrentB2bUser() user: B2bJwtUser, @Query('date') date?: string) { return this.service.metricsSummary(user, date ? new Date(date) : new Date()); }
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('bookings') createBooking(@CurrentB2bUser() user: B2bJwtUser, @Body() body: BookingDto) { return this.service.createBooking(user, body); }
   @Post('bookings/:id/confirm') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) confirm(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CONFIRMED); }
   @Post('bookings/:id/cancel') cancel(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CANCELLED); }
