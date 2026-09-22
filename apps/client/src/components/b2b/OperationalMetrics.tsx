@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { b2bService, type B2bMetricsSummary } from '../../services/b2bService';
 
-export function OperationalMetrics() {
+export function OperationalMetrics({ date, courtId }: { date?: string; courtId?: string }) {
   const [metrics, setMetrics] = useState<B2bMetricsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -10,13 +10,13 @@ export function OperationalMetrics() {
     let active = true;
     setLoading(true);
     setError('');
-    b2bService.getMetricsSummary().then((data) => {
+    b2bService.getMetricsSummary(date, courtId).then((data) => {
       if (active) setMetrics(data);
     }).catch(() => {
       if (active) setError('No se pudieron cargar las métricas.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [refresh]);
+  }, [date, courtId, refresh]);
   if (loading) return <p role="status">Cargando métricas…</p>;
   if (error) return <p role="alert">{error} <button className="secondary-action" onClick={() => setRefresh((value) => value + 1)}>Reintentar</button></p>;
   if (!metrics) return null;

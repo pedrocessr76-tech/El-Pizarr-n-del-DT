@@ -17,6 +17,7 @@ import { B2bFacilityEntity } from './entities/facility.entity';
 import { B2bOrganizationEntity } from './entities/organization.entity';
 import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
 import { B2bShiftEntity } from './entities/shift.entity';
+import { B2bUserEntity } from './entities/user.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
 import { canChangeBookingStatus, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
 import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-notifications.service';
@@ -33,6 +34,7 @@ export class B2bManagementService {
     @InjectRepository(B2bAvailabilityBlockEntity, 'b2b') private readonly blocks: Repository<B2bAvailabilityBlockEntity>,
     @InjectRepository(B2bBookingEntity, 'b2b') private readonly bookings: Repository<B2bBookingEntity>,
     @InjectRepository(B2bBookingEventEntity, 'b2b') private readonly bookingEvents: Repository<B2bBookingEventEntity>,
+    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
     private readonly notifications: B2bNotificationsService,
   ) {}
 
@@ -173,6 +175,50 @@ export class B2bManagementService {
     return shifts.filter((shift) => !blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt));
   }
 
+  /**
+   * Disponibilidad semanal para el calendario del admin: por cancha devuelve
+   * cada turno del rango con su estado real (libre/reservado/pendiente/bloqueado),
+   * mezclando turnos, reservas activas y bloques de disponibilidad.
+   */
+  async weeklyAvailability(user: B2bJwtUser, from: string, to: string) {
+    const startsAt = new Date(from);
+    const endsAt = new Date(to);
+    const [courts, shifts, bookings, blocks] = await Promise.all([
+      this.courts.find({ where: { organizationId: user.organizationId }, order: { name: 'ASC' } }),
+      this.shifts.find({ where: { organizationId: user.organizationId, startsAt: Between(startsAt, endsAt) }, order: { startsAt: 'ASC' } }),
+      this.bookings.find({ where: { organizationId: user.organizationId, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } }),
+      this.blocks.find({ where: { organizationId: user.organizationId } }),
+    ]);
+    const bookingByShift = new Map(bookings.map((booking) => [booking.shiftId, booking]));
+    const clientUserIds = [...new Set(bookings.map((booking) => booking.clientUserId))];
+    const users = clientUserIds.length
+      ? await this.users.find({ where: { id: In(clientUserIds) } })
+      : ([] as B2bUserEntity[]);
+    const userById = new Map(users.map((user) => [user.id, user]));
+    const board = new Map<string, Array<Record<string, unknown>>>(
+      courts.map((court) => [court.id, []]),
+    );
+    for (const shift of shifts) {
+      const blocked = blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt);
+      const booking = bookingByShift.get(shift.id);
+      let state: string;
+      if (blocked) state = 'BLOCKED';
+      else if (booking) state = booking.status === BookingStatus.PENDING ? 'PENDING' : 'CONFIRMED';
+      else state = ShiftStatus.AVAILABLE;
+      const lane = board.get(shift.courtId) ?? [];
+      const client = booking ? userById.get(booking.clientUserId) : undefined;
+      lane.push({ id: shift.id, startsAt: shift.startsAt, endsAt: shift.endsAt, priceCentsArs: shift.priceCentsArs, state, clientName: client?.fullName ?? client?.email ?? null });
+      board.set(shift.courtId, lane);
+    }
+    return courts.map((court) => ({
+      courtId: court.id,
+      courtName: court.name,
+      sportType: court.sportType,
+      facilityId: court.facilityId,
+      lanes: board.get(court.id) ?? [],
+    }));
+  }
+
   async listBookings(user: B2bJwtUser) {
     const where = user.roles.includes(B2bRoleCode.CLIENT) && !user.roles.some((role) => [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR].includes(role))
       ? { organizationId: user.organizationId, clientUserId: user.userId }
@@ -183,34 +229,43 @@ export class B2bManagementService {
     // para que la bandeja del frontend muestre el horario real en lugar de un placeholder.
     const shiftIds = [...new Set(rows.map((row) => row.shiftId))];
     const courtIds = [...new Set(rows.map((row) => row.courtId).filter((id): id is string => Boolean(id)))];
-    const [shifts, courts] = await Promise.all([
+    const clientUserIds = [...new Set(rows.map((row) => row.clientUserId).filter((id): id is string => Boolean(id)))];
+    const [shifts, courts, users] = await Promise.all([
       this.shifts.find({ where: { id: In(shiftIds) } }),
       courtIds.length ? this.courts.find({ where: { id: In(courtIds) } }) : Promise.resolve([] as B2bCourtEntity[]),
+      clientUserIds.length ? this.users.find({ where: { id: In(clientUserIds) } }) : Promise.resolve([] as B2bUserEntity[]),
     ]);
     const shiftById = new Map(shifts.map((shift) => [shift.id, shift]));
     const courtById = new Map(courts.map((court) => [court.id, court]));
+    const userById = new Map(users.map((user) => [user.id, user]));
     return rows.map((row) => {
       const shift = shiftById.get(row.shiftId);
       const court = courtById.get(row.courtId);
+      const client = userById.get(row.clientUserId);
       return {
         ...row,
         shiftStartsAt: shift?.startsAt ?? null,
         shiftEndsAt: shift?.endsAt ?? null,
         courtName: court?.name ?? null,
         courtSportType: court?.sportType ?? null,
+        clientName: client?.fullName ?? client?.email ?? null,
       };
     });
   }
 
-  async metricsSummary(user: B2bJwtUser, date = new Date()) {
+  async metricsSummary(user: B2bJwtUser, date = new Date(), courtId?: string) {
     const start = new Date(date);
     start.setHours(0, 0, 0, 0);
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
-    const shifts = await this.shifts.find({
-      where: { organizationId: user.organizationId, startsAt: Between(start, end) },
-    });
-    const bookings = await this.bookings.find({ where: { organizationId: user.organizationId } });
+    const shiftWhere: Record<string, unknown> = { organizationId: user.organizationId, startsAt: Between(start, end) };
+    const bookingWhere: Record<string, unknown> = { organizationId: user.organizationId };
+    if (courtId) {
+      shiftWhere.courtId = courtId;
+      bookingWhere.courtId = courtId;
+    }
+    const shifts = await this.shifts.find({ where: shiftWhere });
+    const bookings = await this.bookings.find({ where: bookingWhere });
     const activeBookings = bookings.filter((booking) => [BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status));
     const bookedShiftIds = new Set(activeBookings.map((booking) => booking.shiftId));
     const revenueCentsArs = bookings

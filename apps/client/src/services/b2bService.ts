@@ -24,6 +24,22 @@ export interface B2bBooking {
   shiftEndsAt?: string | null;
   courtName?: string | null;
   courtSportType?: string | null;
+  clientName?: string | null;
+}
+
+export interface B2bWeeklyAvailability {
+  courtId: string;
+  courtName: string;
+  sportType: string;
+  facilityId: string;
+  lanes: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    priceCentsArs: number;
+    state: 'AVAILABLE' | 'CONFIRMED' | 'PENDING' | 'BLOCKED';
+    clientName?: string | null;
+  }>;
 }
 
 export interface B2bFacility { id: string; organizationId: string; name: string; address?: string | null; status: string; }
@@ -86,6 +102,10 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bFacility>('/v1/facilities', input);
     return data;
   },
+  async updateFacility(id: string, patch: { name?: string; address?: string }) {
+    const { data } = await b2bApi.patch<B2bFacility>(`/v1/facilities/${id}`, patch);
+    return data;
+  },
   async createCourt(facilityId: string, input: { name: string; sportType?: string; defaultPriceCentsArs: number }) {
     const { data } = await b2bApi.post<B2bCourt>(`/v1/facilities/${facilityId}/courts`, input);
     return data;
@@ -98,8 +118,12 @@ export const b2bService = {
     const { data } = await b2bApi.get<B2bBooking[]>('/v1/bookings');
     return data;
   },
-  async getMetricsSummary(date?: string) {
-    const { data } = await b2bApi.get<B2bMetricsSummary>('/v1/metrics/summary', { params: date ? { date } : undefined });
+  async getMetricsSummary(date?: string, courtId?: string) {
+    const { data } = await b2bApi.get<B2bMetricsSummary>('/v1/metrics/summary', { params: { ...(date ? { date } : {}), ...(courtId ? { courtId } : {}) } });
+    return data;
+  },
+  async getWeeklyAvailability(from: string, to: string) {
+    const { data } = await b2bApi.get<B2bWeeklyAvailability[]>('/v1/availability/week', { params: { from, to } });
     return data;
   },
   async createBooking(input: { courtId: string; shiftId: string; notes?: string }) {

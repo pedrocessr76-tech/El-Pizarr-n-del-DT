@@ -68,6 +68,7 @@ describe('Notificaciones del ciclo de reservas', () => {
     const service = new B2bManagementService(
       {} as never, {} as never, courts as never, {} as never,
       shifts as never, blocks as never, bookings as never, bookingEvents as never,
+      {} as never,
       notifications as never,
     );
     return { service, notifications, bookings, shifts, status };
@@ -185,6 +186,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       {} as never, shifts as never, busyBlocks as never,
       { findOne: jest.fn().mockResolvedValue(null), create: jest.fn(), save: jest.fn() } as never,
       { save: jest.fn() } as never,
+      {} as never,
       notifications as never,
     );
 

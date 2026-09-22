@@ -32,6 +32,7 @@ describe('Horarios y bloqueos', () => {
     const service = new B2bManagementService(
       {} as never, {} as never, courts as never, rules as never,
       shifts as never, blocks as never, bookings as never, {} as never,
+      {} as never,
       notifications as never,
     );
     return { service, shifts, blocks, bookings, generated, notifications };
