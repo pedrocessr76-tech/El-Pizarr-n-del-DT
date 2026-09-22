@@ -41,6 +41,12 @@ export class B2bSeedService implements OnModuleInit {
     user.passwordHash = await bcrypt.hash(process.env.B2B_SEED_PASSWORD || 'canchas-demo', 12);
     user = await this.users.save(user);
     await this.userRoles.upsert({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.ADMIN }, ['userId', 'organizationId', 'roleId']);
+    const admin2Email = process.env.B2B_SEED_ADMIN2_EMAIL || 'admin2@lacancha.com.ar';
+    let admin2 = await this.users.findOne({ where: { email: admin2Email, organizationId: organization.id } });
+    if (!admin2) admin2 = this.users.create({ organizationId: organization.id, email: admin2Email, fullName: 'Juan Román Riquelme' });
+    admin2.passwordHash = await bcrypt.hash(process.env.B2B_SEED_ADMIN2_PASSWORD || 'canchas-admin2', 12);
+    admin2 = await this.users.save(admin2);
+    await this.userRoles.upsert({ userId: admin2.id, organizationId: organization.id, roleId: B2bRoleCode.ADMIN }, ['userId', 'organizationId', 'roleId']);
     const clientEmail = process.env.B2B_SEED_CLIENT_EMAIL || 'cliente@lacancha.com.ar';
     let client = await this.users.findOne({ where: { email: clientEmail, organizationId: organization.id } });
     if (!client) client = this.users.create({ organizationId: organization.id, email: clientEmail, fullName: 'Cliente Demo' });
@@ -68,6 +74,6 @@ export class B2bSeedService implements OnModuleInit {
         }
       }
     }
-    this.logger.log(`Seed B2B listo: ${organization.slug} / ${email} / cliente: ${clientEmail}`);
+    this.logger.log(`Seed B2B listo: ${organization.slug} / ${email} / admin2: ${admin2Email} / cliente: ${clientEmail}`);
   }
 }

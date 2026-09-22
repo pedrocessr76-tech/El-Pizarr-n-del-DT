@@ -36,8 +36,9 @@ describe('B2bAuthService - resolveUserFromToken', () => {
     const userRoles = { find: jest.fn().mockResolvedValue(assignments) };
     const roles = { upsert: jest.fn() };
     const courts = {};
+    const facilities = {};
     const jwt = { sign: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, jwt as never);
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never);
     return { service, users, organizations, userRoles };
   }
 

@@ -68,6 +68,12 @@ export class B2bAuthController {
     return this.auth.listPublicCourts(organizationId);
   }
 
+  @Get('organizations/:organizationId/facilities')
+  @ApiOperation({ summary: 'Listar complejos públicos de una organización, con sus canchas' })
+  listOrganizationFacilities(@Param('organizationId') organizationId: string) {
+    return this.auth.listPublicFacilities(organizationId);
+  }
+
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión en Sistema Canchas' })

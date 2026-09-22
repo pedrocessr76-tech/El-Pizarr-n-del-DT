@@ -20,6 +20,16 @@ describe('Gestión de canchas', () => {
         return row;
       }),
     };
+    const rules = {
+      create: jest.fn((row) => ({ id: 'rule', ...row })),
+      save: jest.fn(async (rows) => rows),
+      find: jest.fn(async () => []),
+    };
+    const shifts = {
+      create: jest.fn((row) => ({ id: 'shift', ...row })),
+      save: jest.fn(async (rows) => rows),
+      findOne: jest.fn(async () => null),
+    };
     const notifications = {
       notifyStaff: jest.fn().mockResolvedValue([]),
       notifyUser: jest.fn().mockResolvedValue([]),
@@ -27,7 +37,7 @@ describe('Gestión de canchas', () => {
     };
     const service = new B2bManagementService(
       {} as never, facilities as never, courts as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
+      rules as never, shifts as never, {} as never, {} as never, {} as never,
       {} as never,
       notifications as never,
     );

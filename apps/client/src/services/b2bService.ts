@@ -46,6 +46,7 @@ export interface B2bFacility { id: string; organizationId: string; name: string;
 export interface B2bCourt { id: string; facilityId: string; organizationId: string; name: string; sportType: string; capacity: number; status: string; defaultPriceCentsArs: number; }
 export interface B2bMetricsSummary { date: string; currency: string; totalShifts: number; occupiedShifts: number; availableShifts: number; pendingBookings: number; confirmedBookings: number; cancelledBookings: number; revenueCentsArs: number; }
 export interface B2bOrganizationOption { id: string; name: string; slug: string; }
+export interface B2bPublicFacility { id: string; name: string; address?: string | null; courts: Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>; }
 export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
 export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
 
@@ -80,6 +81,10 @@ export const b2bService = {
   },
   async getPublicCourts(organizationId: string) {
     const { data } = await b2bApi.get(`/v1/auth/organizations/${organizationId}/courts`);
+    return data;
+  },
+  async getPublicFacilities(organizationId: string) {
+    const { data } = await b2bApi.get<B2bPublicFacility[]>(`/v1/auth/organizations/${organizationId}/facilities`);
     return data;
   },
   async getProfile() {

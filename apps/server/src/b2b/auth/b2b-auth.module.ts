@@ -6,6 +6,7 @@ import { requireB2bJwtSecret } from '../../config/env';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
 import { B2bCourtEntity } from '../entities/court.entity';
+import { B2bFacilityEntity } from '../entities/facility.entity';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
 import { B2bAuthController } from './b2b-auth.controller';
@@ -15,7 +16,7 @@ import { B2bRolesGuard } from './b2b-roles.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity], 'b2b'),
+    TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity, B2bFacilityEntity], 'b2b'),
     PassportModule,
     JwtModule.register({ secret: requireB2bJwtSecret(), signOptions: { expiresIn: '7d' } }),
   ],

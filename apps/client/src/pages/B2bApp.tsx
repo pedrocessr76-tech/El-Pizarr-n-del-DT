@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useB2bStore } from '../store/useB2bStore';
-import { b2bService, type B2bOrganizationOption, type B2bWeeklyAvailability } from '../services/b2bService';
+import { b2bService, type B2bOrganizationOption, type B2bPublicFacility, type B2bWeeklyAvailability } from '../services/b2bService';
 import { MobileTopBar } from '../components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from '../components/layout/MobileTabBar';
 import { useB2bNotificationSocket } from '../services/b2bNotificationSocket';
@@ -358,37 +358,40 @@ function AvailabilityView({ onNavigate }: { onNavigate: (view: B2bView) => void 
 function BookingsView({ bookingRows, onNavigate, onSelectBooking }: { bookingRows: BookingRow[]; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: BookingRow) => void }) { return <div className="b2b-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> GESTIÓN OPERATIVA</span><h1>Bandeja de reservas</h1><p>Revisá y gestioná las solicitudes del complejo.</p></div><button className="primary-action" onClick={() => onNavigate('portal')}>＋ Nueva reserva</button></div><div className="booking-summary"><strong>{bookingRows.length} reservas visibles</strong><span>Estados sincronizados</span><div className="search-bookings">Buscar cliente o reserva...</div></div><section className="panel booking-list"><div className="booking-list-head"><span>Turno</span><span>Cliente</span><span>Cancha</span><span>Estado</span><span>Importe</span><span /></div>{bookingRows.slice(0, 10).map((booking) => <button className="booking-list-row" key={`${booking.client}-${booking.time}`} onClick={() => onSelectBooking(booking)}><span><strong>{booking.time}</strong></span><span><strong>{booking.client}</strong><small>Reserva online</small></span><span>{booking.court}<small>{booking.type}</small></span><StatusBadge status={booking.status} /><span><strong>{booking.price}</strong><small>ARS</small></span><ArrowRight size={17} /></button>)}</section></div>; }
 
 function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view: B2bView) => void }) {
-  const [organizations, setOrganizations] = useState<B2bOrganizationOption[]>([]);
-  const [organizationId, setOrganizationId] = useState('');
+  const user = useB2bStore((state) => state.user);
+  const [facilities, setFacilities] = useState<B2bPublicFacility[]>([]);
+  const [facilityId, setFacilityId] = useState('');
   const [courts, setCourts] = useState<Array<{ id: string; name: string; sportType: string; defaultPriceCentsArs: number }>>([]);
   const [shifts, setShifts] = useState<Array<{ id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number }>>([]);
   const [message, setMessage] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
-    b2bService.getPublicOrganizations()
+    const organizationId = user?.organizationId;
+    if (!organizationId) { setMessage('Tu sesión no pertenece a una organización.'); return; }
+    b2bService.getPublicFacilities(organizationId)
       .then((items) => {
-        setOrganizations(items);
-        if (items.length > 0) setOrganizationId(items[0].id);
+        setFacilities(items);
+        if (items.length > 0) setFacilityId(items[0].id);
       })
       .catch(() => setMessage('No se pudieron cargar los complejos.'));
-  }, []);
+  }, [user?.organizationId]);
   useEffect(() => {
-    if (!organizationId) return;
+    if (!facilityId) return;
     setMessage('');
     setCourts([]);
     setShifts([]);
+    const facility = facilities.find((item) => item.id === facilityId);
+    const facilityCourts = facility?.courts ?? [];
+    setCourts(facilityCourts);
+    if (facilityCourts.length === 0) return;
     const from = new Date();
     const to = new Date(from);
     to.setDate(to.getDate() + 7);
-    b2bService.getPublicCourts(organizationId)
-      .then(async (loadedCourts: Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>) => {
-        setCourts(loadedCourts);
-        const results = await Promise.allSettled(loadedCourts.map((court) => b2bService.getAvailability(court.id, from.toISOString(), to.toISOString())));
-        setShifts(results.filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled').flatMap((result) => result.value));
-      })
+    Promise.allSettled(facilityCourts.map((court) => b2bService.getAvailability(court.id, from.toISOString(), to.toISOString())))
+      .then((results) => setShifts(results.filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled').flatMap((result) => result.value)))
       .catch(() => setMessage('No se pudieron cargar las canchas de este complejo.'));
-  }, [organizationId, reloadKey]);
-    const selectedOrgName = organizations.find((org) => org.id === organizationId)?.name ?? '';
+  }, [facilityId, reloadKey]);
+    const selectedOrgName = facilities.find((item) => item.id === facilityId)?.name ?? '';
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [duration, setDuration] = useState<1 | 2>(1);
   const [selectedShift, setSelectedShift] = useState<{ courtName: string; courtId: string; shiftId?: string; label: string; priceCents: number } | null>(null);
@@ -424,7 +427,7 @@ function RealClientView({ view, onNavigate }: { view: B2bView; onNavigate: (view
     if (selectedShift) void reserve(selectedShift.courtId, selectedShift.shiftId);
     else setMessage('Seleccioná un turno disponible para continuar al pago.');
   };
-  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)}>{organizations.length === 0 && <option value="">Cargando complejos…</option>}{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDays.map((d) => { const key = toDayKey(d); const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' })}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(new Date(shift.startsAt)) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = new Date(shift.startsAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
+  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={facilityId} onChange={(event) => setFacilityId(event.target.value)}>{facilities.length === 0 && <option value="">Cargando complejos…</option>}{facilities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDays.map((d) => { const key = toDayKey(d); const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' })}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(new Date(shift.startsAt)) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = new Date(shift.startsAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
 
 }
 

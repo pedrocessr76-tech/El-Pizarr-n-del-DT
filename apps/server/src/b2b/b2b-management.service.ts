@@ -76,7 +76,7 @@ export class B2bManagementService {
     if (!facility) throw new NotFoundException('Complejo no encontrado');
     const sportType = input.sportType ?? 'FUTBOL 5';
     if (!isValidCourtSize(sportType)) throw new BadRequestException('Tamaño de cancha inválido; usá Fútbol 5, 7, 8 u 11');
-    return this.courts.save(this.courts.create({
+    const court = await this.courts.save(this.courts.create({
       organizationId: user.organizationId,
       facilityId,
       name: input.name,
@@ -84,6 +84,19 @@ export class B2bManagementService {
       capacity: input.capacity ?? deriveCourtCapacity(sportType),
       defaultPriceCentsArs: input.defaultPriceCentsArs,
     }));
+    // Agenda inicial automática: regla diaria 09:00–23:00 (tramos de 1 h) y
+    // turnos generados para los próximos 7 días, para que la cancha se pueda
+    // reservar de inmediato sin configuración manual.
+    await this.shiftRules.save(
+      Array.from({ length: 7 }, (_, weekday) =>
+        this.shiftRules.create({ courtId: court.id, weekday, startTime: '09:00', endTime: '23:00', durationHours: 1, priceCentsArs: court.defaultPriceCentsArs }),
+      ),
+    );
+    const from = new Date();
+    const to = new Date(from);
+    to.setDate(to.getDate() + 7);
+    await this.generateShiftsForRange(user.organizationId, court.id, from, to);
+    return court;
   }
 
   listCourts(user: B2bJwtUser) {
@@ -133,6 +146,10 @@ export class B2bManagementService {
     if (Number.isNaN(from.valueOf()) || Number.isNaN(to.valueOf()) || from >= to) {
       throw new BadRequestException('El rango de generación es inválido');
     }
+    return this.generateShiftsForRange(user.organizationId, courtId, from, to);
+  }
+
+  private async generateShiftsForRange(organizationId: string, courtId: string, from: Date, to: Date) {
     const rules = await this.shiftRules.find({ where: { courtId, active: true } });
     const generated: B2bShiftEntity[] = [];
     for (const rule of rules) {
@@ -148,7 +165,7 @@ export class B2bManagementService {
             const existing = await this.shifts.findOne({ where: { courtId, startsAt } });
             if (!existing) {
               generated.push(this.shifts.create({
-                organizationId: user.organizationId,
+                organizationId,
                 courtId,
                 startsAt,
                 endsAt,

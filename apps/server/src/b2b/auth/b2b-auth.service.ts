@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRecordStatus, B2bRoleCode } from '../entities/b2b.enums';
 import { B2bCourtEntity } from '../entities/court.entity';
+import { B2bFacilityEntity } from '../entities/facility.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
@@ -26,6 +27,7 @@ export class B2bAuthService {
     @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
     @InjectRepository(B2bUserRoleEntity, 'b2b') private readonly userRoles: Repository<B2bUserRoleEntity>,
     @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
+    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
     private readonly jwt: JwtService,
   ) {}
 
@@ -54,6 +56,33 @@ export class B2bAuthService {
       select: { id: true, name: true, sportType: true, capacity: true, defaultPriceCentsArs: true },
       order: { name: 'ASC' },
     });
+  }
+
+  /**
+   * Complejos (facilities) públicos de una organización con sus canchas activas.
+   * El portal cliente agrupa por complejo, no por organización: así un complejo
+   * recién creado aparece de inmediato y las canchas quedan en su sede.
+   */
+  async listPublicFacilities(organizationId: string) {
+    const organization = await this.organizations.findOne({ where: { id: organizationId, status: B2bRecordStatus.ACTIVE } });
+    if (!organization) throw new UnprocessableEntityException('El complejo no existe o no está activo.');
+    const facilities = await this.facilities.find({
+      where: { organizationId, status: B2bRecordStatus.ACTIVE },
+      order: { name: 'ASC' },
+    });
+    if (facilities.length === 0) return [];
+    const courts = await this.courts.find({
+      where: { organizationId, status: B2bRecordStatus.ACTIVE },
+      order: { name: 'ASC' },
+    });
+    return facilities.map((facility) => ({
+      id: facility.id,
+      name: facility.name,
+      address: facility.address,
+      courts: courts
+        .filter((court) => court.facilityId === facility.id)
+        .map((court) => ({ id: court.id, name: court.name, sportType: court.sportType, capacity: court.capacity, defaultPriceCentsArs: court.defaultPriceCentsArs })),
+    }));
   }
 
   async registerClient(input: { email: string; fullName: string; password: string; organizationId?: string }) {
