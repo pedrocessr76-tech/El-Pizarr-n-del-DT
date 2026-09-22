@@ -319,14 +319,10 @@
 .b2b-brand small { display: block; color: #4ade80; font-size: 9px; font-weight: 700; letter-spacing: .08em; margin-top: 5px; }
 .b2b-brand-mark { width: 32px; height: 32px; border: 1px solid #4ade80; color: #4ade80; display: grid; place-items: center; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: .05em; }
 .b2b-venue { margin: 0 14px; padding: 18px 4px 20px; border-top: 1px solid #253b49; border-bottom: 1px solid #253b49; position: relative; }
-.b2b-venue span, .b2b-role-switch > span, .b2b-nav > span { display: block; color: #8ba0ad; font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-bottom: 12px; }
+.b2b-venue span, .b2b-nav > span { display: block; color: #8ba0ad; font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-bottom: 12px; }
 .b2b-venue strong { display: block; color: #f8fafc; font-size: 16px; }
 .b2b-venue small { color: #8ba0ad; display: block; font-size: 11px; margin-top: 4px; }
 .b2b-venue em { display: block; color: #4ade80; font-size: 10px; font-style: normal; margin-top: 14px; }
-.b2b-role-switch { padding: 16px 18px 10px; }
-.b2b-role-switch > div { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #29414f; border-radius: 4px; overflow: hidden; }
-.b2b-role-switch button { background: transparent; border: 0; color: #91a3ad; padding: 8px 2px; font-size: 10px; cursor: pointer; }
-.b2b-role-switch button.active { background: #15803d; color: white; font-weight: 700; }
 .b2b-nav { padding: 18px 10px; flex: 1; }
 .b2b-nav > span { padding: 0 8px; }
 .b2b-nav-item { width: 100%; border: 0; background: transparent; color: #b5c2ca; display: flex; align-items: center; gap: 11px; padding: 12px 10px; border-radius: 4px; text-align: left; cursor: pointer; font-size: 13px; margin: 2px 0; }

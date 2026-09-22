@@ -79,24 +79,28 @@ function formatRole(role: B2bRole) {
 
 function resolveRole(user: { roles?: string[] } | null): B2bRole {
   if (!user) return 'CLIENT';
-  return (user.roles ?? []).some((r) => r.toUpperCase() === 'CLIENT') ? 'CLIENT' : 'ADMIN';
+  const roles = (user.roles ?? []).map((r) => r.toUpperCase());
+  for (const candidate of ['OWNER', 'ADMIN', 'OPERATOR'] as const) {
+    if (roles.includes(candidate)) return candidate;
+  }
+  return 'CLIENT';
 }
 
 export function B2bApp() {
   useB2bNotificationSocket();
+  const user = useB2bStore((state) => state.user);
   const [view, setView] = useState<B2bView>(() => {
     const stored = useB2bStore.getState().user;
     if (!stored) return 'login';
     return resolveRole(stored) === 'CLIENT' ? 'portal' : 'dashboard';
   });
-  const [role, setRole] = useState<B2bRole>(() => resolveRole(useB2bStore.getState().user));
+  const role = resolveRole(user);
+  const isStaff = role !== 'CLIENT';
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const login = useB2bStore((state) => state.login);
   const registerClient = useB2bStore((state) => state.registerClient);
 
-      const isStaff = role !== 'CLIENT';
-  const user = useB2bStore((state) => state.user);
   const [organizations, setOrganizations] = useState<B2bOrganizationOption[]>([]);
   useEffect(() => {
     if (user) {
@@ -113,7 +117,6 @@ export function B2bApp() {
     const authenticated = await login(email, password);
     if (!authenticated) return;
     const nextRole = resolveRole(useB2bStore.getState().user);
-    setRole(nextRole);
     navigate(nextRole === 'CLIENT' ? 'portal' : 'dashboard');
   };
 
@@ -121,7 +124,6 @@ export function B2bApp() {
     const created = await registerClient(input);
     if (!created) return;
     // Un cliente recién registrado entra a su portal: ahí elige en qué complejo reservar.
-    setRole('CLIENT');
     navigate('portal');
   };
 
@@ -157,7 +159,6 @@ export function B2bApp() {
           <div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div>
         </div>
                         <div className="b2b-venue"><span>COMPLEJO ACTIVO</span><strong>{orgName || 'Sin organización'}</strong><small>Online</small><em>● Online</em></div>
-        <div className="b2b-role-switch"><span>VISTA DE ROL B2B</span><div>{(['OWNER', 'ADMIN', 'OPERATOR', 'CLIENT'] as B2bRole[]).map((item) => <button key={item} className={role === item ? 'active' : ''} onClick={() => { setRole(item); navigate(item === 'CLIENT' ? 'portal' : 'dashboard'); }}>{item === 'OWNER' ? 'Prop' : item === 'ADMIN' ? 'Admin' : item === 'OPERATOR' ? 'Oper' : 'Clie'}</button>)}</div></div>
         <nav className="b2b-nav">
           <span>MÓDULOS DE GESTIÓN</span>
           {isStaff ? <>
