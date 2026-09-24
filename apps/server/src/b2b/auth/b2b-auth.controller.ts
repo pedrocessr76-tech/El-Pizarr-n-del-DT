@@ -1,11 +1,14 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { B2bJwtGuard } from './b2b-jwt.guard';
 import { CurrentB2bUser } from './b2b-auth.decorators';
 import { B2bAuthService } from './b2b-auth.service';
 import { B2bJwtUser } from './b2b-auth.types';
+import { CsrfRefreshGuard } from '../../auth/csrf-refresh.guard';
+import { B2B_REFRESH_COOKIE, clearRefreshCookie, readCookie, setRefreshCookie } from '../../auth/tokens';
 
 class OnboardingDto {
   @ApiProperty({ example: 'Complejo Los Amigos' })
@@ -84,15 +87,19 @@ export class B2bAuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('onboarding')
   @ApiOperation({ summary: 'Onboarding de propietario: crea el complejo, su cuenta OWNER y una sede inicial opcional' })
-  onboarding(@Body() body: OnboardingDto) {
-    return this.auth.onboardOwner(body);
+  async onboarding(@Body() body: OnboardingDto, @Res({ passthrough: true }) res: ExpressResponse) {
+    const { refreshToken, ...session } = await this.auth.onboardOwner(body);
+    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+    return session;
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register-client')
   @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })
-  registerClient(@Body() body: RegisterClientDto) {
-    return this.auth.registerClient(body);
+  async registerClient(@Body() body: RegisterClientDto, @Res({ passthrough: true }) res: ExpressResponse) {
+    const { refreshToken, ...session } = await this.auth.registerClient(body);
+    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+    return session;
   }
 
   @Get('organizations')
@@ -116,8 +123,35 @@ export class B2bAuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión en Sistema Canchas' })
-  login(@Body() body: LoginB2bDto) {
-    return this.auth.login(body.email, body.password);
+  async login(@Body() body: LoginB2bDto, @Res({ passthrough: true }) res: ExpressResponse) {
+    const { refreshToken, ...session } = await this.auth.login(body.email, body.password);
+    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+    return session;
+  }
+
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Post('refresh')
+  @UseGuards(CsrfRefreshGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renovar la sesión B2B con el refresh token en cookie HttpOnly' })
+  async refresh(@Req() req: ExpressRequest, @Res({ passthrough: true }) res: ExpressResponse) {
+    const cookieRefresh = readCookie(req, B2B_REFRESH_COOKIE);
+    if (!cookieRefresh) {
+      throw new UnauthorizedException('No hay sesión activa.');
+    }
+    const { refreshToken, ...session } = await this.auth.refresh(cookieRefresh);
+    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+    return session;
+  }
+
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Post('logout')
+  @UseGuards(CsrfRefreshGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cerrar sesión B2B: elimina la cookie de refresh' })
+  logout(@Res({ passthrough: true }) res: ExpressResponse) {
+    clearRefreshCookie(res, B2B_REFRESH_COOKIE);
+    return { ok: true };
   }
 
   @Get('me')

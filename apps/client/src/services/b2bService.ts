@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 export interface B2bUser {
   userId: string;
@@ -50,6 +50,22 @@ export interface B2bPublicFacility { id: string; name: string; address?: string 
 export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
 export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
 
+// El access token B2B vive sólo EN MEMORIA (issue #17): la sesión larga la
+// renueva el refresh token que la API guarda en cookie HttpOnly.
+let b2bAccessToken: string | null = null;
+
+export function setB2bAccessToken(token: string | null): void {
+  b2bAccessToken = token;
+}
+
+export function getB2bAccessToken(): string | null {
+  return b2bAccessToken;
+}
+
+function clearB2bSession(): void {
+  b2bAccessToken = null;
+}
+
 // El backend sirve el B2B bajo `/api/v1`. VITE_API_URL apunta a la raíz de la API
 // (misma convención que en api.ts), por eso se agrega el prefijo `/api`.
 // En dev, Vite proxya `/api` al backend, así que la base queda `/api` de forma consistente.
@@ -57,14 +73,55 @@ const B2B_API_BASE = `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
 export const b2bApi = axios.create({
   baseURL: B2B_API_BASE,
+  // withCredentials permite que la cookie HttpOnly del refresh viaje en
+  // POST /v1/auth/refresh y /v1/auth/logout.
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
 
 b2bApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('b2bToken');
+  const token = getB2bAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Renovación con coalescing para los 401 del B2B.
+let b2bRefreshing: Promise<string | null> | null = null;
+
+function requestB2bRefresh(): Promise<string | null> {
+  if (!b2bRefreshing) {
+    b2bRefreshing = b2bApi
+      .post<B2bAuthResponse>('/v1/auth/refresh')
+      .then(({ data }) => {
+        setB2bAccessToken(data.accessToken);
+        return data.accessToken;
+      })
+      .catch(() => {
+        clearB2bSession();
+        return null;
+      })
+      .finally(() => {
+        b2bRefreshing = null;
+      });
+  }
+  return b2bRefreshing;
+}
+
+b2bApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
+    if (error.response?.status === 401 && original && !original._retried) {
+      original._retried = true;
+      return requestB2bRefresh().then((token) => {
+        if (!token) return Promise.reject(error);
+        original.headers.Authorization = `Bearer ${token}`;
+        return b2bApi(original);
+      });
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const b2bService = {
   async login(email: string, password: string) {
@@ -94,6 +151,19 @@ export const b2bService = {
   async getProfile() {
     const { data } = await b2bApi.get<B2bUser>('/v1/auth/me');
     return data;
+  },
+  async refresh(): Promise<B2bAuthResponse | null> {
+    try {
+      const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/refresh');
+      setB2bAccessToken(data.accessToken);
+      return data;
+    } catch {
+      return null;
+    }
+  },
+  async logout(): Promise<void> {
+    await b2bApi.post('/v1/auth/logout').catch(() => {});
+    clearB2bSession();
   },
   async getAvailability(courtId: string, from: string, to: string) {
     const { data } = await b2bApi.get('/v1/availability', { params: { courtId, from, to } });

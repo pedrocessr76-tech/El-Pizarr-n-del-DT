@@ -11,6 +11,7 @@ import { B2bRoleEntity } from '../entities/role.entity';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
 import { B2bJwtUser } from './b2b-auth.types';
+import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TYPE } from '../../auth/tokens';
 
 const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OWNER]: 'Propietario',
@@ -174,9 +175,40 @@ export class B2bAuthService {
     return slug;
   }
 
+  /**
+   * Access token corto (en memoria en el cliente) + refresh token de 7d en
+   * cookie HttpOnly (issue #17). El refresh lleva claim `type: 'refresh'` para
+   * que un access token robado no pueda usarse para renovar la sesión.
+   */
+  private issueTokenFrom(payload: B2bJwtUser) {
+    return {
+      accessToken: this.jwt.sign(payload, { expiresIn: ACCESS_TOKEN_TTL }),
+      refreshToken: this.jwt.sign({ ...payload, type: REFRESH_TOKEN_TYPE }, { expiresIn: REFRESH_TOKEN_TTL }),
+      user: payload,
+    };
+  }
+
   private issueToken(user: B2bUserEntity, roles: B2bRoleCode[]) {
-    const payload = { userId: user.id, organizationId: user.organizationId, email: user.email, roles };
-    return { accessToken: this.jwt.sign(payload), user: payload };
+    return this.issueTokenFrom({ userId: user.id, organizationId: user.organizationId, email: user.email, roles });
+  }
+
+  /**
+   * Renueva la sesión B2B a partir del refresh token (cookie HttpOnly).
+   * Revalida la identidad contra la BD (misma política que resolveUserFromToken:
+   * roles/status nunca se confían al JWT) y rota el par completo.
+   */
+  async refresh(refreshToken: string) {
+    let claims: B2bJwtUser & { type?: string };
+    try {
+      claims = this.jwt.verify<B2bJwtUser & { type?: string }>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('La sesión expiró. Volvé a iniciar sesión.');
+    }
+    if (claims.type !== REFRESH_TOKEN_TYPE) {
+      throw new UnauthorizedException('Token de refresco inválido.');
+    }
+    const fresh = await this.resolveUserFromToken(claims);
+    return this.issueTokenFrom(fresh);
   }
 
   /**

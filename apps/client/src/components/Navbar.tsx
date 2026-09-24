@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLo
                 <span className="max-w-[120px] truncate">{user.username}</span>
               </div>
               <button
-                onClick={logout}
+                onClick={() => void logout()}
                 className="flex items-center gap-2 px-3 py-2 bg-[#222a3d] border border-white/10 rounded-lg text-sm font-montserrat font-semibold text-gray-400 hover:text-white hover:bg-[#2d3449] transition-colors shadow-sm"
                 title="Cerrar sesión"
               >

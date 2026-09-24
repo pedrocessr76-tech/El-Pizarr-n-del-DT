@@ -9,8 +9,8 @@ import { HomePage } from './pages/HomePage';
 import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { CatalogHistoryPage } from './pages/CatalogHistoryPage';
 import { TournamentBracketPage } from './pages/TournamentBracketPage';
-import { ensureGuestToken } from './services/authService';
-import { getGuestToken } from './utils/session';
+import { ensureGuestToken, type AuthResponse } from './services/authService';
+import { getGuestToken, hasUserToken } from './utils/session';
 import { B2bApp } from './pages/B2bApp';
 import { PwaOverlays } from './components/pwa/PwaOverlays';
 import { MobileTopBar } from './components/layout/MobileTopBar';
@@ -50,16 +50,35 @@ function App() {
   const toasts = useNotificationStore((s) => s.toasts);
   const { user, logout } = useAuthStore();
 
-  // Identidad anónima del servidor: garantiza un guest-token firmado desde el arranque.
+  // Restaura la sesión desde la cookie HttpOnly (usuario real o invitado) y
+  // garantiza un token efectivo en memoria desde el arranque (issue #17).
   useEffect(() => {
-    void ensureGuestToken().catch((err) => console.warn('No se pudo crear el token de invitado:', err));
+    void ensureGuestToken().catch((err) => console.warn('No se pudo restaurar la sesión:', err));
+  }, []);
+
+  // Hidrata el store cuando ensureGuestToken restaura un usuario real, y
+  // desloguea (sin llamar al server) si la sesión venció definitivamente.
+  useEffect(() => {
+    const onUserSession = (e: Event) => {
+      const session = (e as CustomEvent<AuthResponse>).detail;
+      useAuthStore.getState().setSession(session);
+    };
+    const onSessionExpired = () => {
+      void useAuthStore.getState().logout(false);
+    };
+    window.addEventListener('epdt:user-session', onUserSession);
+    window.addEventListener('epdt:session-expired', onSessionExpired);
+    return () => {
+      window.removeEventListener('epdt:user-session', onUserSession);
+      window.removeEventListener('epdt:session-expired', onSessionExpired);
+    };
   }, []);
 
   // Al cerrar la página con identidad de INVITADO, limpiar sus datos en backend.
   // fetch keepalive permite el header Authorization que sendBeacon no soporta.
   useEffect(() => {
     const cleanup = () => {
-      if (localStorage.getItem('token')) return;
+      if (hasUserToken()) return;
       const guestToken = getGuestToken();
       if (!guestToken) return;
       const base = (import.meta.env.VITE_API_URL as string | undefined) || '';

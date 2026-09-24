@@ -18,7 +18,12 @@ import { B2bRolesGuard } from './b2b-roles.guard';
   imports: [
     TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity, B2bFacilityEntity], 'b2b'),
     PassportModule,
-    JwtModule.register({ secret: requireB2bJwtSecret(), signOptions: { expiresIn: '7d' } }),
+    JwtModule.register({
+      secret: requireB2bJwtSecret(),
+      // Access token corto; la sesión larga la renueva el refresh token en
+      // cookie HttpOnly (issue #17).
+      signOptions: { expiresIn: '15m' },
+    }),
   ],
   controllers: [B2bAuthController],
   providers: [B2bAuthService, B2bJwtStrategy, B2bRolesGuard],
