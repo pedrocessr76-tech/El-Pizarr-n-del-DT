@@ -101,13 +101,40 @@ export function B2bApp() {
   // que las vistas ya rendericen todos sus horarios con la tz correcta (#24).
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    void useB2bStore.getState().hydrate().then(async (restored) => {
-      if (restored) {
-        await useB2bStore.getState().loadOrgTimezone();
-        setView(resolveRole(useB2bStore.getState().user) === 'CLIENT' ? 'portal' : 'dashboard');
-      }
-      setHydrated(true);
-    });
+    document.documentElement.classList.add('b2b-route');
+    document.body.classList.add('b2b-route');
+    return () => {
+      document.documentElement.classList.remove('b2b-route');
+      document.body.classList.remove('b2b-route');
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const finish = () => {
+      if (!cancelled) setHydrated(true);
+    };
+    // Si el refresh se cuelga (p. ej. interceptor reentrante), no dejar la ruta
+    // en blanco sobre el fondo verde del juego.
+    const failSafe = window.setTimeout(finish, 6000);
+    void useB2bStore.getState().hydrate()
+      .then(async (restored) => {
+        if (cancelled) return;
+        if (restored) {
+          await useB2bStore.getState().loadOrgTimezone();
+          if (cancelled) return;
+          setView(resolveRole(useB2bStore.getState().user) === 'CLIENT' ? 'portal' : 'dashboard');
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        window.clearTimeout(failSafe);
+        finish();
+      });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failSafe);
+    };
   }, []);
 
   // Recarga la zona cuando la sesión cambia (login/registro dentro del app).

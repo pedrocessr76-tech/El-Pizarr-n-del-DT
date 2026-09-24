@@ -129,4 +129,13 @@ describe('b2bService: flujo reserva / cancelación / reprogramación', () => {
 
     expect(getB2bAccessToken()).toBeNull();
   });
+
+  it('un 401 en /v1/auth/refresh no reentra al refresh (evita deadlock del hydrate)', async () => {
+    const original = { headers: {}, url: '/v1/auth/refresh' };
+    const httpError = { response: { status: 401 }, config: original };
+
+    await expect(responseErrHandler(httpError)).rejects.toEqual(httpError);
+
+    expect(main.post).not.toHaveBeenCalled();
+  });
 });
