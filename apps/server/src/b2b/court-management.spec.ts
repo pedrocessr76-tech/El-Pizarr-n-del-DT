@@ -1,10 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bRoleCode } from './entities/b2b.enums';
+import { DEFAULT_TIMEZONE } from './time';
 
 // Alta y edición de canchas: tamaño, capacidad derivada y validación.
 describe('Gestión de canchas', () => {
   const user = { userId: 'owner', organizationId: 'org', email: 'owner@test.invalid', roles: [B2bRoleCode.OWNER] };
+  const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }) };
 
   function setup() {
     const savedCourts: Array<Record<string, unknown>> = [];
@@ -36,7 +38,7 @@ describe('Gestión de canchas', () => {
       getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test'),
     };
     const service = new B2bManagementService(
-      {} as never, facilities as never, courts as never,
+      organizations as never, facilities as never, courts as never,
       rules as never, shifts as never, {} as never, {} as never, {} as never,
       {} as never,
       notifications as never,
@@ -84,7 +86,7 @@ describe('Gestión de canchas', () => {
     const { courts } = setup();
     const otherFacilities = { findOneBy: jest.fn().mockResolvedValue(null) };
     const other = new B2bManagementService(
-      {} as never, otherFacilities as never, courts as never,
+      organizations as never, otherFacilities as never, courts as never,
       {} as never, {} as never, {} as never, {} as never, {} as never,
       {} as never,
       { notifyStaff: jest.fn(), notifyUser: jest.fn(), getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test') } as never,

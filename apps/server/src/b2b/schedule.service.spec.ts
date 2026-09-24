@@ -3,10 +3,17 @@ import { B2bManagementService } from './b2b-management.service';
 import { B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
+import { DEFAULT_TIMEZONE, orgTimeToDate } from './time';
 
 // Ejecuta el servicio real con repositorios simulados; no sustituye una prueba PostgreSQL.
 describe('Horarios y bloqueos', () => {
   const user = { userId: 'owner', organizationId: 'org', email: 'owner@test.invalid', roles: [B2bRoleCode.OWNER] };
+  const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }) };
+  // Los rangos se calculan en la zona de la organización (issue #24), no con la
+  // hora local del proceso: el test es estable aunque el servidor cambie de región.
+  const mondayFrom = orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 0, minute: 0 }, DEFAULT_TIMEZONE).toISOString();
+  const mondayTo = orgTimeToDate({ year: 2030, month: 1, day: 8, hour: 0, minute: 0 }, DEFAULT_TIMEZONE).toISOString();
+
   function setup() {
     const generated: B2bShiftEntity[] = [];
     const savedBlocks: B2bAvailabilityBlockEntity[] = [];
@@ -42,7 +49,7 @@ describe('Horarios y bloqueos', () => {
       getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test'),
     };
     const service = new B2bManagementService(
-      {} as never, {} as never, courts as never, rules as never,
+      organizations as never, {} as never, courts as never, rules as never,
       shifts as never, blocks as never, bookings as never, {} as never,
       {} as never,
       notifications as never,
@@ -53,8 +60,8 @@ describe('Horarios y bloqueos', () => {
 
   it('excluye un turno generado después de bloquearlo y rechaza reservarlo', async () => {
     const { service, bookings } = setup();
-    const from = new Date(2030, 0, 7, 0).toISOString(); // lunes, zona local del servidor
-    const to = new Date(2030, 0, 8, 0).toISOString();
+    const from = mondayFrom;
+    const to = mondayTo;
     const [shift] = await service.generateShifts(user, 'court', { from, to });
     expect(shift.status).toBe(ShiftStatus.AVAILABLE);
     expect(await service.availability(user, 'court', from, to)).toHaveLength(1);
@@ -92,8 +99,8 @@ describe('Horarios y bloqueos', () => {
 
   it('un bloqueo contiguo no oculta el turno (intervalos semiabiertos)', async () => {
     const { service } = setup();
-    const from = new Date(2030, 0, 7, 0).toISOString();
-    const to = new Date(2030, 0, 8, 0).toISOString();
+    const from = mondayFrom;
+    const to = mondayTo;
     const [shift] = await service.generateShifts(user, 'court', { from, to });
     await service.createBlock(user, 'court', {
       startsAt: shift.endsAt.toISOString(),
