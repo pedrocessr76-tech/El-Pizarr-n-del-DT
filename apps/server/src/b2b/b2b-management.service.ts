@@ -6,8 +6,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { Between, DataSource, EntityManager, In, QueryFailedError, Repository } from 'typeorm';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
@@ -36,6 +36,7 @@ export class B2bManagementService {
     @InjectRepository(B2bBookingEventEntity, 'b2b') private readonly bookingEvents: Repository<B2bBookingEventEntity>,
     @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
     private readonly notifications: B2bNotificationsService,
+    @InjectDataSource('b2b') private readonly dataSource: DataSource,
   ) {}
 
   async getOrganization(user: B2bJwtUser) {
@@ -303,22 +304,44 @@ export class B2bManagementService {
 
   async createBooking(user: B2bJwtUser, input: { courtId: string; shiftId: string; notes?: string }) {
     await this.getCourt(user, input.courtId);
-    const shift = await this.shifts.findOne({ where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId } });
-    if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
-    await this.assertUnblocked(shift);
-    const existing = await this.bookings.findOne({ where: { shiftId: shift.id, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } });
-    if (existing) throw new ConflictException('El turno ya fue reservado');
-    const booking = await this.bookings.save(this.bookings.create({
-      organizationId: user.organizationId,
-      courtId: input.courtId,
-      shiftId: input.shiftId,
-      clientUserId: user.userId,
-      status: BookingStatus.PENDING,
-      priceCentsArs: shift.priceCentsArs,
-      notes: input.notes || null,
-    }));
-    shift.status = ShiftStatus.BOOKED;
-    await this.shifts.save(shift);
+    let booking!: B2bBookingEntity;
+    try {
+      // Transacción con bloqueo de fila (SELECT ... FOR UPDATE) sobre el turno:
+      // dos reservas concurrentes del mismo turno se serializan y quien pierde
+      // la carrera relee el turno ya BOOKED (issue #18).
+      booking = await this.dataSource.transaction(async (manager) => {
+        const shifts = manager.getRepository(B2bShiftEntity);
+        const bookings = manager.getRepository(B2bBookingEntity);
+        const shift = await shifts.findOne({
+          where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
+        await this.assertUnblocked(shift, manager);
+        const existing = await bookings.findOne({ where: { shiftId: shift.id, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } });
+        if (existing) throw new ConflictException('El turno ya fue reservado');
+        const saved = await bookings.save(
+          bookings.create({
+            organizationId: user.organizationId,
+            courtId: input.courtId,
+            shiftId: input.shiftId,
+            clientUserId: user.userId,
+            status: BookingStatus.PENDING,
+            priceCentsArs: shift.priceCentsArs,
+            notes: input.notes || null,
+          }),
+        );
+        await shifts.update({ id: shift.id }, { status: ShiftStatus.BOOKED });
+        return saved;
+      });
+    } catch (error) {
+      // El índice parcial único de b2b_bookings es la red de seguridad final:
+      // ante una carrera que el bloqueo de fila no alcanzó, se reporta 409.
+      if (error instanceof QueryFailedError && (error as unknown as { driverError?: { code?: string } }).driverError?.code === '23505') {
+        throw new ConflictException('El turno ya fue reservado');
+      }
+      throw error;
+    }
     // Los efectos posteriores al alta (evento + notificación al staff) nunca
     // deben tumbar la reserva ya creada: si fallan, se registran y la reserva
     // queda igual (PENDING). Antes, un fallo aquí devolvía 500 al cliente
@@ -339,39 +362,52 @@ export class B2bManagementService {
   }
 
   async transitionBooking(user: B2bJwtUser, id: string, status: BookingStatus) {
-    const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
-    if (!booking) throw new NotFoundException('Reserva no encontrada');
     const isStaff = user.roles.some(isStaffRole);
-    if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
-    if (!canChangeBookingStatus(booking.status, status, isStaff)) throw new ForbiddenException('Transición de reserva no permitida');
-    const previous = booking.status;
-    booking.status = status;
-    const saved = await this.bookings.save(booking);
-    if (status === BookingStatus.CANCELLED) {
-      await this.shifts.update({ id: booking.shiftId }, { status: ShiftStatus.AVAILABLE });
-    }
-    await this.recordEvent(booking.id, user.userId, previous, status);
+    let saved!: B2bBookingEntity;
+    let previous!: BookingStatus;
+    await this.dataSource.transaction(async (manager) => {
+      // Bloqueo de fila sobre la reserva: una cancelación concurrente con una
+      // reprogramación no puede dejar el turno liberado o tomado dos veces.
+      const bookings = manager.getRepository(B2bBookingEntity);
+      const shifts = manager.getRepository(B2bShiftEntity);
+      const booking = await bookings.findOne({
+        where: { id, organizationId: user.organizationId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!booking) throw new NotFoundException('Reserva no encontrada');
+      if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
+      if (!canChangeBookingStatus(booking.status, status, isStaff)) throw new ForbiddenException('Transición de reserva no permitida');
+      previous = booking.status;
+      booking.status = status;
+      saved = await bookings.save(booking);
+      if (status === BookingStatus.CANCELLED) {
+        // Liberar el turno es parte de la misma transacción que el estado de
+        // la reserva: ante un error, se revierte todo (issue #18).
+        await shifts.update({ id: booking.shiftId }, { status: ShiftStatus.AVAILABLE });
+      }
+    });
+    await this.recordEvent(saved.id, user.userId, previous, status);
 
     if (status === BookingStatus.CONFIRMED) {
       await this.notifications.notifyUser(
-        booking.clientUserId,
-        booking.organizationId,
-        await this.bookingNotification(booking, 'b2b_booking_confirmed', 'success'),
+        saved.clientUserId,
+        saved.organizationId,
+        await this.bookingNotification(saved, 'b2b_booking_confirmed', 'success'),
         user.userId,
       );
     } else if (status === BookingStatus.COMPLETED) {
       await this.notifications.notifyUser(
-        booking.clientUserId,
-        booking.organizationId,
-        await this.bookingNotification(booking, 'b2b_booking_completed', 'success'),
+        saved.clientUserId,
+        saved.organizationId,
+        await this.bookingNotification(saved, 'b2b_booking_completed', 'success'),
         user.userId,
       );
     } else if (status === BookingStatus.CANCELLED) {
-      const notification = await this.bookingNotification(booking, 'b2b_booking_cancelled', 'warning');
+      const notification = await this.bookingNotification(saved, 'b2b_booking_cancelled', 'warning');
       if (isStaff) {
-        await this.notifications.notifyUser(booking.clientUserId, booking.organizationId, notification, user.userId);
+        await this.notifications.notifyUser(saved.clientUserId, saved.organizationId, notification, user.userId);
       } else {
-        await this.notifications.notifyStaff(booking.organizationId, notification, user.userId);
+        await this.notifications.notifyStaff(saved.organizationId, notification, user.userId);
       }
     }
 
@@ -379,33 +415,49 @@ export class B2bManagementService {
   }
 
   async rescheduleBooking(user: B2bJwtUser, id: string, shiftId: string) {
-    const booking = await this.bookings.findOne({ where: { id, organizationId: user.organizationId } });
-    if (!booking) throw new NotFoundException('Reserva no encontrada');
     const isStaff = user.roles.some(isStaffRole);
-    if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
-    const shift = await this.shifts.findOne({ where: { id: shiftId, organizationId: user.organizationId, status: ShiftStatus.AVAILABLE } });
-    if (!shift) throw new ConflictException('El nuevo turno no está disponible');
-    await this.assertUnblocked(shift);
-    const previousShiftId = booking.shiftId;
-    booking.shiftId = shift.id;
-    booking.courtId = shift.courtId;
-    booking.priceCentsArs = shift.priceCentsArs;
-    await this.shifts.update({ id: previousShiftId }, { status: ShiftStatus.AVAILABLE });
-    await this.shifts.update({ id: shift.id }, { status: ShiftStatus.BOOKED });
-    const saved = await this.bookings.save(booking);
-    await this.recordEvent(booking.id, user.userId, booking.status, booking.status);
-    const notification = await this.bookingNotification(booking, 'b2b_booking_rescheduled', 'info');
+    const saved = await this.dataSource.transaction(async (manager) => {
+      // Transacción con bloqueo de fila: la reserva y el turno de destino se
+      // serializan frente a reprogramaciones/cancelaciones concurrentes, y la
+      // liberación de un turno y la toma del otro son atómicas (issue #18).
+      const bookings = manager.getRepository(B2bBookingEntity);
+      const shifts = manager.getRepository(B2bShiftEntity);
+      const booking = await bookings.findOne({
+        where: { id, organizationId: user.organizationId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!booking) throw new NotFoundException('Reserva no encontrada');
+      if (!isStaff && booking.clientUserId !== user.userId) throw new ForbiddenException('No puede modificar esta reserva');
+      const shift = await shifts.findOne({
+        where: { id: shiftId, organizationId: user.organizationId, status: ShiftStatus.AVAILABLE },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!shift) throw new ConflictException('El nuevo turno no está disponible');
+      await this.assertUnblocked(shift, manager);
+      const previousShiftId = booking.shiftId;
+      // El turno nuevo se marca BOOKED antes de liberar el anterior; si algo
+      // falla a mitad de proceso la transacción revierte ambos cambios.
+      await shifts.update({ id: shift.id }, { status: ShiftStatus.BOOKED });
+      await shifts.update({ id: previousShiftId }, { status: ShiftStatus.AVAILABLE });
+      booking.shiftId = shift.id;
+      booking.courtId = shift.courtId;
+      booking.priceCentsArs = shift.priceCentsArs;
+      return bookings.save(booking);
+    });
+    await this.recordEvent(saved.id, user.userId, saved.status, saved.status);
+    const notification = await this.bookingNotification(saved, 'b2b_booking_rescheduled', 'info');
     if (isStaff) {
-      await this.notifications.notifyUser(booking.clientUserId, booking.organizationId, notification, user.userId);
+      await this.notifications.notifyUser(saved.clientUserId, saved.organizationId, notification, user.userId);
     } else {
-      await this.notifications.notifyStaff(booking.organizationId, notification, user.userId);
+      await this.notifications.notifyStaff(saved.organizationId, notification, user.userId);
     }
     return saved;
   }
 
-  private async assertUnblocked(shift: B2bShiftEntity) {
-    const blocks = await this.blocks.find({ where: { organizationId: shift.organizationId, courtId: shift.courtId } });
-    if (blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt)) {
+  private async assertUnblocked(shift: B2bShiftEntity, manager?: EntityManager) {
+    const blocks = manager ? manager.getRepository(B2bAvailabilityBlockEntity) : this.blocks;
+    const found = await blocks.find({ where: { organizationId: shift.organizationId, courtId: shift.courtId } });
+    if (found.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt)) {
       throw new ConflictException('El turno está bloqueado');
     }
   }

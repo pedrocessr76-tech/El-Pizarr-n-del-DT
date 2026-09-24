@@ -65,11 +65,24 @@ describe('Notificaciones del ciclo de reservas', () => {
       save: jest.fn(async (booking) => booking),
     };
     const bookingEvents = { create: jest.fn((event) => event), save: jest.fn(async (event) => event) };
+    const dataSource = {
+      transaction: jest.fn(async (cb: (manager: any) => unknown) => cb({
+        getRepository: jest.fn((entity: { name: string }) => {
+          const map: Record<string, unknown> = {
+            B2bShiftEntity: shifts,
+            B2bAvailabilityBlockEntity: blocks,
+            B2bBookingEntity: bookings,
+          };
+          return (map[entity.name] ?? {}) as never;
+        }),
+      } as never)),
+    };
     const service = new B2bManagementService(
       {} as never, {} as never, courts as never, {} as never,
       shifts as never, blocks as never, bookings as never, bookingEvents as never,
       {} as never,
       notifications as never,
+      dataSource as never,
     );
     return { service, notifications, bookings, shifts, status };
   }
@@ -180,14 +193,28 @@ describe('Notificaciones del ciclo de reservas', () => {
       notifyUser: jest.fn().mockResolvedValue([]),
       getUserDisplayName: jest.fn().mockResolvedValue('Carlos Cliente'),
     };
+    const bookings = { findOne: jest.fn().mockResolvedValue(null), create: jest.fn(), save: jest.fn() };
+    const dataSource = {
+      transaction: jest.fn(async (cb: (manager: any) => unknown) => cb({
+        getRepository: jest.fn((entity: { name: string }) => {
+          const map: Record<string, unknown> = {
+            B2bShiftEntity: shifts,
+            B2bAvailabilityBlockEntity: busyBlocks,
+            B2bBookingEntity: bookings,
+          };
+          return (map[entity.name] ?? {}) as never;
+        }),
+      } as never)),
+    };
     const service = new B2bManagementService(
       {} as never, {} as never,
       { findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org', name: 'Cancha 1' }) } as never,
       {} as never, shifts as never, busyBlocks as never,
-      { findOne: jest.fn().mockResolvedValue(null), create: jest.fn(), save: jest.fn() } as never,
+      bookings as never,
       { save: jest.fn() } as never,
       {} as never,
       notifications as never,
+      dataSource as never,
     );
 
     await expect(service.createBooking(client, { courtId: 'court', shiftId: 'shift' }))
