@@ -91,6 +91,7 @@ export class B2bManagementController {
   @Post('bookings') createBooking(@CurrentB2bUser() user: B2bJwtUser, @Body() body: BookingDto) { return this.service.createBooking(user, body); }
   @Post('bookings/:id/confirm') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) confirm(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CONFIRMED); }
   @Post('bookings/:id/cancel') cancel(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CANCELLED); }
+  @Post('bookings/:id/confirm-attendance') confirmAttendance(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.confirmAttendance(user, id); }
   @Post('bookings/:id/reschedule') reschedule(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string, @Body() body: RescheduleDto) { return this.service.rescheduleBooking(user, id, body.shiftId); }
   @Post('bookings/:id/complete') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) complete(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.COMPLETED); }
 }

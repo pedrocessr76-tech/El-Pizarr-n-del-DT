@@ -85,6 +85,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       {} as never,
       notifications as never,
       dataSource as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, notifications, bookings, shifts, status };
   }
@@ -217,6 +218,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       {} as never,
       notifications as never,
       dataSource as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
 
     await expect(service.createBooking(client, { courtId: 'court', shiftId: 'shift' }))

@@ -77,6 +77,13 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   });
 
   it('declara todas las columnas de cada entidad', () => {
+    // Contacto de WhatsApp (#37): los 4 campos se agregan en la migración
+    // aditiva 1710000000002-CreateB2bWhatsappContacts (ver su spec), no en el
+    // baseline. El guard siguiente las registra para no exigirlas acá.
+    const provisionedLater: Record<string, string[]> = {
+      b2b_users: ['whatsappPhone', 'whatsappOptIn'],
+      b2b_organizations: ['whatsappPhone', 'whatsappOptIn'],
+    };
     const missing: string[] = [];
     let checked = 0;
     for (const meta of dataSource.entityMetadatas) {
@@ -86,7 +93,7 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
         checked += 1;
         const name = column.databaseName;
         const present = sql!.includes('"' + name + '"') || new RegExp('\\b' + name + '\\b').test(sql!);
-        if (!present) missing.push(meta.tableName + '.' + name);
+        if (!present && !(provisionedLater[meta.tableName] ?? []).includes(name)) missing.push(meta.tableName + '.' + name);
       }
     }
     // Guarda contra un test vacío: se validan las columnas de las 11 entidades B2B.

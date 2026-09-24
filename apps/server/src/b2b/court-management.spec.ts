@@ -43,6 +43,7 @@ describe('Gestión de canchas', () => {
       {} as never,
       notifications as never,
       { transaction: jest.fn() } as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, courts, savedCourts };
   }
@@ -91,6 +92,7 @@ describe('Gestión de canchas', () => {
       {} as never,
       { notifyStaff: jest.fn(), notifyUser: jest.fn(), getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test') } as never,
       { transaction: jest.fn() } as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     await expect(other.createCourt(user, 'facility', { name: 'Cancha Y', sportType: 'FUTBOL 5', defaultPriceCentsArs: 9000 }))
       .rejects.toThrow(NotFoundException);

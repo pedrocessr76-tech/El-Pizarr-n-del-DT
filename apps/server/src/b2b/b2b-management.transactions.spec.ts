@@ -84,6 +84,7 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
       {} as never,
       notifications as never,
       dataSource as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, notifications, bookings, shifts, dataSource, manager };
   }

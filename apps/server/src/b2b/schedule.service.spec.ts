@@ -54,6 +54,7 @@ describe('Horarios y bloqueos', () => {
       {} as never,
       notifications as never,
       dataSource as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, shifts, blocks, bookings, generated, notifications };
   }

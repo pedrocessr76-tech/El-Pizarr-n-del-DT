@@ -5,6 +5,8 @@ export interface B2bUser {
   organizationId: string;
   email: string;
   roles: string[];
+  whatsappPhone?: string | null;
+  whatsappOptIn?: boolean;
 }
 
 export interface B2bAuthResponse {
@@ -49,7 +51,7 @@ export interface B2bOrganizationOption { id: string; name: string; slug: string;
 export interface B2bPublicFacility { id: string; name: string; address?: string | null; courts: Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>; }
 export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
 export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
-export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; }
+export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; whatsappPhone?: string | null; whatsappOptIn?: boolean; }
 
 // El access token B2B vive sólo EN MEMORIA (issue #17): la sesión larga la
 // renueva el refresh token que la API guarda en cookie HttpOnly.
@@ -153,6 +155,14 @@ export const b2bService = {
     const { data } = await b2bApi.get<B2bUser>('/v1/auth/me');
     return data;
   },
+  async updateProfile(input: { whatsappPhone?: string; whatsappOptIn?: boolean }) {
+    const { data } = await b2bApi.patch<B2bUser>('/v1/auth/profile', input);
+    return data;
+  },
+  async updateOrganizationContact(input: { whatsappPhone?: string; whatsappOptIn?: boolean }) {
+    const { data } = await b2bApi.patch<{ whatsappPhone: string | null; whatsappOptIn: boolean }>('/v1/auth/organization', input);
+    return data;
+  },
   async getOrganization() {
     const { data } = await b2bApi.get<B2bOrganizationSettings>('/v1/organizations/me');
     return data;
@@ -222,6 +232,10 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/cancel`);
     return data;
   },
+  async confirmAttendance(id: string) {
+    const { data } = await b2bApi.post<{ sent: boolean; message: string }>(`/v1/bookings/${id}/confirm-attendance`);
+    return data;
+  },
   async rescheduleBooking(id: string, shiftId: string) {
     const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/reschedule`, { shiftId });
     return data;
@@ -247,3 +261,13 @@ export const b2bService = {
     return data;
   },
 };
+
+/**
+ * Deep link a WhatsApp (#34 R1): abre el chat del número indicado (E.164, ej.
+ * +5491112345678) con un mensaje pre-cargado. No requiere proveedor de envío:
+ * el teléfono del usuario final es quien manda el mensaje.
+ */
+export function buildWhatsAppDeepLink(phone: string, text: string): string {
+  const digits = phone.replace(/[^\d]/g, '');
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}

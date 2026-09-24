@@ -2,6 +2,8 @@ import { ScheduleSettings } from '../components/b2b/ScheduleSettings';
 
 import { OperationalMetrics } from '../components/b2b/OperationalMetrics';
 
+import { ProfileView } from '../components/b2b/ProfileView';
+
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
@@ -13,6 +15,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageCircle,
   SlidersHorizontal,
   Trophy,
   UserRound,
@@ -20,7 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { useB2bStore } from '../store/useB2bStore';
-import { b2bService, type B2bOrganizationOption, type B2bPublicFacility, type B2bWeeklyAvailability } from '../services/b2bService';
+import { b2bService, buildWhatsAppDeepLink, type B2bBooking, type B2bOrganizationOption, type B2bPublicFacility, type B2bWeeklyAvailability } from '../services/b2bService';
 import { MobileTopBar } from '../components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from '../components/layout/MobileTabBar';
 import { useB2bNotificationSocket } from '../services/b2bNotificationSocket';
@@ -29,7 +32,7 @@ import { B2bNotificationToasts } from '../components/b2b/B2bNotificationToasts';
 import { addOrgDays, dayKeyToOrgMidnight, formatDayLabel, formatHourLabel, formatWeekdayLabel, orgTzLabel, resolveOrgTimeZone, startOfOrgDay, startOfWeekKey, toDayKey } from '../utils/orgTime';
 
 type B2bRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'CLIENT';
-type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'schedule' | 'portal' | 'payment';
+type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'schedule' | 'portal' | 'payment' | 'profile';
 
 const roleLabels: Record<B2bRole, string> = {
   OWNER: 'Propietario',
@@ -158,13 +161,13 @@ export function B2bApp() {
         { id: 'dashboard', label: 'Operativa', icon: 'dashboard' },
         { id: 'availability', label: 'Canchas', icon: 'calendar_month' },
         { id: 'bookings', label: 'Reservas', icon: 'groups' },
-        { id: 'login', label: 'Perfil', icon: 'person' },
+        { id: 'profile', label: 'Perfil', icon: 'person' },
       ]
     : [
         { id: 'portal', label: 'Reservar', icon: 'sports_soccer' },
         { id: 'payment', label: 'Pago', icon: 'credit_card' },
         { id: 'bookings', label: 'Mis turnos', icon: 'event_available' },
-        { id: 'login', label: 'Perfil', icon: 'person' },
+        { id: 'profile', label: 'Perfil', icon: 'person' },
       ];
 
   return (
@@ -194,7 +197,7 @@ export function B2bApp() {
         <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span><LogOut size={16} /></div></div>
       </aside>
       <main className="b2b-main">
-        <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell /><button className="profile-button" onClick={() => navigate('login')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
+        <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell /><button className="profile-button" onClick={() => navigate('profile')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
         {isStaff ? <StaffView view={view} onNavigate={navigate} onSelectBooking={setSelectedBooking} timezone={timezone} /> : <RealClientView view={view} onNavigate={navigate} timezone={timezone} />}
       </main>
       <MobileTabBar variant="canchas" tabs={mobileTabs} activeTab={view} onSelect={(next) => navigate(next)} />
@@ -349,6 +352,7 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
   if (view === 'bookings') return <BookingsView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} />;
   if (view === 'settings') return <SettingsView />;
   if (view === 'schedule') return <ScheduleView />;
+  if (view === 'profile') return <ProfileView role="staff" onBack={() => onNavigate('dashboard')} />;
   return <DashboardView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} timezone={timezone} />;
 }
 
@@ -455,21 +459,26 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
     const selectedOrgName = facilities.find((item) => item.id === facilityId)?.name ?? '';
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [duration, setDuration] = useState<1 | 2>(1);
-  const [selectedShift, setSelectedShift] = useState<{ courtName: string; courtId: string; shiftId?: string; label: string; priceCents: number } | null>(null);
+  const [selectedShift, setSelectedShift] = useState<{ courtName: string; courtId: string; shiftId?: string; startsAt: string; label: string; priceCents: number } | null>(null);
+  const [lastBooking, setLastBooking] = useState<{ id: string } | null>(null);
   const finishPayment = () => {
     setSelectedDate('');
     setSelectedShift(null);
     setDuration(1);
+    setLastBooking(null);
     setReloadKey((key) => key + 1);
     setMessage('Reserva registrada. El complejo confirmará tu turno.');
     onNavigate('portal');
   };
-  if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} />;
+  if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} timezone={timezone} lastBooking={lastBooking} selectedShift={selectedShift} duration={duration} organizationName={selectedOrgName} />;
+  if (view === 'bookings') return <ClientBookingsView timezone={timezone} onBack={() => onNavigate('portal')} />;
+  if (view === 'profile') return <ProfileView role="client" onBack={() => onNavigate('portal')} />;
     const demoCourts = courts.length ? courts : [{ id: 'placeholder', name: 'Sin canchas todavía', sportType: 'Seleccioná un complejo', defaultPriceCentsArs: 0 }];
   const reserve = async (courtId: string, shiftId?: string) => {
     if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
     try {
       const result = await b2bService.createBooking({ courtId, shiftId });
+      setLastBooking(result);
       setMessage('Turno reservado correctamente.');
       onNavigate('payment');
       return result;
@@ -487,8 +496,62 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
     if (selectedShift) void reserve(selectedShift.courtId, selectedShift.shiftId);
     else setMessage('Seleccioná un turno disponible para continuar al pago.');
   };
-  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={facilityId} onChange={(event) => setFacilityId(event.target.value)}>{facilities.length === 0 && <option value="">Cargando complejos…</option>}{facilities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDayKeys.map((key) => { const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{formatWeekdayLabel(timezone, key)}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(timezone, shift.startsAt) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = formatHourLabel(timezone, shift.startsAt); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
+  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={facilityId} onChange={(event) => setFacilityId(event.target.value)}>{facilities.length === 0 && <option value="">Cargando complejos…</option>}{facilities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDayKeys.map((key) => { const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{formatWeekdayLabel(timezone, key)}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(timezone, shift.startsAt) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = formatHourLabel(timezone, shift.startsAt); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, startsAt: shift.startsAt, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
 
+}
+
+function ClientBookingsView({ timezone, onBack }: { timezone: string; onBack: () => void }) {
+  const [items, setItems] = useState<B2bBooking[]>([]);
+  const [now, setNow] = useState(Date.now());
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const load = () => b2bService.getBookings().then(setItems).catch(() => setFeedback({ load: 'No se pudieron cargar tus turnos.' }));
+  useEffect(() => {
+    load();
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const statusLabel: Record<string, string> = { PENDING: 'Pendiente', CONFIRMED: 'Confirmado', CANCELLED: 'Cancelado', COMPLETED: 'Completado' };
+  const confirm = async (id: string) => {
+    setBusyId(id);
+    try {
+      const result = await b2bService.confirmAttendance(id);
+      setFeedback((current) => ({ ...current, [id]: result.message }));
+      setNow(Date.now());
+    } catch (error: any) {
+      const reason = error?.response?.data?.message;
+      setFeedback((current) => ({ ...current, [id]: typeof reason === 'string' && reason ? reason : 'No se pudo enviar la confirmación.' }));
+    } finally {
+      setBusyId(null);
+    }
+  };
+  return (
+    <div className="b2b-content client-content">
+      <div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> MIS TURNOS</span><h1>Tus reservas</h1><p>Confirmá asistencia dentro de los 30 minutos previos a tu turno.</p></div>{feedback.load && <div className="client-chip"><X size={15} /> {feedback.load}</div>}</div>
+      <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Volver al portal</button>
+      {items.length === 0 ? <section className="panel"><div className="empty-state">Todavía no tenés turnos reservados.</div></section> : <section className="panel"><div className="client-bookings-list">{items.map((booking) => {
+        const startsAtMs = new Date(booking.shiftStartsAt ?? '').getTime();
+        const minutesLeft = Math.round((startsAtMs - now) / 60000);
+        const isActive = booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+        const canConfirm = isActive && minutesLeft >= 0 && minutesLeft <= 30;
+        return (
+          <div className="client-booking-row" key={booking.id}>
+            <div><strong>{booking.courtName ?? 'Cancha'} {booking.courtSportType ? `· ${booking.courtSportType}` : ''}</strong><small>{statusLabel[booking.status] ?? booking.status}</small></div>
+            <span className="client-booking-when">{booking.shiftStartsAt ? `${formatDayLabel(timezone, booking.shiftStartsAt)} · ${formatHourLabel(timezone, booking.shiftStartsAt)}` : '—'}</span>
+            <span className="client-booking-price">$ {(booking.priceCentsArs / 100).toLocaleString('es-AR')} ARS</span>
+            <div className="client-booking-action">
+              {canConfirm ? (
+                <button className="primary-action" disabled={busyId === booking.id} onClick={() => confirm(booking.id)}>{busyId === booking.id ? 'Enviando…' : 'Confirmo asistencia'}</button>
+              ) : isActive ? (
+                <small className="text-slate-400">{minutesLeft < 0 ? 'El turno ya comenzó.' : `El botón se habilita a 30 min del turno (faltan ${minutesLeft} min).`}</small>
+              ) : null}
+              {feedback[booking.id] && <small className="settings-feedback">{feedback[booking.id]}</small>}
+            </div>
+          </div>
+        );
+      })}</div></section>}
+    </div>
+  );
 }
 
 function ScheduleView() {
@@ -670,11 +733,37 @@ function SettingsView() {
 }
 
 
-function PaymentView({ onNavigate, onComplete }: { onNavigate: (view: B2bView) => void; onComplete: () => void }) {
+function PaymentView({ onNavigate, onComplete, timezone, lastBooking, selectedShift, duration, organizationName }: {
+  onNavigate: (view: B2bView) => void;
+  onComplete: () => void;
+  timezone: string;
+  lastBooking: { id: string } | null;
+  selectedShift: { courtName: string; startsAt: string; label: string; priceCents: number } | null;
+  duration: 1 | 2;
+  organizationName: string;
+}) {
   const [modality, setModality] = useState<'deposit' | 'total'>('deposit');
   const [method, setMethod] = useState<'mercadopago' | 'transfer'>('mercadopago');
   const [holder, setHolder] = useState('');
+  const [orgPhone, setOrgPhone] = useState<string | null>(null);
+  useEffect(() => {
+    b2bService.getOrganization()
+      .then((org) => setOrgPhone(typeof org?.whatsappPhone === 'string' && org.whatsappPhone ? org.whatsappPhone : null))
+      .catch(() => setOrgPhone(null));
+  }, []);
   const label = modality === 'deposit' ? 'Pagar seña (30%)' : 'Pagar total';
+  const amountCents = selectedShift ? selectedShift.priceCents * duration : 0;
+  const dayLabel = selectedShift ? formatDayLabel(timezone, selectedShift.startsAt) : '';
+  const hourLabel = selectedShift ? formatHourLabel(timezone, selectedShift.startsAt) : '';
+  const canSendComprobante = Boolean(orgPhone && selectedShift && lastBooking);
+  const comprobanteText = [
+    `Hola ${organizationName || 'Complejo'}! Te envío el comprobante de mi reserva.`,
+    `Reserva: ${lastBooking?.id ?? '-'}`,
+    `Cancha: ${selectedShift?.courtName ?? '-'}`,
+    `Día: ${dayLabel} · ${hourLabel} · ${duration} hora${duration === 1 ? '' : 's'}`,
+    `Importe: $ ${(amountCents / 100).toLocaleString('es-AR')} ARS (${modality === 'deposit' ? 'seña' : 'total'})`,
+    holder ? `Titular: ${holder}` : '',
+  ].filter(Boolean).join('\n');
   return (
     <div className="b2b-content client-content">
       <button className="back-link" onClick={() => onNavigate('portal')}><ArrowLeft size={16} /> Volver al portal</button>
@@ -685,12 +774,18 @@ function PaymentView({ onNavigate, onComplete }: { onNavigate: (view: B2bView) =
           <h1>Tu turno está listo</h1>
           <p>Revisá los datos antes de confirmar la reserva.</p>
           <div className="payment-steps"><span className="done">1. Turno</span><span className="active">2. Pago</span><span>3. Confirmación</span></div>
-          <div className="payment-detail"><span>Resumen de reserva</span><strong>Reserva confirmada</strong><small>Los datos del turno se cargarán desde tu historial de reservas.</small></div>
+          <div className="payment-detail"><span>Resumen de reserva</span>{selectedShift && lastBooking ? <strong>{selectedShift.courtName} · {dayLabel}</strong> : <strong>Reserva confirmada</strong>}<small>{selectedShift && lastBooking ? `${hourLabel} · ${duration} hora${duration === 1 ? '' : 's'} · $ ${(amountCents / 100).toLocaleString('es-AR')} ARS · Ref ${lastBooking.id}` : 'Los datos del turno se cargarán desde tu historial de reservas.'}</small></div>
           <div className="selector-block"><label>Modalidad de pago</label><div className="duration-toggle"><button className={modality === 'deposit' ? 'active' : ''} onClick={() => setModality('deposit')}>Seña (30%)</button><button className={modality === 'total' ? 'active' : ''} onClick={() => setModality('total')}>Pago total</button></div></div>
           <div className="selector-block"><label>Medio de pago</label><div className="duration-toggle"><button className={method === 'mercadopago' ? 'active' : ''} onClick={() => setMethod('mercadopago')}>Mercado Pago</button><button className={method === 'transfer' ? 'active' : ''} onClick={() => setMethod('transfer')}>Transferencia</button></div></div>
           <div className="selector-block"><label>Nombre del titular</label><input className="b2b-input" placeholder="Como figura en la tarjeta" value={holder} onChange={(event) => setHolder(event.target.value)} /></div>
           <div className="receipt-total"><span>Total</span><strong>{label}</strong></div>
           <button className="primary-action wide hidden md:inline-flex" onClick={onComplete}><Check size={16} /> {label}</button>
+          {canSendComprobante && (
+            <div className="wa-optin-row wa-optin-action">
+              <a className="primary-action wide" href={buildWhatsAppDeepLink(orgPhone as string, comprobanteText)} target="_blank" rel="noreferrer"><MessageCircle size={16} /> Enviar comprobante por WhatsApp</a>
+              <small>Se abre tu WhatsApp con el comprobante armado para mandárselo al dueño.</small>
+            </div>
+          )}
           <p className="payment-note">Pago SIMULADO: la integración con una pasarela de pagos se agregará en una etapa posterior.</p>
         </section>
       </div>
