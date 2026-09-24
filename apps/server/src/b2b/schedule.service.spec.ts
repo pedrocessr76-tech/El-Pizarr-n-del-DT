@@ -24,6 +24,18 @@ describe('Horarios y bloqueos', () => {
       find: jest.fn(async () => savedBlocks),
     };
     const bookings = { findOne: jest.fn().mockResolvedValue(null), save: jest.fn(), create: jest.fn() };
+    const dataSource = {
+      transaction: jest.fn(async (cb: (manager: any) => unknown) => cb({
+        getRepository: jest.fn((entity: { name: string }) => {
+          const map: Record<string, unknown> = {
+            B2bShiftEntity: shifts,
+            B2bAvailabilityBlockEntity: blocks,
+            B2bBookingEntity: bookings,
+          };
+          return (map[entity.name] ?? {}) as never;
+        }),
+      } as never)),
+    };
     const notifications = {
       notifyStaff: jest.fn().mockResolvedValue([]),
       notifyUser: jest.fn().mockResolvedValue([]),
@@ -34,6 +46,7 @@ describe('Horarios y bloqueos', () => {
       shifts as never, blocks as never, bookings as never, {} as never,
       {} as never,
       notifications as never,
+      dataSource as never,
     );
     return { service, shifts, blocks, bookings, generated, notifications };
   }
