@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { WhatsAppMessageKind } from './messaging.types';
 import { MessageProvider } from './messaging.provider';
-import { MESSAGE_PROVIDER } from './messaging.module';
+import { MESSAGE_PROVIDER } from './messaging.constants';
 
 /**
  * Punto único de envío de WhatsApp para los consumidores (recordatorios,

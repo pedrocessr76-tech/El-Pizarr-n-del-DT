@@ -1,6 +1,6 @@
 import { MessageProvider } from './messaging.provider';
 import { MessagingService } from './messaging.service';
-import { MESSAGE_PROVIDER } from './messaging.module';
+import { MESSAGE_PROVIDER } from './messaging.constants';
 import { LogMessageProvider } from './log-message.provider';
 
 // La fachada MessagingService delega en el proveedor activo (#37/placeholder).
