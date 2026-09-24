@@ -1,6 +1,10 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { B2bAuthService } from './b2b-auth.service';
 import { B2bRoleCode, B2bRecordStatus } from '../entities/b2b.enums';
+import { B2bOrganizationEntity } from '../entities/organization.entity';
+import { B2bUserRoleEntity } from '../entities/user-role.entity';
+import { B2bUserEntity } from '../entities/user.entity';
+import { B2bFacilityEntity } from '../entities/facility.entity';
 
 // Revalidación de la identidad B2B contra la BD (ALTO 7): roles y status
 // nunca se confían al JWT; se recalculan en cada uso real.
@@ -38,7 +42,8 @@ describe('B2bAuthService - resolveUserFromToken', () => {
     const courts = {};
     const facilities = {};
     const jwt = { sign: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never);
+    const dataSource = { transaction: jest.fn() };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
     return { service, users, organizations, userRoles };
   }
 
@@ -97,5 +102,123 @@ describe('B2bAuthService - resolveUserFromToken', () => {
 
     const resolved = await service.resolveUserFromToken(claims);
     expect(resolved.roles).toEqual([B2bRoleCode.CLIENT]);
+  });
+});
+
+// Onboarding de propietario: reemplaza al seed en producción para dar de alta un
+// complejo con su cuenta OWNER (issue #16). La creación corre en UNA transacción
+// (DataSource 'b2b') para que un fallo intermedio no deje una org huérfana.
+describe('B2bAuthService - onboardOwner', () => {
+  function setup() {
+    const organizations = {
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest.fn(async (value: any) => ({ id: 'org-nueva', ...value })),
+      create: jest.fn((value: any) => value),
+    };
+    const roles = { upsert: jest.fn().mockResolvedValue(undefined) };
+    const users = {
+      save: jest.fn(async (value: any) => ({ id: 'user-nuevo', ...value })),
+      create: jest.fn((value: any) => value),
+    };
+    const userRoles = { save: jest.fn().mockResolvedValue(undefined) };
+    const courts = {};
+    const facilities = {
+      save: jest.fn(async (value: any) => ({ id: 'facility-nueva', ...value })),
+      create: jest.fn((value: any) => value),
+    };
+    const jwt = { sign: jest.fn(() => 'jwt-firmado') };
+    const manager = {
+      getRepository: jest.fn((entity: any) => {
+        if (entity === B2bOrganizationEntity) return organizations;
+        if (entity === B2bUserEntity) return users;
+        if (entity === B2bUserRoleEntity) return userRoles;
+        if (entity === B2bFacilityEntity) return facilities;
+        return {};
+      }),
+    };
+    // Simula DataSource.transaction: corre el callback con el manager transaccional
+    // y, si el callback lanza, re-lanza (en TypeORM real eso hace ROLLBACK).
+    const dataSource = {
+      transaction: jest.fn(async (cb: any) => cb(manager)),
+    };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    return { service, organizations, users, userRoles, facilities, manager, dataSource };
+  }
+
+  const input = {
+    organizationName: 'Complejo Los Amigos',
+    facilityName: 'Sede Central',
+    ownerFullName: 'Carlos Bianchi',
+    email: 'DUENO@amigos.com',
+    password: 'clave-segura-2026',
+  };
+
+  it('crea la organización con su slug único, la cuenta OWNER, la sede y emite token', async () => {
+    const { service, organizations, users, userRoles, facilities } = setup();
+
+    const result = await service.onboardOwner(input);
+
+    expect(result.user.roles).toEqual([B2bRoleCode.OWNER]);
+    expect(result.accessToken).toBe('jwt-firmado');
+    expect(organizations.save).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Complejo Los Amigos', slug: 'complejo-los-amigos' }),
+    );
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: 'org-nueva',
+        email: 'dueno@amigos.com',
+        fullName: 'Carlos Bianchi',
+        passwordHash: expect.any(String),
+      }),
+    );
+    expect(userRoles.save).toHaveBeenCalledWith({
+      userId: 'user-nuevo',
+      organizationId: 'org-nueva',
+      roleId: B2bRoleCode.OWNER,
+    });
+    expect(facilities.save).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: 'org-nueva', name: 'Sede Central' }),
+    );
+  });
+
+  it('resuelve slugs únicos agregando sufijo numérico ante colisiones', async () => {
+    const { service, organizations } = setup();
+    organizations.findOne
+      .mockResolvedValueOnce({ id: 'org-1' }) // 'complejo-los-amigos' ocupado
+      .mockResolvedValueOnce(null); // 'complejo-los-amigos-2' libre
+
+    await service.onboardOwner(input);
+
+    expect(organizations.save).toHaveBeenCalledWith(expect.objectContaining({ slug: 'complejo-los-amigos-2' }));
+  });
+
+  it('normaliza el nombre de la organización a un slug ASCII', async () => {
+    const { service, organizations } = setup();
+
+    await service.onboardOwner({ ...input, organizationName: 'Complejo Ánimas Ñuble' });
+
+    expect(organizations.save).toHaveBeenCalledWith(expect.objectContaining({ slug: 'complejo-animas-nuble' }));
+  });
+
+  it('no crea sede si no se envía facilityName', async () => {
+    const { service, facilities } = setup();
+
+    await service.onboardOwner({ ...input, facilityName: undefined });
+
+    expect(facilities.save).not.toHaveBeenCalled();
+  });
+
+  it('si falla un paso intermedio, toda la creación corre dentro de la transacción (rollback, sin org huérfana)', async () => {
+    const { service, users, dataSource, manager } = setup();
+    users.save.mockRejectedValueOnce(new Error('falla al guardar el dueño'));
+
+    await expect(service.onboardOwner(input)).rejects.toThrow('falla al guardar el dueño');
+
+    // Los writes van por el manager transaccional: si el callback lanza, TypeORM
+    // revierte (rollback) y no queda la organización creada sin su dueño.
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(manager.getRepository).toHaveBeenCalledWith(B2bOrganizationEntity);
+    expect(manager.getRepository).toHaveBeenCalledWith(B2bUserEntity);
+    expect(manager.getRepository).toHaveBeenCalledWith(B2bUserRoleEntity);
   });
 });

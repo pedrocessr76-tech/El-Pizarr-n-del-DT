@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRecordStatus, B2bRoleCode } from '../entities/b2b.enums';
 import { B2bCourtEntity } from '../entities/court.entity';
@@ -29,6 +29,7 @@ export class B2bAuthService {
     @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
     @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
     private readonly jwt: JwtService,
+    @InjectDataSource('b2b') private readonly dataSource: DataSource,
   ) {}
 
   async login(email: string, password: string) {
@@ -110,6 +111,67 @@ export class B2bAuthService {
     for (const [id, name] of Object.entries(roleNames)) {
       await this.roles.upsert({ id: id as B2bRoleCode, name }, ['id']);
     }
+  }
+
+  /**
+   * Onboarding de propietario: crea la organización con su cuenta OWNER y una
+   * sede inicial opcional. Es la vía pública para dar de alta un complejo sin
+   * depender del seed (que queda restringido a desarrollo).
+   *
+   * Toda la creación corre en UNA transacción: si falla cualquier paso (usuario,
+   * rol o sede), se revierte la organización y no queda un complejo huérfano sin
+   * dueño.
+   */
+  async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
+    await this.ensureRoles();
+    return this.dataSource.transaction(async (manager) => {
+      const organizations = manager.getRepository(B2bOrganizationEntity);
+      const users = manager.getRepository(B2bUserEntity);
+      const userRoles = manager.getRepository(B2bUserRoleEntity);
+      const facilities = manager.getRepository(B2bFacilityEntity);
+
+      const name = input.organizationName.trim();
+      const slug = await this.buildUniqueSlug(organizations, name);
+      const email = input.email.toLowerCase();
+      const organization = await organizations.save(organizations.create({ name, slug }));
+      const owner = await users.save(
+        users.create({
+          organizationId: organization.id,
+          email,
+          fullName: input.ownerFullName.trim(),
+          passwordHash: await bcrypt.hash(input.password, 12),
+        }),
+      );
+      await userRoles.save({ userId: owner.id, organizationId: organization.id, roleId: B2bRoleCode.OWNER });
+      if (input.facilityName && input.facilityName.trim()) {
+        await facilities.save(facilities.create({ organizationId: organization.id, name: input.facilityName.trim() }));
+      }
+      return this.issueToken(owner, [B2bRoleCode.OWNER]);
+    });
+  }
+
+  private slugify(name: string): string {
+    return (
+      name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'complejo'
+    );
+  }
+
+  private async buildUniqueSlug(organizations: Repository<B2bOrganizationEntity>, organizationName: string): Promise<string> {
+    const base = this.slugify(organizationName);
+    let slug = base;
+    let suffix = 1;
+    // eslint-disable-next-line no-await-in-loop
+    while (await organizations.findOne({ where: { slug } })) {
+      suffix += 1;
+      slug = `${base}-${suffix}`;
+    }
+    return slug;
   }
 
   private issueToken(user: B2bUserEntity, roles: B2bRoleCode[]) {

@@ -75,6 +75,10 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register-client', input);
     return data;
   },
+  async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
+    const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/onboarding', input);
+    return data;
+  },
   async getPublicOrganizations() {
     const { data } = await b2bApi.get<B2bOrganizationOption[]>('/v1/auth/organizations');
     return data;

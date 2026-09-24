@@ -8,6 +8,7 @@ interface B2bState {
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   registerClient: (input: { email: string; fullName: string; password: string }) => Promise<boolean>;
+  onboardOwner: (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
@@ -44,6 +45,17 @@ export const useB2bStore = create<B2bState>((set) => ({
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta de cliente.' });
+      return false;
+    }
+  },
+  onboardOwner: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await b2bService.onboardOwner(input);
+      set({ ...persistAuth(response), isLoading: false });
+      return true;
+    } catch (error: any) {
+      set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear el complejo.' });
       return false;
     }
   },

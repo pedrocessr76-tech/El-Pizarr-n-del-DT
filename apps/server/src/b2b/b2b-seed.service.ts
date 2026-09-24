@@ -30,6 +30,10 @@ export class B2bSeedService implements OnModuleInit {
 
   async onModuleInit() {
     if (process.env.B2B_SEED !== 'true') return;
+    if (process.env.NODE_ENV === 'production') {
+      this.logger.warn('Seed B2B desactivado en producción: las credenciales demo no deben existir acá. Usá POST /api/v1/auth/onboarding para el alta inicial del propietario.');
+      return;
+    }
     const roleNames: Record<B2bRoleCode, string> = { OWNER: 'Propietario', ADMIN: 'Administrador', OPERATOR: 'Operador', CLIENT: 'Cliente' };
     await Promise.all(Object.entries(roleNames).map(([id, name]) => this.roles.upsert({ id: id as B2bRoleCode, name }, ['id'])));
     let organization = await this.organizations.findOne({ where: { slug: 'complejo-la-cancha' } });
