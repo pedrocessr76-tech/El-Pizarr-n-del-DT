@@ -25,6 +25,11 @@ api.interceptors.request.use((config) => {
 // una sola llamada a /auth/refresh.
 let refreshing: Promise<string | null> | null = null;
 
+/** Refresh/logout se autentican con cookie: un 401 ahí NO debe reentrar al interceptor. */
+function isCookieAuthRequest(config?: { url?: string }): boolean {
+  return /\/auth\/(refresh|logout)(?:\?|$)/.test(config?.url ?? '');
+}
+
 function requestRefresh(): Promise<string | null> {
   if (!refreshing) {
     refreshing = api
@@ -48,7 +53,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
-    if (error.response?.status === 401 && original && !original._retried) {
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retried &&
+      !isCookieAuthRequest(original)
+    ) {
       original._retried = true;
       return requestRefresh().then((token) => {
         if (!token) {
