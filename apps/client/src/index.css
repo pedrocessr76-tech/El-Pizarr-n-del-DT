@@ -511,3 +511,5 @@ body {
   position: relative;
   background: linear-gradient(135deg, #081C15 0%, #1B4332 100%);
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }

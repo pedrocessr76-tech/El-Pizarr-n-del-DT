@@ -6,10 +6,14 @@ import { isOriginAllowed } from '../config/cors';
  * Protección CSRF para los únicos endpoints que se autentican con cookie
  * (refresh y logout, issue #17).
  *
- * La cookie ya es SameSite=Lax: un POST cross-site (formulario/JSON de otro
- * sitio) no la envía. Como defensa en profundidad, si llega el header Origin
- * exigimos que esté en la allowlist de CORS. Sin Origin (petición misma-origen
+ * En producción la cookie es SameSite=None (necesario para requests
+ * cross-origin entre el frontend y la API en Render). Por eso la defensa
+ * CSRF descansa aquí: si llega el header Origin exigimos que esté en la
+ * allowlist de CORS (variable CORS_ORIGIN). Sin Origin (petición misma-origen
  * o cliente no-navegador como curl/tests) se permite.
+ *
+ * IMPORTANTE: configurar CORS_ORIGIN en las variables de entorno de Render
+ * con la URL del frontend (ej: https://el-pizarron.onrender.com).
  */
 @Injectable()
 export class CsrfRefreshGuard implements CanActivate {

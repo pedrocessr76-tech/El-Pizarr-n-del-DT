@@ -22,10 +22,19 @@ export const REFRESH_TOKEN_TYPE = 'refresh';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
+/**
+ * En producción el frontend y la API viven en dominios distintos (Render
+ * Static Site vs Web Service). La cookie del refresh token DEBE viajar en
+ * requests cross-origin iniciados desde JS (POST /auth/refresh), lo que
+ * requiere SameSite=None + Secure=true.
+ *
+ * En desarrollo frontend y API están en el mismo origen (Vite proxy), por lo
+ * que SameSite=Lax es suficiente y más restrictivo.
+ */
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
-  sameSite: 'lax' as const,
+  sameSite: (IS_PRODUCTION ? 'none' : 'lax') as 'none' | 'lax',
   path: '/',
 };
 

@@ -149,7 +149,14 @@ export function B2bApp() {
   };
 
   if (!hydrated) {
-    return null;
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'grid', placeItems: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ textAlign: 'center', color: '#64748b' }}>
+          <div style={{ width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#15803d', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <small>Cargando Sistema Canchas…</small>
+        </div>
+      </div>
+    );
   }
 
   if (view === 'login') {
