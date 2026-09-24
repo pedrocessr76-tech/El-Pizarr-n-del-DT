@@ -64,6 +64,8 @@ services:
       # falla con un error claro en lugar de firmar tokens con una clave pública.
       - JWT_SECRET=${JWT_SECRET:?Definí JWT_SECRET en .env (más de 32 caracteres)}
       - B2B_JWT_SECRET=${B2B_JWT_SECRET:?Definí B2B_JWT_SECRET en .env (más de 32 caracteres)}
+      # Seed B2B: solo desarrollo (NODE_ENV=development). En producción se ignora
+      # y las altas de propietario van por POST /api/v1/auth/onboarding.
       - B2B_SEED=true
       - B2B_SEED_EMAIL=admin@lacancha.com.ar
       - B2B_SEED_PASSWORD=canchas-demo

@@ -100,6 +100,7 @@ export function B2bApp() {
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const login = useB2bStore((state) => state.login);
   const registerClient = useB2bStore((state) => state.registerClient);
+  const onboardOwner = useB2bStore((state) => state.onboardOwner);
 
   const [organizations, setOrganizations] = useState<B2bOrganizationOption[]>([]);
   useEffect(() => {
@@ -127,8 +128,15 @@ export function B2bApp() {
     navigate('portal');
   };
 
+  const registerOwnerAccount = async (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => {
+    const created = await onboardOwner(input);
+    if (!created) return;
+    // El propietario recién dado de alta entra directo a su dashboard operativo.
+    navigate('dashboard');
+  };
+
   if (view === 'login') {
-    return <B2bLogin onEnter={enterB2b} onRegisterClient={registerClientAccount} />;
+    return <B2bLogin onEnter={enterB2b} onRegisterClient={registerClientAccount} onRegisterOwner={registerOwnerAccount} />;
   }
 
   const mobileTabs: MobileTab<B2bView>[] = isStaff
@@ -182,41 +190,62 @@ export function B2bApp() {
   );
 }
 
-function B2bLogin({ onEnter, onRegisterClient }: {
+function B2bLogin({ onEnter, onRegisterClient, onRegisterOwner }: {
   onEnter: (email: string, password: string) => Promise<void>;
   onRegisterClient: (input: { email: string; fullName: string; password: string }) => Promise<void>;
+  onRegisterOwner: (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => Promise<void>;
 }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'register-owner'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [facilityName, setFacilityName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const authError = useB2bStore((state) => state.error);
   const isLoading = useB2bStore((state) => state.isLoading);
   const clearError = useB2bStore((state) => state.clearError);
 
   const isRegister = mode === 'register';
+  const isOwnerOnboarding = mode === 'register-owner';
 
-  const switchMode = () => {
+  const switchMode = (next: 'login' | 'register' | 'register-owner') => {
     clearError();
     setValidationError(null);
     setPassword('');
     setConfirmPassword('');
-    setMode(mode === 'login' ? 'register' : 'login');
+    setMode(next);
   };
 
   const handleSubmit = async () => {
     clearError();
     setValidationError(null);
 
-    if (mode === 'register') {
+    if (isRegister) {
       // Registro de CLIENTE: se suma al sistema y luego elige en qué complejo reservar.
       if (fullName.trim().length < 3) { setValidationError('Ingresá tu nombre completo.'); return; }
       if (email.trim().length < 3 || !email.includes('@')) { setValidationError('Ingresá un email válido.'); return; }
       if (password.length < 6) { setValidationError('La contraseña debe tener al menos 6 caracteres.'); return; }
       if (password !== confirmPassword) { setValidationError('Las contraseñas no coinciden.'); return; }
       await onRegisterClient({ email: email.trim(), fullName: fullName.trim(), password });
+      return;
+    }
+
+    if (isOwnerOnboarding) {
+      // Onboarding de propietario: crea el complejo con su cuenta OWNER y una sede inicial.
+      if (organizationName.trim().length < 3) { setValidationError('Ingresá el nombre de tu complejo.'); return; }
+      if (fullName.trim().length < 3) { setValidationError('Ingresá el nombre del dueño.'); return; }
+      if (email.trim().length < 3 || !email.includes('@')) { setValidationError('Ingresá un email válido.'); return; }
+      if (password.length < 6) { setValidationError('La contraseña debe tener al menos 6 caracteres.'); return; }
+      if (password !== confirmPassword) { setValidationError('Las contraseñas no coinciden.'); return; }
+      await onRegisterOwner({
+        organizationName: organizationName.trim(),
+        facilityName: facilityName.trim() || undefined,
+        ownerFullName: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
       return;
     }
 
@@ -232,34 +261,46 @@ function B2bLogin({ onEnter, onRegisterClient }: {
           <div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div>
         </div>
         <div className="b2b-login-copy">
-          <span>{isRegister ? 'Cuenta de cliente' : 'Acceso seguro'}</span>
-          <h1>{isRegister ? (<>Tu cancha,<br /><em>a un clic.</em></>) : (<>Tu complejo,<br /><em>bajo control.</em></>)}</h1>
-          <p>{isRegister ? 'Creá tu cuenta para reservar turnos en cualquier complejo.' : 'Gestioná canchas, reservas y recaudación desde un solo lugar.'}</p>
+          <span>{isOwnerOnboarding ? 'Alta de propietario' : isRegister ? 'Cuenta de cliente' : 'Acceso seguro'}</span>
+          <h1>{isOwnerOnboarding ? (<>Tu complejo,<br /><em>listo desde hoy.</em></>) : isRegister ? (<>Tu cancha,<br /><em>a un clic.</em></>) : (<>Tu complejo,<br /><em>bajo control.</em></>)}</h1>
+          <p>{isOwnerOnboarding ? 'Creá tu complejo y una cuenta de propietario para gestionar canchas y reservas.' : isRegister ? 'Creá tu cuenta para reservar turnos en cualquier complejo.' : 'Gestioná canchas, reservas y recaudación desde un solo lugar.'}</p>
         </div>
 
         <form className="b2b-login-form" onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
-          {isRegister && <label className="field-label">Nombre y apellido</label>}
-          {isRegister && <input className="b2b-input" type="text" placeholder="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} />}
+          {isOwnerOnboarding && <label className="field-label">Nombre del complejo</label>}
+          {isOwnerOnboarding && <input className="b2b-input" type="text" placeholder="Ej: Complejo Los Amigos" value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} />}
+
+          {isOwnerOnboarding && <label className="field-label">Sede inicial (opcional)</label>}
+          {isOwnerOnboarding && <input className="b2b-input" type="text" placeholder="Ej: Sede Central" value={facilityName} onChange={(event) => setFacilityName(event.target.value)} />}
+
+          {(isRegister || isOwnerOnboarding) && <label className="field-label">{isOwnerOnboarding ? 'Nombre del dueño' : 'Nombre y apellido'}</label>}
+          {(isRegister || isOwnerOnboarding) && <input className="b2b-input" type="text" placeholder={isOwnerOnboarding ? 'Nombre completo del dueño' : 'Nombre completo'} value={fullName} onChange={(event) => setFullName(event.target.value)} />}
 
           <label className="field-label">Email</label>
           <input className="b2b-input" type="email" placeholder="tu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
 
           <label className="field-label">Contraseña</label>
-          <input className="b2b-input" type="password" placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={isRegister ? 'new-password' : 'current-password'} />
+          <input className="b2b-input" type="password" placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={isRegister || isOwnerOnboarding ? 'new-password' : 'current-password'} />
 
-          {isRegister && <label className="field-label">Confirmar contraseña</label>}
-          {isRegister && <input className="b2b-input" type="password" placeholder="••••••••" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />}
+          {(isRegister || isOwnerOnboarding) && <label className="field-label">Confirmar contraseña</label>}
+          {(isRegister || isOwnerOnboarding) && <input className="b2b-input" type="password" placeholder="••••••••" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />}
 
           {(validationError || authError) && <p className="login-error" role="alert">{validationError || authError}</p>}
 
           <button type="submit" className="primary-action wide" disabled={isLoading}>
-            {isLoading ? 'Procesando...' : isRegister ? 'Crear mi cuenta' : 'Ingresar al sistema'}
+            {isLoading ? 'Procesando...' : isOwnerOnboarding ? 'Crear mi complejo' : isRegister ? 'Crear mi cuenta' : 'Ingresar al sistema'}
           </button>
         </form>
 
         <p className="login-footnote">
-          {isRegister ? '¿Ya tenés una cuenta?' : '¿Todavía no tenés cuenta?'}{' '}
-          <a href="#" onClick={(event) => { event.preventDefault(); switchMode(); }}>{isRegister ? 'Iniciar sesión' : 'Crear una cuenta'}</a>
+          {isOwnerOnboarding || isRegister
+            ? <a href="#" onClick={(event) => { event.preventDefault(); switchMode('login'); }}>¿Ya tenés cuenta? Iniciar sesión</a>
+            : <a href="#" onClick={(event) => { event.preventDefault(); switchMode('register'); }}>¿Sos cliente? Creá tu cuenta</a>}
+        </p>
+        <p className="login-footnote">
+          {isOwnerOnboarding
+            ? <a href="#" onClick={(event) => { event.preventDefault(); switchMode('register'); }}>¿Sos cliente? Creá tu cuenta</a>
+            : <a href="#" onClick={(event) => { event.preventDefault(); switchMode('register-owner'); }}>¿Sos dueño de un complejo? Registralo</a>}
         </p>
       </div>
       <div className="b2b-login-visual"><div className="visual-overlay"><span>OPERACIÓN EN VIVO</span><h2>Más reservas.<br />Menos complicaciones.</h2><p>La herramienta que tu complejo necesita para crecer.</p></div></div>

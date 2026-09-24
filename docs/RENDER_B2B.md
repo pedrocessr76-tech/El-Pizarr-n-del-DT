@@ -14,7 +14,7 @@ El `render.yaml` mapea `B2B_DB_*` a la misma instancia `el-pizarron-db` (`fromDa
 
 ## Creación automática de la base `sistema_canchas`
 
-Al arrancar, el API (`apps/server/src/main.ts`) verifica si la base `sistema_canchas` existe en la instancia compartida; si no, la **crea automáticamente** (`CREATE DATABASE`). No hace falta correr SQL a mano. Luego ejecuta la migración B2B (`B2B_DB_MIGRATIONS=true`) y carga el seed (`B2B_SEED=true`).
+Al arrancar, el API (`apps/server/src/main.ts`) verifica si la base `sistema_canchas` existe en la instancia compartida; si no, la **crea automáticamente** (`CREATE DATABASE`). No hace falta correr SQL a mano. Luego ejecuta la migración B2B (`B2B_DB_MIGRATIONS=true`). El seed B2B (`B2B_SEED`) queda restringido a desarrollo: en producción se ignora además por `NODE_ENV=production`.
 
 > Requisito: el usuario de la instancia debe tener permiso `CREATE DATABASE`. Es el caso por defecto para el usuario principal que Render crea para `el-pizarron-db`. Si tu usuario no tuviera permiso, creá la base una vez desde el shell de Render:
 > `CREATE DATABASE sistema_canchas;`
@@ -37,7 +37,13 @@ El código conserva fallbacks a `DB_*` por compatibilidad. No dejar `B2B_DB_HOST
 
 Después de guardar las variables, ejecutar un nuevo deploy del servicio API.
 
-Luego el servicio API ejecuta la migración B2B con `B2B_DB_MIGRATIONS=true` y carga el seed cuando `B2B_SEED=true`.
+Luego el servicio API ejecuta la migración B2B con `B2B_DB_MIGRATIONS=true`.
+
+## Alta de propietario (producción)
+
+El seed con credenciales demo (`admin@lacancha.com.ar` / `canchas-demo`) **no existe en producción**. Para dar de alta el primer dueño de un complejo sin credenciales conocidas, el frontend de **Sistema Canchas** ofrece el **onboarding de propietario** que usa `POST /api/v1/auth/onboarding` (nombre del complejo, sede inicial opcional, nombre del dueño, email y contraseña). Crea la organización, su cuenta `OWNER` y emite el JWT directo al dashboard.
+
+Recordatorio: `B2B_SEED` debe quedar en `false` (o ausente) en Render; el seed está pensado solo para desarrollo local (Docker).
 
 El healthcheck productivo del API usa `/health/b2b`, que ejecuta `SELECT 1` contra la conexión B2B y evita considerar saludable un backend cuya base de reservas esté caída.
 

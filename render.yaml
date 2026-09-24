@@ -70,16 +70,12 @@ services:
         value: false
       - key: B2B_DB_MIGRATIONS
         value: true
+      # Seed B2B: solo desarrollo. En producción el seed se ignora además por
+      # NODE_ENV=production (apps/server/src/b2b/b2b-seed.service.ts). El alta
+      # inicial del propietario se hace por POST /api/v1/auth/onboarding, sin
+      # credenciales demo conocidas.
       - key: B2B_SEED
-        value: true
-      - key: B2B_SEED_EMAIL
-        value: admin@lacancha.com.ar
-      - key: B2B_SEED_PASSWORD
-        value: canchas-demo
-      - key: B2B_SEED_CLIENT_EMAIL
-        value: cliente@lacancha.com.ar
-      - key: B2B_SEED_CLIENT_PASSWORD
-        value: canchas-client
+        value: false
       - key: B2B_JWT_SECRET
         generateValue: true
 

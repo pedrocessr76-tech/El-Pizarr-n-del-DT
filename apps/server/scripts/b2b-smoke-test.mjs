@@ -16,10 +16,11 @@
  *   B2B_API_URL=https://api-de-pruebas.midominio.com npm run test:b2b
  *
  * Requiere un servidor ya levantado (`npm run start:dev`) apuntando a una base B2B.
- * El staff (organización + administrador demo) lo crea el seed por código
- * (`B2B_SEED=true`): el script sólo valida login de ese staff, registra su propio
- * cliente (`register-client`), crea un complejo/cancha de prueba y lo archiva al
- * terminar. La creación pública de organizaciones/staff ya no existe.
+ * La creación pública de organizaciones/staff ya no existe: el staff puede venir
+ * del seed por código (`B2B_SEED=true`, solo dev) o del onboarding de propietario
+ * (`POST /api/v1/auth/onboarding`). El script valida login del staff, registra su
+ * propio cliente (`register-client`), crea un complejo/cancha de prueba y lo
+ * archiva al terminar.
  *
  * Nota de zona horaria: los turnos se generan por día de la semana, por lo que el
  * servidor y este script deben compartir zona horaria (caso normal: misma máquina).
@@ -150,15 +151,31 @@ async function main() {
   });
   expectStatus('POST /api/v1/auth/register ya no existe (staff por código)', orgRegister, 404);
 
-  // El staff (admin demo) lo crea el seed por código: aquí sólo se valida su login.
-  const login = await api('POST', '/api/v1/auth/login', { body: { email: STAFF_EMAIL, password: STAFF_PASSWORD } });
-  if (!expectStatus('POST /api/v1/auth/login (staff seed)', login, 201)) return finish();
-  const staffToken = login.data.accessToken;
+  // El staff puede venir del seed (desarrollo) o del onboarding de propietario
+  // (entornos sin seed). Si el login demo falla, el script se autoabastece por
+  // onboarding y valida el alta de propietario de paso.
+  let staffLogin = await api('POST', '/api/v1/auth/login', { body: { email: STAFF_EMAIL, password: STAFF_PASSWORD } });
+  if (staffLogin.status !== 201) {
+    const onboard = await api('POST', '/api/v1/auth/onboarding', {
+      body: {
+        organizationName: 'Smoke Test ' + UNIQUE,
+        facilityName: 'Sede Smoke',
+        ownerFullName: 'Dueño Smoke',
+        email: 'staff+' + UNIQUE + '@smoke.test',
+        password: PASSWORD,
+      },
+    });
+    if (!expectStatus('POST /api/v1/auth/onboarding (sin seed)', onboard, 201)) return finish();
+    check('onboarding asigna el rol OWNER', onboard.data.user?.roles?.includes('OWNER'), JSON.stringify(onboard.data.user?.roles));
+    staffLogin = onboard;
+  }
+  if (!expectStatus('POST /api/v1/auth/login (staff)', staffLogin, 201)) return finish();
+  const staffToken = staffLogin.data.accessToken;
   check('login devuelve accessToken', Boolean(staffToken));
   check(
     'el staff tiene rol de gestión',
-    login.data.user?.roles?.some((role) => ['OWNER', 'ADMIN', 'OPERATOR'].includes(role)),
-    JSON.stringify(login.data.user?.roles),
+    staffLogin.data.user?.roles?.some((role) => ['OWNER', 'ADMIN', 'OPERATOR'].includes(role)),
+    JSON.stringify(staffLogin.data.user?.roles),
   );
 
   const badLogin = await api('POST', '/api/v1/auth/login', { body: { email: STAFF_EMAIL, password: 'password-incorrecta' } });
