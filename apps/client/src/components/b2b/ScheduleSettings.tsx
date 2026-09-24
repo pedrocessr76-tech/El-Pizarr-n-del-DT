@@ -1,10 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import './ScheduleSettings.css';
 import { b2bService, type B2bShiftRule } from '../../services/b2bService';
+import { useB2bStore } from '../../store/useB2bStore';
+import { orgLocalDateTimeToDate, orgTzLabel, resolveOrgTimeZone } from '../../utils/orgTime';
 
 const weekdays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name: string }> }) {
+  // Issue #24: el datetime-local y los turnos se interpretan en la zona del complejo.
+  const orgTimezone = useB2bStore((state) => state.orgTimezone);
+  const timezone = resolveOrgTimeZone(orgTimezone);
   const [courtId, setCourtId] = useState('');
   const [rules, setRules] = useState<B2bShiftRule[]>([]);
   const [refresh, setRefresh] = useState(0);
@@ -50,9 +55,9 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
         setMessage('Regla creada. Generá los turnos para publicarla en disponibilidad.');
         setRefresh((value) => value + 1);
       } else {
-        // datetime-local se interpreta en la zona del navegador y se envía como ISO UTC.
-        const from = new Date(text('from'));
-        const to = new Date(text('to'));
+        // datetime-local es el reloj de pared del complejo (#24).
+        const from = orgLocalDateTimeToDate(timezone, text('from'));
+        const to = orgLocalDateTimeToDate(timezone, text('to'));
         if (!Number.isFinite(from.valueOf()) || !Number.isFinite(to.valueOf()) || from >= to) throw new Error('Ingresá un rango de fechas válido.');
         if (kind === 'block') {
           const reason = text('reason').trim();
@@ -73,7 +78,7 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
 
   return <section className="panel settings-panel">
     <h2>Horarios y bloqueos</h2>
-    <p>Una regla por turno de 1 o 2 horas. Horarios de reglas: zona del servidor. Fechas de bloqueos y generación: {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p>
+    <p>Una regla por turno de 1 o 2 horas. Todos los horarios se interpretan en la zona del complejo: <strong>{orgTzLabel(timezone)}</strong>.</p>
     <label>Cancha<select className="b2b-input" value={selectedCourt} disabled={busy} onChange={(event) => { setCourtId(event.target.value); setMessage(''); }}>
       {!courts.length && <option value="">Creá una cancha primero</option>}
       {courts.map((court) => <option key={court.id} value={court.id}>{court.name}</option>)}

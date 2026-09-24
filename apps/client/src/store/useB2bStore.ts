@@ -4,12 +4,14 @@ import { b2bService, setB2bAccessToken, type B2bAuthResponse, type B2bUser } fro
 interface B2bState {
   user: B2bUser | null;
   token: string | null;
+  orgTimezone: string | null;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   registerClient: (input: { email: string; fullName: string; password: string }) => Promise<boolean>;
   onboardOwner: (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => Promise<boolean>;
   hydrate: () => Promise<boolean>;
+  loadOrgTimezone: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -23,6 +25,7 @@ function applyAuth(session: B2bAuthResponse): { user: B2bUser; token: string } {
 export const useB2bStore = create<B2bState>((set) => ({
   user: null,
   token: null,
+  orgTimezone: null,
   isLoading: false,
   error: null,
 
@@ -70,9 +73,19 @@ export const useB2bStore = create<B2bState>((set) => ({
     return true;
   },
 
+  /** Carga la zona horaria de la organización (issue #24) para fijar horarios. */
+  loadOrgTimezone: async () => {
+    try {
+      const organization = await b2bService.getOrganization();
+      set({ orgTimezone: organization.timezone });
+    } catch {
+      set({ orgTimezone: null });
+    }
+  },
+
   logout: async () => {
     await b2bService.logout();
-    set({ user: null, token: null, error: null });
+    set({ user: null, token: null, orgTimezone: null, error: null });
   },
 
   clearError: () => set({ error: null }),

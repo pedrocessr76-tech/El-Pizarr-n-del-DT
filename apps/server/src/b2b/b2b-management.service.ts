@@ -21,6 +21,7 @@ import { B2bUserEntity } from './entities/user.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
 import { canChangeBookingStatus, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
 import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-notifications.service';
+import { addOrgDays, addOrgHours, orgDateString, orgParts, orgTimeString, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
 
 @Injectable()
 export class B2bManagementService {
@@ -93,10 +94,10 @@ export class B2bManagementService {
         this.shiftRules.create({ courtId: court.id, weekday, startTime: '09:00', endTime: '23:00', durationHours: 1, priceCentsArs: court.defaultPriceCentsArs }),
       ),
     );
-    const from = new Date();
-    const to = new Date(from);
-    to.setDate(to.getDate() + 7);
-    await this.generateShiftsForRange(user.organizationId, court.id, from, to);
+    const timezone = await this.orgTimezone(user.organizationId);
+    const from = startOfOrgDay(new Date(), timezone);
+    const to = addOrgDays(from, 7, timezone);
+    await this.generateShiftsForRange(user.organizationId, court.id, from, to, timezone);
     return court;
   }
 
@@ -147,21 +148,23 @@ export class B2bManagementService {
     if (Number.isNaN(from.valueOf()) || Number.isNaN(to.valueOf()) || from >= to) {
       throw new BadRequestException('El rango de generación es inválido');
     }
-    return this.generateShiftsForRange(user.organizationId, courtId, from, to);
+    return this.generateShiftsForRange(user.organizationId, courtId, from, to, await this.orgTimezone(user.organizationId));
   }
 
-  private async generateShiftsForRange(organizationId: string, courtId: string, from: Date, to: Date) {
+  private async generateShiftsForRange(organizationId: string, courtId: string, from: Date, to: Date, timeZone: string) {
     const rules = await this.shiftRules.find({ where: { courtId, active: true } });
     const generated: B2bShiftEntity[] = [];
     for (const rule of rules) {
-      const cursor = new Date(from);
+      // Los días se recorren con el reloj de pared de la organización: el
+      // weekday de la regla y la hora de inicio son del complejo, no del
+      // servidor (issue #24).
+      let cursor = startOfOrgDay(from, timeZone);
       while (cursor < to) {
-        if (cursor.getDay() === rule.weekday) {
+        const parts = orgParts(cursor, timeZone);
+        if (parts.weekday === rule.weekday) {
           const [startHour, startMinute] = rule.startTime.split(':').map(Number);
-          const startsAt = new Date(cursor);
-          startsAt.setHours(startHour, startMinute, 0, 0);
-          const endsAt = new Date(startsAt);
-          endsAt.setHours(endsAt.getHours() + rule.durationHours);
+          const startsAt = orgTimeToDate({ year: parts.year, month: parts.month, day: parts.day, hour: startHour, minute: startMinute }, timeZone);
+          const endsAt = addOrgHours(startsAt, rule.durationHours, timeZone);
           if (startsAt >= from && endsAt <= to) {
             const existing = await this.shifts.findOne({ where: { courtId, startsAt } });
             if (!existing) {
@@ -176,7 +179,7 @@ export class B2bManagementService {
             }
           }
         }
-        cursor.setDate(cursor.getDate() + 1);
+        cursor = addOrgDays(cursor, 1, timeZone);
       }
     }
     return this.shifts.save(generated);
@@ -271,11 +274,26 @@ export class B2bManagementService {
     });
   }
 
-  async metricsSummary(user: B2bJwtUser, date = new Date(), courtId?: string) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+  async metricsSummary(user: B2bJwtUser, date?: string, courtId?: string) {
+    const timeZone = await this.orgTimezone(user.organizationId);
+    const match = date?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (date && !match) throw new BadRequestException('La fecha debe tener formato YYYY-MM-DD');
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const probe = new Date(Date.UTC(year, month - 1, day));
+      if (probe.getUTCFullYear() !== year || probe.getUTCMonth() + 1 !== month || probe.getUTCDate() !== day) {
+        throw new BadRequestException('La fecha debe tener formato YYYY-MM-DD');
+      }
+    }
+    const now = new Date();
+    const parts = match
+      ? { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) }
+      : orgParts(now, timeZone);
+    // El "día" de las métricas es el día local del complejo, no el del servidor.
+    const start = orgTimeToDate({ year: parts.year, month: parts.month, day: parts.day, hour: 0, minute: 0 }, timeZone);
+    const end = addOrgDays(start, 1, timeZone);
     const shiftWhere: Record<string, unknown> = { organizationId: user.organizationId, startsAt: Between(start, end) };
     const bookingWhere: Record<string, unknown> = { organizationId: user.organizationId };
     if (courtId) {
@@ -289,8 +307,9 @@ export class B2bManagementService {
     const revenueCentsArs = bookings
       .filter((booking) => [BookingStatus.CONFIRMED, BookingStatus.COMPLETED].includes(booking.status))
       .reduce((total, booking) => total + booking.priceCentsArs, 0);
+    const pad2 = (value: number) => String(value).padStart(2, '0');
     return {
-      date: start.toISOString().slice(0, 10),
+      date: `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`,
       currency: 'ARS',
       totalShifts: shifts.length,
       occupiedShifts: shifts.filter((shift) => bookedShiftIds.has(shift.id)).length,
@@ -467,9 +486,10 @@ export class B2bManagementService {
     type: 'b2b_booking_pending' | 'b2b_booking_confirmed' | 'b2b_booking_cancelled' | 'b2b_booking_completed' | 'b2b_booking_rescheduled',
     severity: 'info' | 'success' | 'warning',
   ): Promise<B2bNotifyOptions> {
-    const [shift, court] = await Promise.all([
+    const [shift, court, organization] = await Promise.all([
       this.shifts.findOneBy({ id: booking.shiftId }),
       this.courts.findOneBy({ id: booking.courtId }),
+      this.organizations.findOneBy({ id: booking.organizationId }),
     ]);
     const titles: Record<string, string> = {
       b2b_booking_pending: 'Nueva reserva',
@@ -484,7 +504,7 @@ export class B2bManagementService {
       type,
       severity,
       title: `${titles[type]} — ${courtName}`,
-      body: `${this.formatShiftTime(shift)} • cliente ${clientName}`,
+      body: `${this.formatShiftTime(shift, resolveTimeZone(organization?.timezone))} • cliente ${clientName}`,
       metadata: {
         bookingId: booking.id,
         courtId: booking.courtId,
@@ -495,12 +515,14 @@ export class B2bManagementService {
     };
   }
 
-  private formatShiftTime(shift: B2bShiftEntity | undefined | null): string {
+  private formatShiftTime(shift: B2bShiftEntity | undefined | null, timeZone: string): string {
     if (!shift) return 'sin horario definido';
-    return `${shift.startsAt.toLocaleDateString('es-AR')} ${shift.startsAt.toLocaleTimeString('es-AR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
+    return `${orgDateString(shift.startsAt, timeZone)} ${orgTimeString(shift.startsAt, timeZone)}`;
+  }
+
+  private async orgTimezone(organizationId: string): Promise<string> {
+    const organization = await this.organizations.findOneByOrFail({ id: organizationId });
+    return resolveTimeZone(organization.timezone);
   }
 
   private async recordEvent(bookingId: string, actorUserId: string, fromStatus: string | null, toStatus: string) {

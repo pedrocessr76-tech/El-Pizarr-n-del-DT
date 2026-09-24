@@ -2,6 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 import { B2bManagementService } from './b2b-management.service';
 import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
+import { DEFAULT_TIMEZONE } from './time';
 
 // Issue #18: reservas y reprogramaciones transaccionales con bloqueo de fila.
 // Verifica que el service ejecuta las escrituras (reserva + turno) dentro de
@@ -10,6 +11,7 @@ import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 describe('Transaccionalidad de reservas (issue #18)', () => {
   const client = { userId: 'client', organizationId: 'org', email: 'client@test.invalid', roles: [B2bRoleCode.CLIENT] };
   const staff = { userId: 'staff', organizationId: 'org', email: 'staff@test.invalid', roles: [B2bRoleCode.OWNER] };
+  const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }), findOneBy: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }) };
 
   const shift = (id: string, status: ShiftStatus) => ({
     id, courtId: 'court', organizationId: 'org',
@@ -76,7 +78,7 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
       transaction: jest.fn(async (cb: (manager: unknown) => unknown) => cb(manager as never)),
     };
     const service = new B2bManagementService(
-      {} as never, {} as never,
+      organizations as never, {} as never,
       { findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org', name: 'Cancha 1' }) } as never,
       {} as never, shifts as never, blocks as never, bookings as never, bookingEvents as never,
       {} as never,

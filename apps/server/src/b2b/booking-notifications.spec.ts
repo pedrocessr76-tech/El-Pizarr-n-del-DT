@@ -1,12 +1,14 @@
 import { ConflictException } from '@nestjs/common';
 import { B2bManagementService } from './b2b-management.service';
 import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
+import { DEFAULT_TIMEZONE } from './time';
 
 // Emisión de notificaciones desde el ciclo de reservas: cada transición avisa
 // al destinatario correcto y el actor no recibe su propio evento.
 describe('Notificaciones del ciclo de reservas', () => {
   const client = { userId: 'client', organizationId: 'org', email: 'client@test.invalid', roles: [B2bRoleCode.CLIENT] };
   const staff = { userId: 'staff', organizationId: 'org', email: 'staff@test.invalid', roles: [B2bRoleCode.OWNER] };
+  const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }), findOneBy: jest.fn().mockResolvedValue({ id: 'org', timezone: DEFAULT_TIMEZONE }) };
 
   function setup(overrides: { initialStatus?: BookingStatus } = {}) {
     const status = { value: overrides.initialStatus ?? BookingStatus.PENDING };
@@ -78,7 +80,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       } as never)),
     };
     const service = new B2bManagementService(
-      {} as never, {} as never, courts as never, {} as never,
+      organizations as never, {} as never, courts as never, {} as never,
       shifts as never, blocks as never, bookings as never, bookingEvents as never,
       {} as never,
       notifications as never,
@@ -207,7 +209,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       } as never)),
     };
     const service = new B2bManagementService(
-      {} as never, {} as never,
+      organizations as never, {} as never,
       { findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org', name: 'Cancha 1' }) } as never,
       {} as never, shifts as never, busyBlocks as never,
       bookings as never,

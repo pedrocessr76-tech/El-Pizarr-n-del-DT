@@ -12,6 +12,7 @@ import { B2bShiftEntity } from './entities/shift.entity';
 import { ShiftStatus } from './entities/b2b.enums';
 import { B2bUserRoleEntity } from './entities/user-role.entity';
 import { B2bUserEntity } from './entities/user.entity';
+import { addOrgDays, addOrgHours, orgParts, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
 
 @Injectable()
 export class B2bSeedService implements OnModuleInit {
@@ -66,13 +67,13 @@ export class B2bSeedService implements OnModuleInit {
       if (!court) court = await this.courts.save(this.courts.create({ organizationId: organization.id, facilityId: facility.id, name, sportType, capacity: 10, defaultPriceCentsArs: price }));
       const count = await this.rules.count({ where: { courtId: court.id } });
       if (!count) await this.rules.save(this.rules.create({ courtId: court.id, weekday: 3, startTime: '18:00', endTime: '23:00', durationHours: 1, priceCentsArs: price }));
+      const timezone = resolveTimeZone(organization.timezone);
+      const today = startOfOrgDay(new Date(), timezone);
       for (let day = 0; day < 7; day += 1) {
+        const dayStart = orgParts(addOrgDays(today, day, timezone), timezone);
         for (let hour = 18; hour < 23; hour += 1) {
-          const startsAt = new Date();
-          startsAt.setDate(startsAt.getDate() + day);
-          startsAt.setHours(hour, 0, 0, 0);
-          const endsAt = new Date(startsAt);
-          endsAt.setHours(hour + 1, 0, 0, 0);
+          const startsAt = orgTimeToDate({ year: dayStart.year, month: dayStart.month, day: dayStart.day, hour, minute: 0 }, timezone);
+          const endsAt = addOrgHours(startsAt, 1, timezone);
           const existingShift = await this.shifts.findOne({ where: { courtId: court.id, startsAt } });
           if (!existingShift) await this.shifts.save(this.shifts.create({ organizationId: organization.id, courtId: court.id, startsAt, endsAt, priceCentsArs: price, status: ShiftStatus.AVAILABLE }));
         }
