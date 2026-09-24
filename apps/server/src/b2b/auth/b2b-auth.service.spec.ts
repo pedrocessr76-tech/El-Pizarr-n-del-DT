@@ -222,3 +222,67 @@ describe('B2bAuthService - onboardOwner', () => {
     expect(manager.getRepository).toHaveBeenCalledWith(B2bUserRoleEntity);
   });
 });
+
+// Refresh token en cookie HttpOnly (issue #17): el access token es corto y la
+// sesión larga la renueva un refresh token que SOLO sirve (claim type=refresh)
+// y que revalida la identidad contra la BD antes de rotar.
+describe('B2bAuthService - refresh', () => {
+  const org = 'org-1';
+
+  function setupRefresh({ claims, userId = 'user-1', organizationActive = true }: { claims: any; userId?: string | null; organizationActive?: boolean }) {
+    const users = {
+      findOne: jest.fn(async ({ where }: any) => {
+        if (!userId) return null;
+        if (where.id && where.id !== userId) return null;
+        if (where.organizationId && where.organizationId !== org) return null;
+        return { id: userId, organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE };
+      }),
+    };
+    const organizations = {
+      findOne: jest.fn(async () =>
+        organizationActive ? { id: org, status: B2bRecordStatus.ACTIVE } : null,
+      ),
+    };
+    const userRoles = {
+      find: jest.fn(async () => [{ userId: 'user-1', organizationId: org, roleId: B2bRoleCode.CLIENT }]),
+    };
+    const roles = { upsert: jest.fn() };
+    const courts = {};
+    const facilities = {};
+    const jwt = {
+      sign: jest.fn(() => 'jwt-firmado'),
+      verify: jest.fn(() => claims),
+    };
+    const dataSource = { transaction: jest.fn() };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    return { service, users, organizations, jwt };
+  }
+
+  it('rotar el par revalidando la identidad contra la BD', async () => {
+    const { service, users, jwt } = setupRefresh({
+      claims: { userId: 'user-1', organizationId: org, type: 'refresh' },
+    });
+
+    const session = await service.refresh('refresh-token');
+
+    expect(jwt.verify).toHaveBeenCalledWith('refresh-token');
+    expect(users.findOne).toHaveBeenCalled();
+    expect(session.accessToken).toBe('jwt-firmado');
+    expect(session.refreshToken).toBe('jwt-firmado');
+    expect(session.user.roles).toEqual([B2bRoleCode.CLIENT]);
+  });
+
+  it('rechaza un token sin claim type=refresh sin consultar la BD', async () => {
+    const { service, users } = setupRefresh({ claims: { userId: 'user-1', organizationId: org } });
+
+    await expect(service.refresh('access-token')).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(users.findOne).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un refresh de un usuario desactivado o eliminado', async () => {
+    const { service, jwt } = setupRefresh({ claims: { userId: 'user-1', organizationId: org, type: 'refresh' }, userId: null });
+
+    await expect(service.refresh('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(jwt.verify).toHaveBeenCalled();
+  });
+});

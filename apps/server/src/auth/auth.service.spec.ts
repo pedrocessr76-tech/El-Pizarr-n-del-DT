@@ -144,3 +144,65 @@ describe('AuthService - getProfile', () => {
     await expect(service.getProfile('no-existe')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
+
+describe('AuthService - refresh token (issue #17)', () => {
+  it('emite un refresh token con claim type=refresh', async () => {
+    const { service, jwt } = makeService();
+
+    const registered = await service.register('pedro', 'secreto-123');
+    const payload = jwt.verify<{ type?: string }>(registered.refreshToken);
+    expect(payload.type).toBe('refresh');
+  });
+
+  it('rota el par completo con un refresh token válido de usuario', async () => {
+    const { service, jwt } = makeService();
+    await service.register('pedro', 'secreto-123');
+    const session = await service.login('pedro', 'secreto-123');
+
+    const renewed = await service.refresh(session.refreshToken);
+
+    expect(renewed.user.username).toBe('pedro');
+    const renewedAccess = jwt.verify<{ sub: string; username: string; iat: number; exp: number }>(renewed.accessToken);
+    expect(renewedAccess).toMatchObject({ sub: 'user-1', username: 'pedro' });
+    // El access token es corto (~15 minutos), no de 7 días como antes.
+    expect(renewedAccess.exp - renewedAccess.iat).toBe(15 * 60);
+    // El refresh rotado sigue siendo utilizable: la sesión se encadena.
+    const chain = await service.refresh(renewed.refreshToken);
+    expect(chain.user.username).toBe('pedro');
+  });
+
+  it('renueva la identidad de un invitado conservando su sub', async () => {
+    const { service } = makeService();
+
+    const guest = await service.getGuestToken();
+    const renewed = await service.refresh(guest.refreshToken);
+
+    expect(renewed.user.id).toBe(guest.user.id);
+    expect(renewed.user.username).toBe('Invitado');
+  });
+
+  it('rechaza un access token usado como refresh (faltante claim type)', async () => {
+    const { service } = makeService();
+    const session = await service.register('pedro', 'secreto-123');
+
+    await expect(service.refresh(session.accessToken)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rechaza un usuario eliminado tras la emisión del refresh', async () => {
+    const { service, repo } = makeService();
+    const session = await service.register('pedro', 'secreto-123');
+    repo.users.length = 0;
+
+    await expect(service.refresh(session.refreshToken)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rechaza un refresh token inválido o expirado', async () => {
+    const { service, jwt } = makeService();
+    const session = await service.register('pedro', 'secreto-123');
+    jest.spyOn(jwt, 'verify').mockImplementationOnce(() => {
+      throw new Error('expired');
+    });
+
+    await expect(service.refresh(session.refreshToken)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+});

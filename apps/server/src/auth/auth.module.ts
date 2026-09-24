@@ -13,7 +13,9 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: requireJwtSecret(),
-      signOptions: { expiresIn: '7d' },
+      // Access token corto: la sesión larga la renueva el refresh token en
+      // cookie HttpOnly (issue #17). Los refresh se firman con expiresIn 7d.
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   controllers: [AuthController],

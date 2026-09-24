@@ -102,6 +102,18 @@ export function B2bApp() {
   const registerClient = useB2bStore((state) => state.registerClient);
   const onboardOwner = useB2bStore((state) => state.onboardOwner);
 
+  // Restaura la sesión B2B desde la cookie HttpOnly al entrar a /canchas
+  // (issue #17): el token ya no se persiste, la sesión larga viaja en cookie.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    void useB2bStore.getState().hydrate().then((restored) => {
+      if (restored) {
+        setView(resolveRole(useB2bStore.getState().user) === 'CLIENT' ? 'portal' : 'dashboard');
+      }
+      setHydrated(true);
+    });
+  }, []);
+
   const [organizations, setOrganizations] = useState<B2bOrganizationOption[]>([]);
   useEffect(() => {
     if (user) {
@@ -134,6 +146,10 @@ export function B2bApp() {
     // El propietario recién dado de alta entra directo a su dashboard operativo.
     navigate('dashboard');
   };
+
+  if (!hydrated) {
+    return null;
+  }
 
   if (view === 'login') {
     return <B2bLogin onEnter={enterB2b} onRegisterClient={registerClientAccount} onRegisterOwner={registerOwnerAccount} />;

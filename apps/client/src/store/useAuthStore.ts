@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { authService, type AuthUser } from '../services/authService';
+import { authService, type AuthResponse, type AuthUser } from '../services/authService';
 import { useDraftStore } from './useDraftStore';
-import { clearGuestSession } from '../utils/session';
+import { clearGuestSession, clearSessionTokens, getGuestToken, setUserToken } from '../utils/session';
 
 interface AuthState {
   user: AuthUser | null;
@@ -10,34 +10,37 @@ interface AuthState {
   error: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+  logout: (callServer?: boolean) => Promise<void>;
+  setSession: (session: AuthResponse) => void;
   clearError: () => void;
 }
 
-const storedToken = localStorage.getItem('token');
-const storedUser = localStorage.getItem('user');
-
-export const useAuthStore = create<AuthState>()((set) => ({
-  user: storedUser ? JSON.parse(storedUser) : null,
-  token: storedToken,
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  // Los tokens viven sólo en memoria (issue #17); se restauran vía cookie.
+  user: null,
+  token: null,
   isLoading: false,
   error: null,
+
+  setSession: (session) => {
+    setUserToken(session.accessToken);
+
+    // Si había un token invitado, descartarlo: la identidad nueva es la del usuario.
+    const hadGuest = Boolean(getGuestToken());
+    clearGuestSession();
+    set({ user: session.user, token: session.accessToken, error: null });
+
+    if (hadGuest) {
+      useDraftStore.getState().setTeamId(null);
+    }
+  },
 
   login: async (username, password) => {
     set({ isLoading: true, error: null });
     try {
       const response = await authService.login(username, password);
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      set({ user: response.user, token: response.accessToken, isLoading: false });
-
-      // Si había un token invitado, descartarlo: la identidad nueva es la del usuario.
-      const hadGuest = Boolean(sessionStorage.getItem('epdt_guest_token'));
-      clearGuestSession();
-      if (hadGuest) {
-        useDraftStore.getState().setTeamId(null);
-      }
-
+      get().setSession(response);
+      set({ isLoading: false });
       return true;
     } catch (err: any) {
       const message = err.response?.data?.message || 'Error al iniciar sesión';
@@ -50,17 +53,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.register(username, password);
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      set({ user: response.user, token: response.accessToken, isLoading: false });
-
-      // Si había un token invitado, descartarlo: la identidad nueva es la del usuario.
-      const hadGuest = Boolean(sessionStorage.getItem('epdt_guest_token'));
-      clearGuestSession();
-      if (hadGuest) {
-        useDraftStore.getState().setTeamId(null);
-      }
-
+      get().setSession(response);
+      set({ isLoading: false });
       return true;
     } catch (err: any) {
       const message = err.response?.data?.message || 'Error al registrarse';
@@ -69,15 +63,15 @@ export const useAuthStore = create<AuthState>()((set) => ({
     }
   },
 
-  logout: async () => {
-    // No se borran datos del servidor al salir: la identidad queda como está. Los
-    // equipos de INVITADOS se limpian con DELETE /draft/data al cerrar la pestaña
-    // (pagehide), nunca con el token de un usuario logueado.
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    clearGuestSession();
+  logout: async (callServer = true) => {
+    // Pide al servidor que borre la cookie HttpOnly del refresh; cuando la
+    // sesión ya expiró (evento epdt:session-expired) se salta la llamada.
+    if (callServer) {
+      await authService.logout();
+    }
+    clearSessionTokens();
     useDraftStore.getState().resetAll();
-    set({ user: null, token: null, error: null });
+    set({ user: null, token: null, isLoading: false, error: null });
   },
 
   clearError: () => set({ error: null }),
