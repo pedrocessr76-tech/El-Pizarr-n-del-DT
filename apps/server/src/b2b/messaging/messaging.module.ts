@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { MessageProvider } from './messaging.provider';
 import { LogMessageProvider } from './log-message.provider';
 import { MessagingService } from './messaging.service';
-
-export const MESSAGE_PROVIDER = Symbol('MESSAGE_PROVIDER');
+import { MESSAGE_PROVIDER } from './messaging.constants';
 
 /**
  * Selecciona el adaptador de WhatsApp activo por entorno (`MESSAGING_PROVIDER`).
