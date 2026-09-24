@@ -22,6 +22,14 @@ export class B2bOrganizationEntity {
   @Column({ length: 3, default: 'ARS' })
   currency!: string;
 
+  /** Teléfono de WhatsApp de la organización normalizado a E.164 (#37). */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  whatsappPhone!: string | null;
+
+  /** Consentimiento explícito de la organización para recibir avisos por WhatsApp (#37). */
+  @Column({ type: 'boolean', default: false })
+  whatsappOptIn!: boolean;
+
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 

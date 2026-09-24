@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -12,6 +12,7 @@ import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
 import { B2bJwtUser } from './b2b-auth.types';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TYPE } from '../../auth/tokens';
+import { normalizeWhatsAppPhone } from '../phone';
 
 const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OWNER]: 'Propietario',
@@ -106,6 +107,67 @@ export class B2bAuthService {
     }));
     await this.userRoles.save({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.CLIENT });
     return this.issueToken(user, [B2bRoleCode.CLIENT]);
+  }
+
+  /**
+   * Perfil completo del usuario B2B con su contacto de WhatsApp (#37).
+   * Los roles se releen de la BD (nunca del JWT), igual que resolveUserFromToken.
+   */
+  async getProfile(userId: string, organizationId: string) {
+    const user = await this.users.findOne({ where: { id: userId, organizationId } });
+    if (!user) throw new UnauthorizedException('Usuario no encontrado.');
+    return {
+      userId: user.id,
+      organizationId: user.organizationId,
+      email: user.email,
+      roles: await this.loadRoles(user.id, user.organizationId),
+      whatsappPhone: user.whatsappPhone ?? null,
+      whatsappOptIn: user.whatsappOptIn,
+    };
+  }
+
+  /**
+   * Actualiza el contacto de WhatsApp del usuario (#37). El teléfono se guarda
+   * normalizado a E.164 (phone.ts). Vaciar el teléfono desactiva el contacto y
+   * deja `whatsappOptIn=false`. Formato inválido → BadRequest.
+   */
+  async updateProfile(userId: string, organizationId: string, input: { whatsappPhone?: string; whatsappOptIn?: boolean }) {
+    const user = await this.users.findOne({ where: { id: userId, organizationId } });
+    if (!user) throw new UnauthorizedException('Usuario no encontrado.');
+    const result = normalizeWhatsAppPhone(input.whatsappPhone ?? user.whatsappPhone ?? null);
+    if (!result.valid) {
+      throw new BadRequestException('Número de WhatsApp inválido. Usá formato internacional, p. ej. +5491112345678.');
+    }
+    user.whatsappPhone = result.value;
+    user.whatsappOptIn = result.value === null ? false : (input.whatsappOptIn ?? user.whatsappOptIn);
+    await this.users.save(user);
+    return {
+      userId: user.id,
+      organizationId: user.organizationId,
+      email: user.email,
+      roles: await this.loadRoles(user.id, user.organizationId),
+      whatsappPhone: user.whatsappPhone,
+      whatsappOptIn: user.whatsappOptIn,
+    };
+  }
+
+  /** Actualiza el contacto de WhatsApp de la organización (#37, staff de administración). */
+  async updateOrganizationContact(organizationId: string, input: { whatsappPhone?: string; whatsappOptIn?: boolean }) {
+    const organization = await this.organizations.findOne({ where: { id: organizationId } });
+    if (!organization) throw new UnauthorizedException('Complejo no encontrado.');
+    const result = normalizeWhatsAppPhone(input.whatsappPhone ?? organization.whatsappPhone ?? null);
+    if (!result.valid) {
+      throw new BadRequestException('Número de WhatsApp inválido. Usá formato internacional, p. ej. +5491112345678.');
+    }
+    organization.whatsappPhone = result.value;
+    organization.whatsappOptIn = result.value === null ? false : (input.whatsappOptIn ?? organization.whatsappOptIn);
+    await this.organizations.save(organization);
+    return { whatsappPhone: organization.whatsappPhone, whatsappOptIn: organization.whatsappOptIn };
+  }
+
+  private async loadRoles(userId: string, organizationId: string): Promise<B2bRoleCode[]> {
+    const assignments = await this.userRoles.find({ where: { userId, organizationId } });
+    return Array.from(new Set(assignments.map((assignment) => assignment.roleId)));
   }
 
   async ensureRoles() {

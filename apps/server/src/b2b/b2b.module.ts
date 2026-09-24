@@ -17,6 +17,7 @@ import { B2bManagementController } from './b2b-management.controller';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
 import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 export const B2B_ENTITIES = [
   B2bOrganizationEntity,
@@ -34,7 +35,7 @@ export const B2B_ENTITIES = [
 ];
 
 @Module({
-  imports: [TypeOrmModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule],
+  imports: [TypeOrmModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
   controllers: [B2bManagementController],
   providers: [B2bManagementService, B2bSeedService],
   exports: [B2bManagementService, TypeOrmModule],

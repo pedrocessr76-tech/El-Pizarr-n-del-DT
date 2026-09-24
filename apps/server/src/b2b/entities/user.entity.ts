@@ -23,6 +23,14 @@ export class B2bUserEntity {
   @Column({ type: 'varchar', length: 20, default: B2bRecordStatus.ACTIVE })
   status!: B2bRecordStatus;
 
+  /** Teléfono de WhatsApp normalizado a E.164 (#37). null = sin WhatsApp configurado. */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  whatsappPhone!: string | null;
+
+  /** Consentimiento explícito para recibir mensajes por WhatsApp (#37). */
+  @Column({ type: 'boolean', default: false })
+  whatsappOptIn!: boolean;
+
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 }

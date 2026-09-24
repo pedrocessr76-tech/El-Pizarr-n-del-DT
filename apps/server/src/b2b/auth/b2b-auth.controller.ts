@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { B2bJwtGuard } from './b2b-jwt.guard';
 import { CurrentB2bUser } from './b2b-auth.decorators';
@@ -9,6 +9,9 @@ import { B2bAuthService } from './b2b-auth.service';
 import { B2bJwtUser } from './b2b-auth.types';
 import { CsrfRefreshGuard } from '../../auth/csrf-refresh.guard';
 import { B2B_REFRESH_COOKIE, clearRefreshCookie, readCookie, setRefreshCookie } from '../../auth/tokens';
+import { B2bRolesGuard } from './b2b-roles.guard';
+import { B2bRoles } from './b2b-auth.decorators';
+import { B2bRoleCode } from '../entities/b2b.enums';
 
 class OnboardingDto {
   @ApiProperty({ example: 'Complejo Los Amigos' })
@@ -77,6 +80,32 @@ class LoginB2bDto {
   @IsNotEmpty()
   @MaxLength(100)
   password!: string;
+}
+
+class UpdateProfileDto {
+  @ApiProperty({ required: false, example: '+5491112345678', description: 'WhatsApp en formato internacional (E.164). Vacío desactiva el contacto.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  whatsappPhone?: string;
+
+  @ApiProperty({ required: false, example: true, description: 'Consentimiento explícito para recibir mensajes por WhatsApp.' })
+  @IsOptional()
+  @IsBoolean()
+  whatsappOptIn?: boolean;
+}
+
+class UpdateOrganizationContactDto {
+  @ApiProperty({ required: false, example: '+5491112345678', description: 'WhatsApp del complejo en formato internacional (E.164).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  whatsappPhone?: string;
+
+  @ApiProperty({ required: false, example: true, description: 'Consentimiento explícito del complejo para avisos por WhatsApp.' })
+  @IsOptional()
+  @IsBoolean()
+  whatsappOptIn?: boolean;
 }
 
 @Controller('api/v1/auth')
@@ -157,7 +186,25 @@ export class B2bAuthController {
   @Get('me')
   @UseGuards(B2bJwtGuard)
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Perfil completo del usuario actual, con rol y contacto de WhatsApp' })
   me(@CurrentB2bUser() user: B2bJwtUser) {
-    return user;
+    return this.auth.getProfile(user.userId, user.organizationId);
+  }
+
+  @Patch('profile')
+  @UseGuards(B2bJwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar el contacto de WhatsApp del usuario actual (teléfono y consentimiento)' })
+  updateProfile(@CurrentB2bUser() user: B2bJwtUser, @Body() body: UpdateProfileDto) {
+    return this.auth.updateProfile(user.userId, user.organizationId, body);
+  }
+
+  @Patch('organization')
+  @UseGuards(B2bJwtGuard, B2bRolesGuard)
+  @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar el contacto de WhatsApp de la organización (staff)' })
+  updateOrganizationContact(@CurrentB2bUser() user: B2bJwtUser, @Body() body: UpdateOrganizationContactDto) {
+    return this.auth.updateOrganizationContact(user.organizationId, body);
   }
 }

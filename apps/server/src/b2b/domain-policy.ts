@@ -32,3 +32,13 @@ export function canChangeBookingStatus(current: BookingStatus, next: BookingStat
   if (next === BookingStatus.CONFIRMED && !isStaff) return false;
   return [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CANCELLED, BookingStatus.COMPLETED, BookingStatus.NO_SHOW].includes(next);
 }
+
+/**
+ * Regla de consentimiento para envíos de WhatsApp (#37): solo cuando hay un
+ * teléfono E.164 configurado Y el opt-in está activo. Es la única puerta de
+ * salida; los consumidores (recordatorios, confirmaciones, resumen) la deben
+ * consultar antes de llamar a MessagingService.
+ */
+export function canSendWhatsApp(phone: string | null | undefined, optIn: boolean): phone is string {
+  return typeof phone === 'string' && phone.length > 0 && optIn;
+}

@@ -19,8 +19,10 @@ import { B2bShiftRuleEntity } from './entities/shift-rule.entity';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bUserEntity } from './entities/user.entity';
 import { B2bJwtUser } from './auth/b2b-auth.types';
-import { canChangeBookingStatus, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
+import { canChangeBookingStatus, canSendWhatsApp, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
 import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-notifications.service';
+import { MessagingService } from './messaging/messaging.service';
+import { WhatsAppMessageKind } from './messaging/messaging.types';
 import { addOrgDays, addOrgHours, orgDateString, orgParts, orgTimeString, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
 
 @Injectable()
@@ -38,6 +40,7 @@ export class B2bManagementService {
     @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
     private readonly notifications: B2bNotificationsService,
     @InjectDataSource('b2b') private readonly dataSource: DataSource,
+    private readonly messaging: MessagingService,
   ) {}
 
   async getOrganization(user: B2bJwtUser) {
@@ -414,6 +417,7 @@ export class B2bManagementService {
         await this.bookingNotification(saved, 'b2b_booking_confirmed', 'success'),
         user.userId,
       );
+      await this.sendBookingWhatsApp('client', saved, 'confirmation', 'Reserva confirmada');
     } else if (status === BookingStatus.COMPLETED) {
       await this.notifications.notifyUser(
         saved.clientUserId,
@@ -431,6 +435,102 @@ export class B2bManagementService {
     }
 
     return saved;
+  }
+
+  /**
+   * Confirma asistencia del cliente al turno (R3): solo dentro de la ventana de
+   * 30 minutos previos al inicio. Avísale al complejo por WhatsApp (org con
+   * teléfono + opt-in) y devuelve `{ sent }` para que la UI muestre el resultado.
+   */
+  async confirmAttendance(user: B2bJwtUser, bookingId: string) {
+    const isStaff = user.roles.some(isStaffRole);
+    const booking = await this.bookings.findOne({ where: { id: bookingId, organizationId: user.organizationId } });
+    if (!booking || (!isStaff && booking.clientUserId !== user.userId)) throw new NotFoundException('Reserva no encontrada');
+    if ([BookingStatus.CANCELLED, BookingStatus.COMPLETED, BookingStatus.NO_SHOW].includes(booking.status)) {
+      throw new ConflictException('La reserva ya está cerrada');
+    }
+    const shift = await this.shifts.findOneBy({ id: booking.shiftId });
+    if (!shift) throw new NotFoundException('Turno no encontrado');
+    const minutesLeft = Math.round((shift.startsAt.getTime() - Date.now()) / 60000);
+    if (minutesLeft < 0) throw new ConflictException('El turno ya comenzó');
+    if (minutesLeft > 30) throw new ConflictException('El botón de confirmación se habilita dentro de los 30 minutos previos al turno');
+
+    const organization = await this.organizations.findOneBy({ id: booking.organizationId });
+    if (!organization || !canSendWhatsApp(organization.whatsappPhone, organization.whatsappOptIn)) {
+      return { sent: false, message: 'El complejo aún no configuró WhatsApp para recibir avisos.' };
+    }
+
+    const clientName = await this.notifications.getUserDisplayName(booking.clientUserId);
+    const [court, timeZone] = await Promise.all([
+      this.courts.findOneBy({ id: booking.courtId }),
+      this.organizations.findOneBy({ id: booking.organizationId }).then((org) => resolveTimeZone(org?.timezone)),
+    ]);
+    const hour = orgTimeString(shift.startsAt, timeZone);
+    const date = orgDateString(shift.startsAt, timeZone);
+    let delivered = false;
+    try {
+      const result = await this.messaging.send(
+        organization.whatsappPhone,
+        `${clientName} confirmó asistencia al turno de las ${hour} en ${court?.name ?? 'la cancha'} (${date}).`,
+        'reminder',
+        { bookingId: booking.id },
+      );
+      delivered = result.delivered;
+    } catch (error) {
+      this.logger.error(`confirmAttendance ${booking.id}: envío WhatsApp al complejo falló: ${(error as Error)?.message ?? error}`);
+    }
+    return { sent: delivered, message: delivered ? 'El complejo fue avisado.' : 'No se pudo avisar al complejo por WhatsApp.' };
+  }
+
+  /**
+   * Envío best-effort de WhatsApp sobre una reserva (R2). Nunca lanza: un fallo
+   * de mensajería se registra y el flujo sigue igual (la reserva ya transitó).
+   * audience 'client' gatea con el teléfono+opt-in del reservante; 'organization'
+   * con los del complejo (aviso de asistencia).
+   */
+  private async sendBookingWhatsApp(
+    audience: 'client' | 'organization',
+    booking: B2bBookingEntity,
+    kind: WhatsAppMessageKind,
+    context: string,
+  ) {
+    try {
+      const [shift, court, organization, clientName] = await Promise.all([
+        this.shifts.findOneBy({ id: booking.shiftId }),
+        this.courts.findOneBy({ id: booking.courtId }),
+        this.organizations.findOneBy({ id: booking.organizationId }),
+        this.notifications.getUserDisplayName(booking.clientUserId),
+      ]);
+      const to = audience === 'client' ? booking.clientUserId : booking.organizationId;
+      const recipient = audience === 'client'
+        ? await this.users.findOneBy({ id: to })
+        : organization;
+      const phone = recipient?.whatsappPhone ?? null;
+      const optIn = recipient?.whatsappOptIn ?? false;
+      if (!canSendWhatsApp(phone, optIn)) return;
+
+      const courtName = court?.name ?? 'la cancha';
+      const orgName = organization?.name ?? 'el complejo';
+      const timeLabel = this.shiftTimeLabel(shift, organization);
+      const body = audience === 'client'
+        ? `Tu reserva en ${courtName} del ${timeLabel} fue confirmada por ${orgName}. ${this.summaryLine(booking)}`
+        : `${clientName} confirmó asistencia al turno de las ${timeLabel.split(' a las ')[1] ?? timeLabel} en ${courtName} (${orgName}).`;
+      await this.messaging.send(phone, body, kind, { bookingId: booking.id });
+    } catch (error) {
+      this.logger.error(`sendBookingWhatsApp (${context}, ${booking.id}): ${(error as Error)?.message ?? error}`);
+    }
+  }
+
+  private shiftTimeLabel(shift: B2bShiftEntity | null | undefined, organization: B2bOrganizationEntity | null | undefined): string {
+    if (!shift) return 'sin horario definido';
+    const timeZone = resolveTimeZone(organization?.timezone);
+    const hour = orgTimeString(shift.startsAt, timeZone);
+    const date = orgDateString(shift.startsAt, timeZone);
+    return `${date} a las ${hour}`;
+  }
+
+  private summaryLine(booking: B2bBookingEntity): string {
+    return `Ref: ${booking.id.slice(0, 8).toUpperCase()} · $ ${(booking.priceCentsArs / 100).toLocaleString('es-AR')} ARS`;
   }
 
   async rescheduleBooking(user: B2bJwtUser, id: string, shiftId: string) {

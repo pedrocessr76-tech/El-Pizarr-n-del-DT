@@ -2,6 +2,7 @@ import {
   isValidShiftDuration,
   isStaffRole,
   canChangeBookingStatus,
+  canSendWhatsApp,
 } from './domain-policy';
 import { BookingStatus, B2bRoleCode } from './entities/b2b.enums';
 
@@ -116,5 +117,21 @@ describe('canChangeBookingStatus', () => {
     it('CANCELLED → CONFIRMED rechazado incluso para staff', () => {
       expect(canChangeBookingStatus(BookingStatus.CANCELLED, BookingStatus.CONFIRMED, true)).toBe(false);
     });
+  });
+});
+
+describe('canSendWhatsApp (#37 - regla de consentimiento)', () => {
+  it('devuelve true solo con teléfono E.164 y opt-in activo', () => {
+    expect(canSendWhatsApp('+5491155551234', true)).toBe(true);
+  });
+
+  it('rechaza sin opt-in aunque haya teléfono', () => {
+    expect(canSendWhatsApp('+5491155551234', false)).toBe(false);
+  });
+
+  it('rechaza sin teléfono (null o vacío) aunque haya opt-in', () => {
+    expect(canSendWhatsApp(null, true)).toBe(false);
+    expect(canSendWhatsApp(undefined, true)).toBe(false);
+    expect(canSendWhatsApp('', true)).toBe(false);
   });
 });

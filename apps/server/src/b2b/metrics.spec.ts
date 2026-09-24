@@ -18,6 +18,7 @@ describe('Métricas del día (zona de la organización)', () => {
       organizations as never, {} as never, {} as never, {} as never,
       shifts as never, {} as never, bookings as never, {} as never,
       {} as never, {} as never, {} as never,
+      { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, organizations, betweenArgs };
   }
