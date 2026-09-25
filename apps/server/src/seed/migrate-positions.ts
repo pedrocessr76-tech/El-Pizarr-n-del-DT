@@ -1,15 +1,13 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { PlayerEntity } from '../player/player.entity';
+import { RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
 
 @Injectable()
 export class MigratePositionsService implements OnModuleInit {
   private readonly logger = new Logger(MigratePositionsService.name);
 
   constructor(
-    @InjectRepository(PlayerEntity)
-    private readonly playerRepo: Repository<PlayerEntity>,
+    @Inject(getRepositoryPortToken(PlayerEntity)) private readonly playerRepo: RepositoryPort<PlayerEntity>,
   ) {}
 
   async onModuleInit() {
@@ -51,16 +49,14 @@ export class MigratePositionsService implements OnModuleInit {
 
     let totalUpdated = 0;
 
+    const players = await this.playerRepo.find();
     for (const migration of migrations) {
-      const result = await this.playerRepo
-        .createQueryBuilder()
-        .update(PlayerEntity)
-        .set({ position: migration.to })
-        .where('position IN (:...positions)', { positions: migration.from })
-        .andWhere('position != :finalPosition', { finalPosition: migration.to })
-        .execute();
-
-      const updated = result.affected || 0;
+      const matching = players.filter((player) => migration.from.includes(player.position) && player.position !== migration.to);
+      for (const player of matching) {
+        player.position = migration.to;
+        await this.playerRepo.save(player);
+      }
+      const updated = matching.length;
       if (updated > 0) {
         this.logger.log(`  ${migration.from.join(', ')} → ${migration.to}: ${updated} jugadores actualizados`);
         totalUpdated += updated;
@@ -68,17 +64,14 @@ export class MigratePositionsService implements OnModuleInit {
     }
 
     // Mostrar resumen final
-    const summary = await this.playerRepo
-      .createQueryBuilder()
-      .select('position')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('position')
-      .orderBy('position')
-      .getRawMany();
+    const summary = [...players.reduce((counts, player) => {
+      counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>())].sort(([a], [b]) => a.localeCompare(b));
 
     this.logger.log('\nResumen de posiciones después de la migración:');
-    summary.forEach(row => {
-      this.logger.log(`  ${row.position}: ${row.count}`);
+    summary.forEach(([position, count]) => {
+      this.logger.log(`  ${position}: ${count}`);
     });
 
     this.logger.log(`\nMigración completada: ${totalUpdated} jugadores actualizados en total`);

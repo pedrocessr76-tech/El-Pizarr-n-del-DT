@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { TeamEntity } from './team.entity';
 import { TeamPlayerEntity } from './team-player.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TeamEntity, TeamPlayerEntity])],
-  exports: [TypeOrmModule],
+  imports: [RepositoryPortModule.forFeature([TeamEntity, TeamPlayerEntity])],
+  exports: [],
 })
 export class TeamModule {}

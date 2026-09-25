@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
 import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
@@ -35,9 +35,9 @@ export const B2B_ENTITIES = [
 ];
 
 @Module({
-  imports: [TypeOrmModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
+  imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
   controllers: [B2bManagementController],
   providers: [B2bManagementService, B2bSeedService],
-  exports: [B2bManagementService, TypeOrmModule],
+  exports: [B2bManagementService],
 })
 export class B2bModule {}

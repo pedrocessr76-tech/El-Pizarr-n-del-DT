@@ -3,7 +3,8 @@ import { ApiBearerAuth, ApiOperation, ApiPropertyOptional, ApiResponse, ApiTags 
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PlayerService, PlayerFilters } from './player.service';
+import { PlayerService } from './player.service';
+import { PlayerFilters } from './player.repository';
 import type { Player } from '../../../../packages/shared/types/models';
 
 class PlayerFilterDto implements PlayerFilters {

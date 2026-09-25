@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Inject } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
 import { B2bRoleCode } from './entities/b2b.enums';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
@@ -13,20 +12,21 @@ import { ShiftStatus } from './entities/b2b.enums';
 import { B2bUserRoleEntity } from './entities/user-role.entity';
 import { B2bUserEntity } from './entities/user.entity';
 import { addOrgDays, addOrgHours, orgParts, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
+import { RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
 
 @Injectable()
 export class B2bSeedService implements OnModuleInit {
   private readonly logger = new Logger(B2bSeedService.name);
 
   constructor(
-    @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
-    @InjectRepository(B2bRoleEntity, 'b2b') private readonly roles: Repository<B2bRoleEntity>,
-    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
-    @InjectRepository(B2bUserRoleEntity, 'b2b') private readonly userRoles: Repository<B2bUserRoleEntity>,
-    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
-    @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
-    @InjectRepository(B2bShiftRuleEntity, 'b2b') private readonly rules: Repository<B2bShiftRuleEntity>,
-    @InjectRepository(B2bShiftEntity, 'b2b') private readonly shifts: Repository<B2bShiftEntity>,
+    @Inject(getRepositoryPortToken(B2bOrganizationEntity, 'b2b')) private readonly organizations: RepositoryPort<B2bOrganizationEntity>,
+    @Inject(getRepositoryPortToken(B2bRoleEntity, 'b2b')) private readonly roles: RepositoryPort<B2bRoleEntity>,
+    @Inject(getRepositoryPortToken(B2bUserEntity, 'b2b')) private readonly users: RepositoryPort<B2bUserEntity>,
+    @Inject(getRepositoryPortToken(B2bUserRoleEntity, 'b2b')) private readonly userRoles: RepositoryPort<B2bUserRoleEntity>,
+    @Inject(getRepositoryPortToken(B2bFacilityEntity, 'b2b')) private readonly facilities: RepositoryPort<B2bFacilityEntity>,
+    @Inject(getRepositoryPortToken(B2bCourtEntity, 'b2b')) private readonly courts: RepositoryPort<B2bCourtEntity>,
+    @Inject(getRepositoryPortToken(B2bShiftRuleEntity, 'b2b')) private readonly rules: RepositoryPort<B2bShiftRuleEntity>,
+    @Inject(getRepositoryPortToken(B2bShiftEntity, 'b2b')) private readonly shifts: RepositoryPort<B2bShiftEntity>,
   ) {}
 
   async onModuleInit() {

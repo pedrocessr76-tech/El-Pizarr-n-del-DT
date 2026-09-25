@@ -3,11 +3,12 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Inject,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Between, DataSource, EntityManager, In, QueryFailedError, Repository } from 'typeorm';
+import { betweenValues, inValues, RepositoryCriteria, RepositoryPort, UnitOfWork, getRepositoryPortToken } from '../persistence/repository.port';
+import { B2B_UNIT_OF_WORK } from '../persistence/persistence.module';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
@@ -29,17 +30,17 @@ import { addOrgDays, addOrgHours, orgDateString, orgParts, orgTimeString, orgTim
 export class B2bManagementService {
   private readonly logger = new Logger(B2bManagementService.name);
   constructor(
-    @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
-    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
-    @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
-    @InjectRepository(B2bShiftRuleEntity, 'b2b') private readonly shiftRules: Repository<B2bShiftRuleEntity>,
-    @InjectRepository(B2bShiftEntity, 'b2b') private readonly shifts: Repository<B2bShiftEntity>,
-    @InjectRepository(B2bAvailabilityBlockEntity, 'b2b') private readonly blocks: Repository<B2bAvailabilityBlockEntity>,
-    @InjectRepository(B2bBookingEntity, 'b2b') private readonly bookings: Repository<B2bBookingEntity>,
-    @InjectRepository(B2bBookingEventEntity, 'b2b') private readonly bookingEvents: Repository<B2bBookingEventEntity>,
-    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
+    @Inject(getRepositoryPortToken(B2bOrganizationEntity, 'b2b')) private readonly organizations: RepositoryPort<B2bOrganizationEntity>,
+    @Inject(getRepositoryPortToken(B2bFacilityEntity, 'b2b')) private readonly facilities: RepositoryPort<B2bFacilityEntity>,
+    @Inject(getRepositoryPortToken(B2bCourtEntity, 'b2b')) private readonly courts: RepositoryPort<B2bCourtEntity>,
+    @Inject(getRepositoryPortToken(B2bShiftRuleEntity, 'b2b')) private readonly shiftRules: RepositoryPort<B2bShiftRuleEntity>,
+    @Inject(getRepositoryPortToken(B2bShiftEntity, 'b2b')) private readonly shifts: RepositoryPort<B2bShiftEntity>,
+    @Inject(getRepositoryPortToken(B2bAvailabilityBlockEntity, 'b2b')) private readonly blocks: RepositoryPort<B2bAvailabilityBlockEntity>,
+    @Inject(getRepositoryPortToken(B2bBookingEntity, 'b2b')) private readonly bookings: RepositoryPort<B2bBookingEntity>,
+    @Inject(getRepositoryPortToken(B2bBookingEventEntity, 'b2b')) private readonly bookingEvents: RepositoryPort<B2bBookingEventEntity>,
+    @Inject(getRepositoryPortToken(B2bUserEntity, 'b2b')) private readonly users: RepositoryPort<B2bUserEntity>,
     private readonly notifications: B2bNotificationsService,
-    @InjectDataSource('b2b') private readonly dataSource: DataSource,
+    @Inject(B2B_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     private readonly messaging: MessagingService,
   ) {}
 
@@ -193,7 +194,7 @@ export class B2bManagementService {
     const startsAt = new Date(from);
     const endsAt = new Date(to);
     const [shifts, blocks] = await Promise.all([
-      this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: Between(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } }),
+      this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: betweenValues(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } }),
       this.blocks.find({ where: { organizationId: user.organizationId, courtId } }),
     ]);
     return shifts.filter((shift) => !blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt));
@@ -209,14 +210,14 @@ export class B2bManagementService {
     const endsAt = new Date(to);
     const [courts, shifts, bookings, blocks] = await Promise.all([
       this.courts.find({ where: { organizationId: user.organizationId }, order: { name: 'ASC' } }),
-      this.shifts.find({ where: { organizationId: user.organizationId, startsAt: Between(startsAt, endsAt) }, order: { startsAt: 'ASC' } }),
-      this.bookings.find({ where: { organizationId: user.organizationId, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } }),
+      this.shifts.find({ where: { organizationId: user.organizationId, startsAt: betweenValues(startsAt, endsAt) }, order: { startsAt: 'ASC' } }),
+      this.bookings.find({ where: { organizationId: user.organizationId, status: inValues([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } }),
       this.blocks.find({ where: { organizationId: user.organizationId } }),
     ]);
     const bookingByShift = new Map(bookings.map((booking) => [booking.shiftId, booking]));
     const clientUserIds = [...new Set(bookings.map((booking) => booking.clientUserId))];
     const users = clientUserIds.length
-      ? await this.users.find({ where: { id: In(clientUserIds) } })
+      ? await this.users.find({ where: { id: inValues(clientUserIds) } })
       : ([] as B2bUserEntity[]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const board = new Map<string, Array<Record<string, unknown>>>(
@@ -255,9 +256,9 @@ export class B2bManagementService {
     const courtIds = [...new Set(rows.map((row) => row.courtId).filter((id): id is string => Boolean(id)))];
     const clientUserIds = [...new Set(rows.map((row) => row.clientUserId).filter((id): id is string => Boolean(id)))];
     const [shifts, courts, users] = await Promise.all([
-      this.shifts.find({ where: { id: In(shiftIds) } }),
-      courtIds.length ? this.courts.find({ where: { id: In(courtIds) } }) : Promise.resolve([] as B2bCourtEntity[]),
-      clientUserIds.length ? this.users.find({ where: { id: In(clientUserIds) } }) : Promise.resolve([] as B2bUserEntity[]),
+      this.shifts.find({ where: { id: inValues(shiftIds) } }),
+      courtIds.length ? this.courts.find({ where: { id: inValues(courtIds) } }) : Promise.resolve([] as B2bCourtEntity[]),
+      clientUserIds.length ? this.users.find({ where: { id: inValues(clientUserIds) } }) : Promise.resolve([] as B2bUserEntity[]),
     ]);
     const shiftById = new Map(shifts.map((shift) => [shift.id, shift]));
     const courtById = new Map(courts.map((court) => [court.id, court]));
@@ -297,7 +298,7 @@ export class B2bManagementService {
     // El "día" de las métricas es el día local del complejo, no el del servidor.
     const start = orgTimeToDate({ year: parts.year, month: parts.month, day: parts.day, hour: 0, minute: 0 }, timeZone);
     const end = addOrgDays(start, 1, timeZone);
-    const shiftWhere: Record<string, unknown> = { organizationId: user.organizationId, startsAt: Between(start, end) };
+    const shiftWhere: RepositoryCriteria<B2bShiftEntity> = { organizationId: user.organizationId, startsAt: betweenValues(start, end) };
     const bookingWhere: Record<string, unknown> = { organizationId: user.organizationId };
     if (courtId) {
       shiftWhere.courtId = courtId;
@@ -331,16 +332,16 @@ export class B2bManagementService {
       // Transacción con bloqueo de fila (SELECT ... FOR UPDATE) sobre el turno:
       // dos reservas concurrentes del mismo turno se serializan y quien pierde
       // la carrera relee el turno ya BOOKED (issue #18).
-      booking = await this.dataSource.transaction(async (manager) => {
-        const shifts = manager.getRepository(B2bShiftEntity);
-        const bookings = manager.getRepository(B2bBookingEntity);
+      booking = await this.unitOfWork.execute(async (repositories) => {
+        const shifts = repositories.get(B2bShiftEntity);
+        const bookings = repositories.get(B2bBookingEntity);
         const shift = await shifts.findOne({
           where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId },
           lock: { mode: 'pessimistic_write' },
         });
         if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
-        await this.assertUnblocked(shift, manager);
-        const existing = await bookings.findOne({ where: { shiftId: shift.id, status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } });
+        await this.assertUnblocked(shift, repositories.get(B2bAvailabilityBlockEntity));
+        const existing = await bookings.find({ where: { shiftId: shift.id, status: inValues([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } }).then((items) => items[0] ?? null);
         if (existing) throw new ConflictException('El turno ya fue reservado');
         const saved = await bookings.save(
           bookings.create({
@@ -359,7 +360,7 @@ export class B2bManagementService {
     } catch (error) {
       // El índice parcial único de b2b_bookings es la red de seguridad final:
       // ante una carrera que el bloqueo de fila no alcanzó, se reporta 409.
-      if (error instanceof QueryFailedError && (error as unknown as { driverError?: { code?: string } }).driverError?.code === '23505') {
+      if ((error as { driverError?: { code?: string } })?.driverError?.code === '23505') {
         throw new ConflictException('El turno ya fue reservado');
       }
       throw error;
@@ -387,11 +388,11 @@ export class B2bManagementService {
     const isStaff = user.roles.some(isStaffRole);
     let saved!: B2bBookingEntity;
     let previous!: BookingStatus;
-    await this.dataSource.transaction(async (manager) => {
+    await this.unitOfWork.execute(async (repositories) => {
       // Bloqueo de fila sobre la reserva: una cancelación concurrente con una
       // reprogramación no puede dejar el turno liberado o tomado dos veces.
-      const bookings = manager.getRepository(B2bBookingEntity);
-      const shifts = manager.getRepository(B2bShiftEntity);
+      const bookings = repositories.get(B2bBookingEntity);
+      const shifts = repositories.get(B2bShiftEntity);
       const booking = await bookings.findOne({
         where: { id, organizationId: user.organizationId },
         lock: { mode: 'pessimistic_write' },
@@ -535,12 +536,12 @@ export class B2bManagementService {
 
   async rescheduleBooking(user: B2bJwtUser, id: string, shiftId: string) {
     const isStaff = user.roles.some(isStaffRole);
-    const saved = await this.dataSource.transaction(async (manager) => {
+    const saved = await this.unitOfWork.execute(async (repositories) => {
       // Transacción con bloqueo de fila: la reserva y el turno de destino se
       // serializan frente a reprogramaciones/cancelaciones concurrentes, y la
       // liberación de un turno y la toma del otro son atómicas (issue #18).
-      const bookings = manager.getRepository(B2bBookingEntity);
-      const shifts = manager.getRepository(B2bShiftEntity);
+      const bookings = repositories.get(B2bBookingEntity);
+      const shifts = repositories.get(B2bShiftEntity);
       const booking = await bookings.findOne({
         where: { id, organizationId: user.organizationId },
         lock: { mode: 'pessimistic_write' },
@@ -552,7 +553,7 @@ export class B2bManagementService {
         lock: { mode: 'pessimistic_write' },
       });
       if (!shift) throw new ConflictException('El nuevo turno no está disponible');
-      await this.assertUnblocked(shift, manager);
+      await this.assertUnblocked(shift, repositories.get(B2bAvailabilityBlockEntity));
       const previousShiftId = booking.shiftId;
       // El turno nuevo se marca BOOKED antes de liberar el anterior; si algo
       // falla a mitad de proceso la transacción revierte ambos cambios.
@@ -573,8 +574,7 @@ export class B2bManagementService {
     return saved;
   }
 
-  private async assertUnblocked(shift: B2bShiftEntity, manager?: EntityManager) {
-    const blocks = manager ? manager.getRepository(B2bAvailabilityBlockEntity) : this.blocks;
+  private async assertUnblocked(shift: B2bShiftEntity, blocks: RepositoryPort<B2bAvailabilityBlockEntity> = this.blocks) {
     const found = await blocks.find({ where: { organizationId: shift.organizationId, courtId: shift.courtId } });
     if (found.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt)) {
       throw new ConflictException('El turno está bloqueado');

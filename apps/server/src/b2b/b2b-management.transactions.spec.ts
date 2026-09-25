@@ -48,6 +48,7 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
     };
     const blocks = { find: jest.fn().mockResolvedValue([]) };
     const bookings = {
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(async ({ where }: any) => {
         if (where?.shiftId !== undefined) return null;
         return {
@@ -72,10 +73,9 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
         return repos[entity.name] ?? {};
       }),
     };
-    const dataSource = {
-      // Emula la transacción real de PostgreSQL: ejecuta el callback y, si
-      // lanza, propaga el error (lo que el driver haría revirtiendo todo).
-      transaction: jest.fn(async (cb: (manager: unknown) => unknown) => cb(manager as never)),
+    const unitOfWork = {
+      // Emula UnitOfWork: el callback recibe únicamente repositorios del manager.
+      execute: jest.fn(async (work: (session: any) => unknown) => work({ get: (entity: any) => manager.getRepository(entity) })),
     };
     const service = new B2bManagementService(
       organizations as never, {} as never,
@@ -83,17 +83,17 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
       {} as never, shifts as never, blocks as never, bookings as never, bookingEvents as never,
       {} as never,
       notifications as never,
-      dataSource as never,
+      unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
-    return { service, notifications, bookings, shifts, dataSource, manager };
+    return { service, notifications, bookings, shifts, unitOfWork, manager };
   }
 
   it('createBooking ejecuta reserva y turno en una transacción con SELECT FOR UPDATE sobre el turno', async () => {
-    const { service, bookings, shifts, dataSource } = setup();
+    const { service, bookings, shifts, unitOfWork } = setup();
     const booking = await service.createBooking(client, { courtId: 'court', shiftId: 'shift' });
 
-    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(unitOfWork.execute).toHaveBeenCalledTimes(1);
     expect(shifts.findOne).toHaveBeenCalledWith({
       where: { id: 'shift', courtId: 'court', organizationId: 'org' },
       lock: { mode: 'pessimistic_write' },
@@ -133,10 +133,10 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
   });
 
   it('rescheduleBooking bloquea la reserva y el turno destino y toma/libera atómicamente', async () => {
-    const { service, bookings, shifts, dataSource } = setup();
+    const { service, bookings, shifts, unitOfWork } = setup();
     const saved = await service.rescheduleBooking(staff, 'booking', 'shift2');
 
-    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(unitOfWork.execute).toHaveBeenCalledTimes(1);
     expect(bookings.findOne).toHaveBeenCalledWith({
       where: { id: 'booking', organizationId: 'org' },
       lock: { mode: 'pessimistic_write' },
@@ -161,10 +161,10 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
   });
 
   it('la cancelación libera el turno en la misma transacción que el estado', async () => {
-    const { service, bookings, shifts, dataSource } = setup();
+    const { service, bookings, shifts, unitOfWork } = setup();
     const saved = await service.transitionBooking(staff, 'booking', BookingStatus.CANCELLED);
 
-    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(unitOfWork.execute).toHaveBeenCalledTimes(1);
     expect(bookings.findOne).toHaveBeenCalledWith({
       where: { id: 'booking', organizationId: 'org' },
       lock: { mode: 'pessimistic_write' },

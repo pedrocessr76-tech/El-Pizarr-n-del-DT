@@ -34,7 +34,7 @@ function makeUserRepo() {
 function makeService() {
   const repo = makeUserRepo();
   const jwt = new JwtService({ secret: 'test-secret' });
-  const service = new AuthService(repo as unknown as Repository<UserEntity>, jwt);
+  const service = new AuthService(repo as unknown as import('../persistence/repository.port').RepositoryPort<UserEntity>, jwt);
   return { repo, jwt, service };
 }
 

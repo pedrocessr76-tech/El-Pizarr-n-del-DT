@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { GAME_ENTITIES } from './game-entities';
+import { getResultCacheOptions } from './persistence/result-cache.config';
 
 /**
  * DataSource de la base del juego, para la CLI de TypeORM
@@ -22,4 +23,5 @@ export default new DataSource({
   // "describe is not defined".
   entities: GAME_ENTITIES,
   migrations: [__dirname + '/migrations/!(*.spec|*.d).{ts,js}'],
+  cache: getResultCacheOptions('game'),
 });

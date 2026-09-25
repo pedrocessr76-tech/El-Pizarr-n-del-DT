@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
@@ -9,7 +9,7 @@ import { DraftService } from './draft.service';
 import { DraftController } from './draft.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity])],
+  imports: [RepositoryPortModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity])],
   controllers: [DraftController],
   providers: [DraftService],
 })

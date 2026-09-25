@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../../persistence/repository-port.module';
 import { requireB2bJwtSecret } from '../../config/env';
 import { B2bAuthModule } from '../auth/b2b-auth.module';
 import { B2bUserRoleEntity } from '../entities/user-role.entity';
@@ -12,7 +12,7 @@ import { B2bNotificationsService } from './b2b-notifications.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([B2bNotificationEntity, B2bUserRoleEntity, B2bUserEntity], 'b2b'),
+    RepositoryPortModule.forFeature([B2bNotificationEntity, B2bUserRoleEntity, B2bUserEntity], 'b2b'),
     JwtModule.register({
       secret: requireB2bJwtSecret(),
     }),

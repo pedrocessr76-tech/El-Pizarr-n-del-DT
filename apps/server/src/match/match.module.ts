@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
@@ -10,10 +10,10 @@ import { TournamentEntity } from './entities/tournament.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity]), NotificationsModule],
+  imports: [RepositoryPortModule.forFeature([PlayerEntity, TeamEntity, TeamPlayerEntity, MatchEntity, TournamentEntity]), NotificationsModule],
 
   controllers: [MatchController],
   providers: [MatchService],
-  exports: [TypeOrmModule],
+  exports: [],
 })
 export class MatchModule {}
