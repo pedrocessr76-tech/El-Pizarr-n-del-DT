@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from '../match/entities/match.entity';
 import { TournamentEntity } from '../match/entities/tournament.entity';
 import type { Player } from '../../../../packages/shared/types/models';
+import { inValues, RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
+import { GAME_UNIT_OF_WORK } from '../persistence/persistence.module';
+import { UnitOfWork } from '../persistence/repository.port';
 
 export interface PlayerPack {
   players: Player[];
@@ -15,16 +16,12 @@ export interface PlayerPack {
 @Injectable()
 export class DraftService {
   constructor(
-    @InjectRepository(PlayerEntity)
-    private readonly playerRepo: Repository<PlayerEntity>,
-    @InjectRepository(TeamEntity)
-    private readonly teamRepo: Repository<TeamEntity>,
-    @InjectRepository(TeamPlayerEntity)
-    private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
-    @InjectRepository(MatchEntity)
-    private readonly matchRepo: Repository<MatchEntity>,
-    @InjectRepository(TournamentEntity)
-    private readonly tournamentRepo: Repository<TournamentEntity>,
+    @Inject(getRepositoryPortToken(PlayerEntity)) private readonly playerRepo: RepositoryPort<PlayerEntity>,
+    @Inject(getRepositoryPortToken(TeamEntity)) private readonly teamRepo: RepositoryPort<TeamEntity>,
+    @Inject(getRepositoryPortToken(TeamPlayerEntity)) private readonly teamPlayerRepo: RepositoryPort<TeamPlayerEntity>,
+    @Inject(getRepositoryPortToken(MatchEntity)) private readonly matchRepo: RepositoryPort<MatchEntity>,
+    @Inject(getRepositoryPortToken(TournamentEntity)) private readonly tournamentRepo: RepositoryPort<TournamentEntity>,
+    @Inject(GAME_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
   ) {}
 
   private toPlayer(entity: PlayerEntity): Player {
@@ -58,10 +55,7 @@ export class DraftService {
     } else {
       // Solo jugadores de la posición exacta (ej. DC → solo DC, sin ST/SD).
       const exactPosition = position.toUpperCase();
-      pool = await this.playerRepo
-        .createQueryBuilder('p')
-        .where('UPPER(p.position) = :position', { position: exactPosition })
-        .getMany();
+      pool = (await this.playerRepo.find()).filter((player) => player.position.toUpperCase() === exactPosition);
     }
 
     if (pool.length === 0) {
@@ -133,39 +127,37 @@ export class DraftService {
   async createTeam(userId: string): Promise<{ teamId: string }> {
     // La identidad (logueado o invitado) viene del token: reusar su último equipo
     // o crear uno nuevo bajo su userId. Nunca se acepta identidad del cliente.
-    const existing = await this.teamRepo.findOne({
-      where: { userId, isReal: false },
-      order: { createdAt: 'DESC' },
+    return this.unitOfWork.execute(async (repositories) => {
+      const teams = repositories.get(TeamEntity);
+      const existing = await teams.findOne({ where: { userId, isReal: false }, order: { createdAt: 'DESC' } });
+      if (existing) return { teamId: existing.id };
+      const team = new TeamEntity();
+      team.id = crypto.randomUUID();
+      team.name = 'Mi Equipo';
+      team.userId = userId;
+      team.isReal = false;
+      await teams.save(team);
+      return { teamId: team.id };
     });
-    if (existing) return { teamId: existing.id };
-
-    const team = new TeamEntity();
-    team.id = crypto.randomUUID();
-    team.name = 'Mi Equipo';
-    team.userId = userId;
-    team.isReal = false; // El equipo del usuario nunca es un oponente IA real
-    await this.teamRepo.save(team);
-    return { teamId: team.id };
   }
 
   async cleanupUserData(userId: string): Promise<{ success: boolean; cleaned: number }> {
-    const teams = await this.teamRepo.find({ where: { userId } });
-    const teamIds = teams.map((t) => t.id);
-    if (teamIds.length === 0) return { success: true, cleaned: 0 };
-
-    // Torneos de la identidad
-    const tournaments = await this.tournamentRepo.find({ where: { userId } });
-    const tournamentIds = tournaments.map((t) => t.id);
-    if (tournamentIds.length) {
-      await this.matchRepo.delete({ tournamentId: In(tournamentIds) });
-      await this.tournamentRepo.delete(tournamentIds);
-    }
-
-    // Equipo y sus jugadores
-    await this.teamPlayerRepo.delete({ teamId: In(teamIds) });
-    await this.teamRepo.delete(teamIds);
-
-    return { success: true, cleaned: teamIds.length };
+    return this.unitOfWork.execute(async (repositories) => {
+      const teams = repositories.get(TeamEntity);
+      const teamPlayers = repositories.get(TeamPlayerEntity);
+      const matches = repositories.get(MatchEntity);
+      const tournaments = repositories.get(TournamentEntity);
+      const teamIds = (await teams.find({ where: { userId } })).map((team) => team.id);
+      if (teamIds.length === 0) return { success: true, cleaned: 0 };
+      const tournamentIds = (await tournaments.find({ where: { userId } })).map((tournament) => tournament.id);
+      if (tournamentIds.length) {
+        await matches.delete({ tournamentId: inValues(tournamentIds) });
+        await tournaments.delete(tournamentIds);
+      }
+      await teamPlayers.delete({ teamId: inValues(teamIds) });
+      await teams.delete(teamIds);
+      return { success: true, cleaned: teamIds.length };
+    });
   }
 
   async addPlayerToTeam(
@@ -174,24 +166,28 @@ export class DraftService {
     isStarter = true,
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
-    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    return this.unitOfWork.execute(async (repositories) => {
+    const teams = repositories.get(TeamEntity);
+    const players = repositories.get(PlayerEntity);
+    const teamPlayers = repositories.get(TeamPlayerEntity);
+    const team = await teams.findOne({ where: { id: teamId } });
     // El equipo debe pertenecer a la identidad del token (404 genérico para no revelar existencia).
     if (!team || team.userId !== userId) {
       throw new NotFoundException('Equipo no encontrado.');
     }
 
-    const player = await this.playerRepo.findOne({ where: { id: playerId } });
+    const player = await players.findOne({ where: { id: playerId } });
     if (!player) {
       throw new NotFoundException('Jugador no encontrado.');
     }
 
-    const existing = await this.teamPlayerRepo.findOne({ where: { teamId, playerId } });
+    const existing = await teamPlayers.findOne({ where: { teamId, playerId } });
     if (existing) {
       throw new BadRequestException('El jugador ya está en el equipo.');
     }
 
-    const starterCount = await this.teamPlayerRepo.count({ where: { teamId, isStarter: true } });
-    const substituteCount = await this.teamPlayerRepo.count({ where: { teamId, isStarter: false } });
+    const starterCount = await teamPlayers.count({ where: { teamId, isStarter: true } });
+    const substituteCount = await teamPlayers.count({ where: { teamId, isStarter: false } });
 
     // Validación de plantilla máxima (11 titulares + 7 suplentes = 18)
     if (starterCount + substituteCount >= 18) {
@@ -213,34 +209,43 @@ export class DraftService {
     tp.playerId = playerId;
     tp.isStarter = isStarter;
     tp.slotIndex = isStarter ? starterCount : substituteCount;
-    await this.teamPlayerRepo.save(tp);
+    await teamPlayers.save(tp);
 
     return { success: true, message: isStarter ? 'Jugador agregado al equipo.' : 'Suplente agregado al equipo.' };
+    });
   }
 
   async removePlayerFromTeam(teamId: string, playerId: string, userId: string): Promise<{ success: boolean; message: string }> {
-    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    return this.unitOfWork.execute(async (repositories) => {
+    const teams = repositories.get(TeamEntity);
+    const teamPlayers = repositories.get(TeamPlayerEntity);
+    const team = await teams.findOne({ where: { id: teamId } });
     if (!team || team.userId !== userId) {
       throw new NotFoundException('Equipo no encontrado.');
     }
 
-    const tp = await this.teamPlayerRepo.findOne({ where: { teamId, playerId } });
+    const tp = await teamPlayers.findOne({ where: { teamId, playerId } });
     if (!tp) {
       throw new NotFoundException('El jugador no está en el equipo.');
     }
 
-    await this.teamPlayerRepo.remove(tp);
+    await teamPlayers.remove(tp);
     return { success: true, message: 'Jugador eliminado del equipo.' };
+    });
   }
 
   async resetTeam(teamId: string, userId: string): Promise<{ success: boolean; message: string }> {
-    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    return this.unitOfWork.execute(async (repositories) => {
+    const teams = repositories.get(TeamEntity);
+    const teamPlayers = repositories.get(TeamPlayerEntity);
+    const team = await teams.findOne({ where: { id: teamId } });
     if (!team || team.userId !== userId) {
       throw new NotFoundException('Equipo no encontrado.');
     }
 
     // Vacía el equipo eliminando todos sus jugadores (titulares y suplentes).
-    await this.teamPlayerRepo.delete({ teamId });
+    await teamPlayers.delete({ teamId });
     return { success: true, message: 'Equipo reiniciado.' };
+    });
   }
 }

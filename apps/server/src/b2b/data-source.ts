@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { B2B_ENTITIES } from '../b2b/b2b.module';
+import { getResultCacheOptions } from '../persistence/result-cache.config';
 
 /**
  * DataSource de la base B2B (Sistema Canchas), para la CLI de TypeORM
@@ -16,4 +17,5 @@ export default new DataSource({
   ssl: process.env.B2B_DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   entities: B2B_ENTITIES,
   migrations: [__dirname + '/migrations/!(*.spec|*.d).{ts,js}'],
+  cache: getResultCacheOptions('b2b'),
 });

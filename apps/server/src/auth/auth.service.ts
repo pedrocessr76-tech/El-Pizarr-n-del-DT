@@ -1,10 +1,10 @@
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { UserEntity } from '../user/user.entity';
+import { RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TYPE } from './tokens';
 
 export const GUEST_ID_PREFIX = 'guest-';
@@ -15,8 +15,8 @@ type GameTokenPayload = { sub: string; username: string };
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly userRepo: Repository<UserEntity>,
+    @Inject(getRepositoryPortToken(UserEntity))
+    private readonly userRepo: RepositoryPort<UserEntity>,
     private readonly jwtService: JwtService,
   ) {}
 

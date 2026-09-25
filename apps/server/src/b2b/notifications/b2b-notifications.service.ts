@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Inject } from '@nestjs/common';
 import {
   B2bNotificationPayload,
   NotificationPayload,
@@ -13,6 +12,7 @@ import { B2bUserRoleEntity } from '../entities/user-role.entity';
 import { B2bUserEntity } from '../entities/user.entity';
 import { B2bRoleCode } from '../entities/b2b.enums';
 import { B2bJwtUser } from '../auth/b2b-auth.types';
+import { inValues, RepositoryPort, getRepositoryPortToken } from '../../persistence/repository.port';
 
 /** Roles que constituyen el staff de un complejo. */
 const STAFF_ROLES = [B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR];
@@ -44,9 +44,9 @@ export interface B2bNotifyResult {
 @Injectable()
 export class B2bNotificationsService {
   constructor(
-    @InjectRepository(B2bNotificationEntity, 'b2b') private readonly notifications: Repository<B2bNotificationEntity>,
-    @InjectRepository(B2bUserRoleEntity, 'b2b') private readonly userRoles: Repository<B2bUserRoleEntity>,
-    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
+    @Inject(getRepositoryPortToken(B2bNotificationEntity, 'b2b')) private readonly notifications: RepositoryPort<B2bNotificationEntity>,
+    @Inject(getRepositoryPortToken(B2bUserRoleEntity, 'b2b')) private readonly userRoles: RepositoryPort<B2bUserRoleEntity>,
+    @Inject(getRepositoryPortToken(B2bUserEntity, 'b2b')) private readonly users: RepositoryPort<B2bUserEntity>,
     private readonly gateway: B2bNotificationsGateway,
   ) {}
 
@@ -97,7 +97,7 @@ export class B2bNotificationsService {
   /** Ids de los integrantes staff (OWNER/ADMIN/OPERATOR) de una organización. */
   async getStaffUserIds(organizationId: string): Promise<string[]> {
     const assignments = await this.userRoles.find({
-      where: { organizationId, roleId: In(STAFF_ROLES) },
+      where: { organizationId, roleId: inValues(STAFF_ROLES) },
     });
     return Array.from(new Set(assignments.map((assignment) => assignment.userId)));
   }

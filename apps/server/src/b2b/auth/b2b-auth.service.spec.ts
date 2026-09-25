@@ -42,8 +42,8 @@ describe('B2bAuthService - resolveUserFromToken', () => {
     const courts = {};
     const facilities = {};
     const jwt = { sign: jest.fn() };
-    const dataSource = { transaction: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    const unitOfWork = { execute: jest.fn() };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
     return { service, users, organizations, userRoles };
   }
 
@@ -136,13 +136,12 @@ describe('B2bAuthService - onboardOwner', () => {
         return {};
       }),
     };
-    // Simula DataSource.transaction: corre el callback con el manager transaccional
-    // y, si el callback lanza, re-lanza (en TypeORM real eso hace ROLLBACK).
-    const dataSource = {
-      transaction: jest.fn(async (cb: any) => cb(manager)),
+    // Simula UnitOfWork: expone sólo repositorios del manager transaccional.
+    const unitOfWork = {
+      execute: jest.fn(async (work: any) => work({ get: (entity: any) => manager.getRepository(entity) })),
     };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
-    return { service, organizations, users, userRoles, facilities, manager, dataSource };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
+    return { service, organizations, users, userRoles, facilities, manager, unitOfWork };
   }
 
   const input = {
@@ -209,14 +208,14 @@ describe('B2bAuthService - onboardOwner', () => {
   });
 
   it('si falla un paso intermedio, toda la creación corre dentro de la transacción (rollback, sin org huérfana)', async () => {
-    const { service, users, dataSource, manager } = setup();
+    const { service, users, unitOfWork, manager } = setup();
     users.save.mockRejectedValueOnce(new Error('falla al guardar el dueño'));
 
     await expect(service.onboardOwner(input)).rejects.toThrow('falla al guardar el dueño');
 
     // Los writes van por el manager transaccional: si el callback lanza, TypeORM
     // revierte (rollback) y no queda la organización creada sin su dueño.
-    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(unitOfWork.execute).toHaveBeenCalledTimes(1);
     expect(manager.getRepository).toHaveBeenCalledWith(B2bOrganizationEntity);
     expect(manager.getRepository).toHaveBeenCalledWith(B2bUserEntity);
     expect(manager.getRepository).toHaveBeenCalledWith(B2bUserRoleEntity);
@@ -253,8 +252,8 @@ describe('B2bAuthService - refresh', () => {
       sign: jest.fn(() => 'jwt-firmado'),
       verify: jest.fn(() => claims),
     };
-    const dataSource = { transaction: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    const unitOfWork = { execute: jest.fn() };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
     return { service, users, organizations, jwt };
   }
 

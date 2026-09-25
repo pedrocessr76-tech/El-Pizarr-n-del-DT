@@ -35,6 +35,13 @@ services:
       timeout: 5s
       retries: 10
 
+  redis-cache:
+    image: redis:7-alpine
+    container_name: pizarron_dt_cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   server:
     build:
       context: .
@@ -53,6 +60,11 @@ services:
       # En desarrollo synchronize crea el esquema; las migraciones quedan para producción.
       - DB_SYNCHRONIZE=true
       - DB_MIGRATIONS=false
+      - RESULT_CACHE_REDIS_URL=redis://redis-cache:6379
+      - DB_CACHE_ENABLED=${DB_CACHE_ENABLED:-false}
+      - B2B_DB_CACHE_ENABLED=${B2B_DB_CACHE_ENABLED:-false}
+      - DB_CACHE_TTL_MS=${DB_CACHE_TTL_MS:-60000}
+      - B2B_DB_CACHE_TTL_MS=${B2B_DB_CACHE_TTL_MS:-60000}
       - B2B_DB_HOST=b2b-db
       - B2B_DB_PORT=5432
       - B2B_DB_USER=canchas

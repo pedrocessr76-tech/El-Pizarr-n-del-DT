@@ -6,10 +6,13 @@ import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { RepositoryPortModule } from '../persistence/repository-port.module';
+import { UserEntity } from '../user/user.entity';
 
 @Module({
   imports: [
     UserModule,
+    RepositoryPortModule.forFeature([UserEntity]),
     PassportModule,
     JwtModule.register({
       secret: requireJwtSecret(),

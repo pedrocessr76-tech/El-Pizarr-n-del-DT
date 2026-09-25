@@ -1,15 +1,14 @@
-import { Controller, Get, NotFoundException } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Inject } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { AppService } from './app.service';
+import { B2B_DATABASE_HEALTH, DatabaseHealthCheck } from './persistence/persistence.module';
 
 @Controller()
 @ApiTags('General')
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    @InjectDataSource('b2b') private readonly b2bDataSource: DataSource,
+    @Inject(B2B_DATABASE_HEALTH) private readonly b2bDatabase: DatabaseHealthCheck,
   ) {}
 
   @Get()
@@ -27,7 +26,7 @@ export class AppController {
   @Get('health/b2b')
   @ApiOperation({ summary: 'Verificar disponibilidad de la base B2B' })
   async getB2bHealth() {
-    await this.b2bDataSource.query('SELECT 1');
+    await this.b2bDatabase.check();
     return { status: 'ok', database: 'b2b' };
   }
 

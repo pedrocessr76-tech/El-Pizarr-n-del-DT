@@ -120,11 +120,17 @@ function makeRepos(players: PlayerEntity[] = []) {
   };
 
   const service = new DraftService(
-    playerRepo as unknown as Repository<PlayerEntity>,
-    teamRepo as unknown as Repository<TeamEntity>,
-    teamPlayerRepo as unknown as Repository<TeamPlayerEntity>,
-    matchRepo as unknown as Repository<never>,
-    tournamentRepo as unknown as Repository<never>,
+    playerRepo as unknown as import('../persistence/repository.port').RepositoryPort<PlayerEntity>,
+    teamRepo as unknown as import('../persistence/repository.port').RepositoryPort<TeamEntity>,
+    teamPlayerRepo as unknown as import('../persistence/repository.port').RepositoryPort<TeamPlayerEntity>,
+    matchRepo as unknown as import('../persistence/repository.port').RepositoryPort<never>,
+    tournamentRepo as unknown as import('../persistence/repository.port').RepositoryPort<never>,
+    {
+      execute: (work: (repositories: any) => Promise<unknown>) => work({
+        get: (entity: Function) => entity === PlayerEntity ? playerRepo : entity === TeamEntity ? teamRepo :
+          entity === TeamPlayerEntity ? teamPlayerRepo : tournamentRepo,
+      }),
+    } as unknown as import('../persistence/repository.port').UnitOfWork,
   );
 
   return { service, playerRepo, teamRepo, teamPlayerRepo, teams, teamPlayers, players };
@@ -284,7 +290,7 @@ describe('DraftService - getPack (franjas de rating)', () => {
     expect(pack.players.every((player) => (player.rating ?? 0) >= 88)).toBe(true);
   });
 
-  it('respeta el filtro de posición exacta (queryBuilder, no find completo)', async () => {
+  it('respeta el filtro de posición exacta mediante el repositorio de jugadores', async () => {
     const defenders = [80, 81, 82, 83, 84].map((rating, index) => makePlayerEntity({ id: 'def' + index, position: 'DEF', rating }));
     const forwards = [80, 81, 82].map((rating, index) => makePlayerEntity({ id: 'fwd' + index, position: 'FWD', rating }));
     const { service, playerRepo } = makeRepos([...defenders, ...forwards]);
@@ -292,8 +298,7 @@ describe('DraftService - getPack (franjas de rating)', () => {
 
     const pack = await service.getPack('def');
 
-    expect(playerRepo.createQueryBuilder).toHaveBeenCalled();
-    expect(playerRepo.find).not.toHaveBeenCalled();
+    expect(playerRepo.find).toHaveBeenCalled();
     expect(pack.players).toHaveLength(5);
     expect(pack.players.every((player) => player.position === 'DEF')).toBe(true);
   });

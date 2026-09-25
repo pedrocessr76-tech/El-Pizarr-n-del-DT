@@ -1,5 +1,6 @@
 import { B2bNotificationsService } from './notifications/b2b-notifications.service';
 import { B2bRoleCode } from './entities/b2b.enums';
+import { getInValues, isInValues } from '../persistence/repository.port';
 
 // Service de notificaciones B2B con repositorios simulados: verifica el
 // fan-out por destinatario, la supresión del actor y el marcado como leído.
@@ -26,7 +27,7 @@ describe('B2bNotificationsService', () => {
     };
     const inValue = (val: unknown): unknown[] | null => {
       if (Array.isArray(val)) return val;
-      if (val && typeof val === 'object' && '_value' in (val as object)) return (val as { _value: unknown[] })._value;
+      if (isInValues(val)) return getInValues(val);
       return val ? [val] : null;
     };
     const userRoles = {

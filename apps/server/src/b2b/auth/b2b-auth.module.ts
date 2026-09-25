@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RepositoryPortModule } from '../../persistence/repository-port.module';
 import { requireB2bJwtSecret } from '../../config/env';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRoleEntity } from '../entities/role.entity';
@@ -16,7 +16,7 @@ import { B2bRolesGuard } from './b2b-roles.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity, B2bFacilityEntity], 'b2b'),
+    RepositoryPortModule.forFeature([B2bOrganizationEntity, B2bRoleEntity, B2bUserEntity, B2bUserRoleEntity, B2bCourtEntity, B2bFacilityEntity], 'b2b'),
     PassportModule,
     JwtModule.register({
       secret: requireB2bJwtSecret(),

@@ -1,6 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, IsNull } from 'typeorm';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -9,22 +7,18 @@ import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
 import { MatchEntity } from '../match/entities/match.entity';
 import { TournamentEntity } from '../match/entities/tournament.entity';
+import { inValues, RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
-    @InjectRepository(PlayerEntity)
-    private readonly playerRepo: Repository<PlayerEntity>,
-    @InjectRepository(TeamEntity)
-    private readonly teamRepo: Repository<TeamEntity>,
-    @InjectRepository(TeamPlayerEntity)
-    private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
-    @InjectRepository(MatchEntity)
-    private readonly matchRepo: Repository<MatchEntity>,
-    @InjectRepository(TournamentEntity)
-    private readonly tournamentRepo: Repository<TournamentEntity>,
+    @Inject(getRepositoryPortToken(PlayerEntity)) private readonly playerRepo: RepositoryPort<PlayerEntity>,
+    @Inject(getRepositoryPortToken(TeamEntity)) private readonly teamRepo: RepositoryPort<TeamEntity>,
+    @Inject(getRepositoryPortToken(TeamPlayerEntity)) private readonly teamPlayerRepo: RepositoryPort<TeamPlayerEntity>,
+    @Inject(getRepositoryPortToken(MatchEntity)) private readonly matchRepo: RepositoryPort<MatchEntity>,
+    @Inject(getRepositoryPortToken(TournamentEntity)) private readonly tournamentRepo: RepositoryPort<TournamentEntity>,
   ) {}
 
   async onModuleInit() {
@@ -37,22 +31,22 @@ export class SeedService implements OnModuleInit {
    * También borra sus torneos/partidos asociados.
    */
   private async cleanupOrphanedGuestData() {
-    const orphans = await this.teamRepo.find({ where: { userId: IsNull(), isReal: false, sessionId: IsNull() } });
+    const orphans = (await this.teamRepo.find()).filter((team) => team.userId == null && !team.isReal && team.sessionId == null);
     if (orphans.length === 0) return;
 
     const orphanIds = orphans.map(t => t.id);
     this.logger.log(`🧹 Limpiando ${orphanIds.length} equipos huérfanos de sesiones antiguas...`);
 
     // Torneos y partidos de esos equipos
-    const orphansTournaments = await this.tournamentRepo.find({ where: { userTeamId: In(orphanIds) } });
+    const orphansTournaments = await this.tournamentRepo.find({ where: { userTeamId: inValues(orphanIds) } });
     const orphanTournamentIds = orphansTournaments.map(t => t.id);
     if (orphanTournamentIds.length) {
-      await this.matchRepo.delete({ tournamentId: In(orphanTournamentIds) });
+      await this.matchRepo.delete({ tournamentId: inValues(orphanTournamentIds) });
       await this.tournamentRepo.delete(orphanTournamentIds);
     }
 
     // Equipos
-    await this.teamPlayerRepo.delete({ teamId: In(orphanIds) });
+    await this.teamPlayerRepo.delete({ teamId: inValues(orphanIds) });
     await this.teamRepo.delete(orphanIds);
 
     this.logger.log(`✓ ${orphanIds.length} equipos huérfanos limpiados.`);

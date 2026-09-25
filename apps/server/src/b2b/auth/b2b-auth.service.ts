@@ -1,8 +1,6 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import { DataSource, Repository } from 'typeorm';
 import { B2bOrganizationEntity } from '../entities/organization.entity';
 import { B2bRecordStatus, B2bRoleCode } from '../entities/b2b.enums';
 import { B2bCourtEntity } from '../entities/court.entity';
@@ -13,6 +11,8 @@ import { B2bUserEntity } from '../entities/user.entity';
 import { B2bJwtUser } from './b2b-auth.types';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TYPE } from '../../auth/tokens';
 import { normalizeWhatsAppPhone } from '../phone';
+import { B2B_UNIT_OF_WORK } from '../../persistence/persistence.module';
+import { RepositoryPort, UnitOfWork, getRepositoryPortToken } from '../../persistence/repository.port';
 
 const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OWNER]: 'Propietario',
@@ -24,14 +24,14 @@ const roleNames: Record<B2bRoleCode, string> = {
 @Injectable()
 export class B2bAuthService {
   constructor(
-    @InjectRepository(B2bOrganizationEntity, 'b2b') private readonly organizations: Repository<B2bOrganizationEntity>,
-    @InjectRepository(B2bRoleEntity, 'b2b') private readonly roles: Repository<B2bRoleEntity>,
-    @InjectRepository(B2bUserEntity, 'b2b') private readonly users: Repository<B2bUserEntity>,
-    @InjectRepository(B2bUserRoleEntity, 'b2b') private readonly userRoles: Repository<B2bUserRoleEntity>,
-    @InjectRepository(B2bCourtEntity, 'b2b') private readonly courts: Repository<B2bCourtEntity>,
-    @InjectRepository(B2bFacilityEntity, 'b2b') private readonly facilities: Repository<B2bFacilityEntity>,
+    @Inject(getRepositoryPortToken(B2bOrganizationEntity, 'b2b')) private readonly organizations: RepositoryPort<B2bOrganizationEntity>,
+    @Inject(getRepositoryPortToken(B2bRoleEntity, 'b2b')) private readonly roles: RepositoryPort<B2bRoleEntity>,
+    @Inject(getRepositoryPortToken(B2bUserEntity, 'b2b')) private readonly users: RepositoryPort<B2bUserEntity>,
+    @Inject(getRepositoryPortToken(B2bUserRoleEntity, 'b2b')) private readonly userRoles: RepositoryPort<B2bUserRoleEntity>,
+    @Inject(getRepositoryPortToken(B2bCourtEntity, 'b2b')) private readonly courts: RepositoryPort<B2bCourtEntity>,
+    @Inject(getRepositoryPortToken(B2bFacilityEntity, 'b2b')) private readonly facilities: RepositoryPort<B2bFacilityEntity>,
     private readonly jwt: JwtService,
-    @InjectDataSource('b2b') private readonly dataSource: DataSource,
+    @Inject(B2B_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
   ) {}
 
   async login(email: string, password: string) {
@@ -187,11 +187,11 @@ export class B2bAuthService {
    */
   async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
     await this.ensureRoles();
-    return this.dataSource.transaction(async (manager) => {
-      const organizations = manager.getRepository(B2bOrganizationEntity);
-      const users = manager.getRepository(B2bUserEntity);
-      const userRoles = manager.getRepository(B2bUserRoleEntity);
-      const facilities = manager.getRepository(B2bFacilityEntity);
+    return this.unitOfWork.execute(async (repositories) => {
+      const organizations = repositories.get(B2bOrganizationEntity);
+      const users = repositories.get(B2bUserEntity);
+      const userRoles = repositories.get(B2bUserRoleEntity);
+      const facilities = repositories.get(B2bFacilityEntity);
 
       const name = input.organizationName.trim();
       const slug = await this.buildUniqueSlug(organizations, name);
@@ -225,7 +225,7 @@ export class B2bAuthService {
     );
   }
 
-  private async buildUniqueSlug(organizations: Repository<B2bOrganizationEntity>, organizationName: string): Promise<string> {
+  private async buildUniqueSlug(organizations: RepositoryPort<B2bOrganizationEntity>, organizationName: string): Promise<string> {
     const base = this.slugify(organizationName);
     let slug = base;
     let suffix = 1;

@@ -1,6 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { PlayerEntity } from '../player/player.entity';
 import { TeamEntity } from '../team/team.entity';
 import { TeamPlayerEntity } from '../team/team-player.entity';
@@ -10,6 +8,9 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { matchSimulation } from './match-simulation';
 import type { Match, Team, Player, Tournament, RoundName, MatchStatus, MatchSummary } from '../../../../packages/shared/types/models';
 import * as crypto from 'crypto';
+import { inValues, RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
+import { RepositorySession, UnitOfWork } from '../persistence/repository.port';
+import { GAME_UNIT_OF_WORK } from '../persistence/persistence.module';
 
 const ROUND_ORDER: RoundName[] = ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
 
@@ -25,16 +26,12 @@ function parseJson<T>(raw: string): T | null {
 @Injectable()
 export class MatchService {
   constructor(
-    @InjectRepository(PlayerEntity)
-    private readonly playerRepo: Repository<PlayerEntity>,
-    @InjectRepository(TeamEntity)
-    private readonly teamRepo: Repository<TeamEntity>,
-    @InjectRepository(TeamPlayerEntity)
-    private readonly teamPlayerRepo: Repository<TeamPlayerEntity>,
-    @InjectRepository(MatchEntity)
-    private readonly matchRepo: Repository<MatchEntity>,
-    @InjectRepository(TournamentEntity)
-    private readonly tournamentRepo: Repository<TournamentEntity>,
+    @Inject(getRepositoryPortToken(PlayerEntity)) private readonly playerRepo: RepositoryPort<PlayerEntity>,
+    @Inject(getRepositoryPortToken(TeamEntity)) private readonly teamRepo: RepositoryPort<TeamEntity>,
+    @Inject(getRepositoryPortToken(TeamPlayerEntity)) private readonly teamPlayerRepo: RepositoryPort<TeamPlayerEntity>,
+    @Inject(getRepositoryPortToken(MatchEntity)) private readonly matchRepo: RepositoryPort<MatchEntity>,
+    @Inject(getRepositoryPortToken(TournamentEntity)) private readonly tournamentRepo: RepositoryPort<TournamentEntity>,
+    @Inject(GAME_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     private readonly notifications: NotificationsService,
   ) {}
 
@@ -57,17 +54,20 @@ export class MatchService {
     };
   }
 
-  async getTeamById(teamId: string): Promise<Team | null> {
-    const teamEntity = await this.teamRepo.findOne({ where: { id: teamId } });
+  async getTeamById(teamId: string, repositories?: RepositorySession): Promise<Team | null> {
+    const teams = repositories?.get(TeamEntity) ?? this.teamRepo;
+    const teamPlayersRepo = repositories?.get(TeamPlayerEntity) ?? this.teamPlayerRepo;
+    const playersRepo = repositories?.get(PlayerEntity) ?? this.playerRepo;
+    const teamEntity = await teams.findOne({ where: { id: teamId } });
     if (!teamEntity) return null;
 
-    const teamPlayers = await this.teamPlayerRepo.find({
+    const teamPlayers = await teamPlayersRepo.find({
       where: { teamId },
       order: { slotIndex: 'ASC' },
     });
 
     const playerIds = teamPlayers.map((tp) => tp.playerId);
-    const playerEntities = await this.playerRepo.find({ where: { id: In(playerIds) } });
+    const playerEntities = playerIds.length ? await playersRepo.find({ where: { id: inValues(playerIds) } }) : [];
     const playerMap = new Map(playerEntities.map((p) => [p.id, this.toPlayer(p)]));
 
     const starters: Player[] = [];
@@ -128,9 +128,9 @@ export class MatchService {
     }
 
     // Simula un partido completo (ponderado por rating medio) y persiste el resultado.
-    private async simulateAndPersistMatch(matchEntity: MatchEntity): Promise<Match> {
-      const homeTeam = await this.getTeamById(matchEntity.homeTeamId);
-      const awayTeam = await this.getTeamById(matchEntity.awayTeamId);
+    private async simulateAndPersistMatch(matchEntity: MatchEntity, repositories?: RepositorySession): Promise<Match> {
+      const homeTeam = await this.getTeamById(matchEntity.homeTeamId, repositories);
+      const awayTeam = await this.getTeamById(matchEntity.awayTeamId, repositories);
       if (!homeTeam || !awayTeam) throw new NotFoundException('Equipo no encontrado.');
 
       // Toda la logica de simulación vive en el módulo puro MatchSimulation
@@ -143,7 +143,7 @@ export class MatchService {
       matchEntity.winnerId = result.winnerId;
       matchEntity.summaryJson = JSON.stringify(result.summary);
 
-      await this.matchRepo.save(matchEntity);
+      await (repositories?.get(MatchEntity) ?? this.matchRepo).save(matchEntity);
 
       return {
         id: matchEntity.id,
@@ -194,13 +194,6 @@ export class MatchService {
     if (!userTeam) throw new NotFoundException('Equipo de usuario no encontrado.');
 
     // 1) Limpiar estado residual: torneos previos SIN terminar de la misma identidad.
-    const previousTournaments = await this.tournamentRepo.find({ where: { userId, status: 'IN_PROGRESS' } });
-    if (previousTournaments.length) {
-      const previousIds = previousTournaments.map((t) => t.id);
-      await this.matchRepo.delete({ tournamentId: In(previousIds) });
-      await this.tournamentRepo.delete(previousIds);
-    }
-
     // 2) 15 oponentes ÚNICOS (sin duplicados por nombre; excluye al equipo del usuario por ID y nombre)
     const allAvailableTeams = await this.teamRepo.find({ where: { isReal: true } });
     const shuffledTeams = this.shuffle(allAvailableTeams);
@@ -231,45 +224,44 @@ export class MatchService {
     const allTeams = this.shuffle([userTeam, ...opponents]);
     const tournamentId = crypto.randomUUID();
 
-    // 4) Persistir el torneo
-    const tournamentEntity = new TournamentEntity();
-    tournamentEntity.id = tournamentId;
-    tournamentEntity.userId = userId;
-    tournamentEntity.userTeamId = userTeamId;
-    tournamentEntity.status = 'IN_PROGRESS';
-    tournamentEntity.currentRound = 'OCTAVOS';
-    await this.tournamentRepo.save(tournamentEntity);
-
-    const octavos: Match[] = [];
-
-    for (let i = 0; i < allTeams.length; i += 2) {
-      const home = allTeams[i];
-      const away = allTeams[i + 1];
-      if (!home || !away) {
-        throw new BadRequestException('Error al generar los cruces de octavos de final.');
+    // El torneo, sus cruces iniciales y la limpieza previa se confirman juntos.
+    const octavos = await this.unitOfWork.execute(async (repositories) => {
+      const matches = repositories.get(MatchEntity);
+      const tournaments = repositories.get(TournamentEntity);
+      const previousTournaments = await tournaments.find({ where: { userId, status: 'IN_PROGRESS' } });
+      for (const previous of previousTournaments) {
+        await matches.delete({ tournamentId: previous.id });
+        await tournaments.delete(previous.id);
       }
 
-      const matchEntity = new MatchEntity();
-      matchEntity.id = crypto.randomUUID();
-      matchEntity.tournamentId = tournamentId;
-      matchEntity.round = 'OCTAVOS';
-      matchEntity.userId = userId;
-      matchEntity.homeTeamId = home.id;
-      matchEntity.awayTeamId = away.id;
-      matchEntity.homeScore = 0;
-      matchEntity.awayScore = 0;
-      matchEntity.status = 'PENDING';
-      await this.matchRepo.save(matchEntity);
+      const tournamentEntity = new TournamentEntity();
+      tournamentEntity.id = tournamentId;
+      tournamentEntity.userId = userId;
+      tournamentEntity.userTeamId = userTeamId;
+      tournamentEntity.status = 'IN_PROGRESS';
+      tournamentEntity.currentRound = 'OCTAVOS';
+      await tournaments.save(tournamentEntity);
 
-      octavos.push({
-        id: matchEntity.id,
-        homeTeam: home,
-        awayTeam: away,
-        homeScore: 0,
-        awayScore: 0,
-        status: 'PENDING',
-      });
-    }
+      const firstRound: Match[] = [];
+      for (let i = 0; i < allTeams.length; i += 2) {
+        const home = allTeams[i];
+        const away = allTeams[i + 1];
+        if (!home || !away) throw new BadRequestException('Error al generar los cruces de octavos de final.');
+        const matchEntity = new MatchEntity();
+        matchEntity.id = crypto.randomUUID();
+        matchEntity.tournamentId = tournamentId;
+        matchEntity.round = 'OCTAVOS';
+        matchEntity.userId = userId;
+        matchEntity.homeTeamId = home.id;
+        matchEntity.awayTeamId = away.id;
+        matchEntity.homeScore = 0;
+        matchEntity.awayScore = 0;
+        matchEntity.status = 'PENDING';
+        await matches.save(matchEntity);
+        firstRound.push({ id: matchEntity.id, homeTeam: home, awayTeam: away, homeScore: 0, awayScore: 0, status: 'PENDING' });
+      }
+      return firstRound;
+    });
 
     // 5) Avisar al usuario / sesión de que el torneo comenzó.
     this.notifications.notify(userId, undefined, {
@@ -338,96 +330,79 @@ export class MatchService {
    *  - Si la Gran Final termina, marca el torneo como COMPLETADO.
    */
   async advanceTournament(tournamentId: string, userId: string): Promise<Tournament> {
-    const tournamentEntity = await this.tournamentRepo.findOne({ where: { id: tournamentId } });
-    if (!tournamentEntity || tournamentEntity.userId !== userId) {
-      throw new NotFoundException('Torneo no encontrado.');
-    }
+    const result = await this.unitOfWork.execute(async (repositories) => {
+      const tournaments = repositories.get(TournamentEntity);
+      const matches = repositories.get(MatchEntity);
+      const tournamentEntity = await tournaments.findOne({ where: { id: tournamentId }, lock: { mode: 'pessimistic_write' } });
+      if (!tournamentEntity || tournamentEntity.userId !== userId) throw new NotFoundException('Torneo no encontrado.');
+      if (tournamentEntity.status === 'COMPLETED') return { completed: true as const };
 
-    if (tournamentEntity.status === 'COMPLETED') {
-      return this.getTournament(tournamentId, userId);
-    }
-
-    const currentRound = tournamentEntity.currentRound as RoundName;
-    const currentMatches = await this.matchRepo.find({ where: { tournamentId, round: currentRound } });
-
-    // El partido del usuario DEBE estar jugado para avanzar de ronda.
-    const userMatch = currentMatches.find(
-      (m) => m.homeTeamId === tournamentEntity.userTeamId || m.awayTeamId === tournamentEntity.userTeamId,
-    );
-    if (!userMatch || userMatch.status !== 'FINISHED') {
-      throw new BadRequestException('Debes jugar tu partido antes de que avance la llave.');
-    }
-
-    // Simular (y persistir) todos los partidos IA pendientes de la ronda actual.
-    for (const m of currentMatches) {
-      if (m.status !== 'FINISHED') {
-        await this.simulateAndPersistMatch(m);
+      const currentRound = tournamentEntity.currentRound as RoundName;
+      const currentMatches = await matches.find({ where: { tournamentId, round: currentRound } });
+      const userMatch = currentMatches.find(
+        (match) => match.homeTeamId === tournamentEntity.userTeamId || match.awayTeamId === tournamentEntity.userTeamId,
+      );
+      if (!userMatch || userMatch.status !== 'FINISHED') {
+        throw new BadRequestException('Debes jugar tu partido antes de que avance la llave.');
       }
-    }
 
-    // Ganadores en el orden de la llave → cruces de la siguiente ronda.
-    const winners: Team[] = [];
-    for (const m of currentMatches) {
-      const persisted = await this.matchRepo.findOne({ where: { id: m.id } });
-      const winnerId = persisted?.winnerId;
-      if (!winnerId) throw new BadRequestException('No se pudo determinar el ganador de un cruce.');
-      const team = await this.getTeamById(winnerId);
-      if (!team) throw new BadRequestException('No se encontró el equipo ganador de un cruce.');
-      winners.push(team);
-    }
+      for (const match of currentMatches) {
+        if (match.status !== 'FINISHED') await this.simulateAndPersistMatch(match, repositories);
+      }
 
-    // Gran Final terminada → torneo COMPLETADO.
-    if (currentRound === 'FINAL') {
-      tournamentEntity.status = 'COMPLETED';
-      await this.tournamentRepo.save(tournamentEntity);
-this.notifications.notify(tournamentEntity.userId, undefined, {
-        type: 'tournament_end',
-        severity: 'success',
-        title: '¡Campeón de la Copa Élite!',
-        body: 'Tu equipo se coronó campeón del torneo. ¡Felicidades!',
-        metadata: { tournamentId },
-      });
-      return this.getTournament(tournamentId, userId);
-    }
+      const winners: Team[] = [];
+      for (const match of currentMatches) {
+        if (!match.winnerId) throw new BadRequestException('No se pudo determinar el ganador de un cruce.');
+        const team = await this.getTeamById(match.winnerId, repositories);
+        if (!team) throw new BadRequestException('No se encontró el equipo ganador de un cruce.');
+        winners.push(team);
+      }
 
-    const currentIdx = ROUND_ORDER.indexOf(currentRound);
-    const nextRound = ROUND_ORDER[currentIdx + 1];
-    if (!nextRound) throw new BadRequestException('Ronda inválida.');
+      if (currentRound === 'FINAL') {
+        tournamentEntity.status = 'COMPLETED';
+        await tournaments.save(tournamentEntity);
+        return { completed: true as const };
+      }
 
-    // Idempotencia: si la siguiente ronda ya fue generada, no duplicar cruces.
-    const nextRoundCount = await this.matchRepo.count({ where: { tournamentId, round: nextRound } });
-    if (nextRoundCount === 0) {
-      for (let i = 0; i < winners.length; i += 2) {
-        const home = winners[i];
-        const away = winners[i + 1];
-        if (!home || !away) {
-          throw new BadRequestException('Estructura de llaves inválida para la siguiente ronda.');
+      const currentIndex = ROUND_ORDER.indexOf(currentRound);
+      const nextRound = ROUND_ORDER[currentIndex + 1];
+      if (!nextRound) throw new BadRequestException('Ronda inválida.');
+      const nextRoundCount = await matches.count({ where: { tournamentId, round: nextRound } });
+      if (nextRoundCount === 0) {
+        for (let i = 0; i < winners.length; i += 2) {
+          const home = winners[i];
+          const away = winners[i + 1];
+          if (!home || !away) throw new BadRequestException('Estructura de llaves inválida para la siguiente ronda.');
+          const nextMatch = new MatchEntity();
+          nextMatch.id = crypto.randomUUID();
+          nextMatch.tournamentId = tournamentId;
+          nextMatch.round = nextRound;
+          nextMatch.userId = tournamentEntity.userId;
+          nextMatch.homeTeamId = home.id;
+          nextMatch.awayTeamId = away.id;
+          nextMatch.homeScore = 0;
+          nextMatch.awayScore = 0;
+          nextMatch.status = 'PENDING';
+          await matches.save(nextMatch);
         }
-
-        const nextEntity = new MatchEntity();
-        nextEntity.id = crypto.randomUUID();
-        nextEntity.tournamentId = tournamentId;
-        nextEntity.round = nextRound;
-        nextEntity.userId = tournamentEntity.userId;
-        nextEntity.homeTeamId = home.id;
-        nextEntity.awayTeamId = away.id;
-        nextEntity.homeScore = 0;
-        nextEntity.awayScore = 0;
-        nextEntity.status = 'PENDING';
-        await this.matchRepo.save(nextEntity);
       }
-    }
+      tournamentEntity.currentRound = nextRound;
+      await tournaments.save(tournamentEntity);
+      return { completed: false as const, currentRound, nextRound, ownerId: tournamentEntity.userId };
+    });
 
-    tournamentEntity.currentRound = nextRound;
-    await this.tournamentRepo.save(tournamentEntity);
-
-this.notifications.notify(tournamentEntity.userId, undefined, {
-        type: 'round_advance',
-        severity: 'info',
-        title: 'Avance de ronda: ' + nextRound,
-        body: 'Tu equipo superó ' + currentRound + '. Descubrí tus nuevos rivales.',
-        metadata: { tournamentId, round: nextRound },
+    if (result.completed) {
+      this.notifications.notify(userId, undefined, {
+        type: 'tournament_end', severity: 'success', title: '¡Campeón de la Copa Élite!',
+        body: 'Tu equipo se coronó campeón del torneo. ¡Felicidades!', metadata: { tournamentId },
       });
+    } else {
+      this.notifications.notify(result.ownerId, undefined, {
+        type: 'round_advance', severity: 'info', title: 'Avance de ronda: ' + result.nextRound,
+        body: 'Tu equipo superó ' + result.currentRound + '. Descubrí tus nuevos rivales.',
+        metadata: { tournamentId, round: result.nextRound },
+      });
+    }
     return this.getTournament(tournamentId, userId);
   }
 

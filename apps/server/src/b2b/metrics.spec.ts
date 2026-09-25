@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bRoleCode } from './entities/b2b.enums';
+import { getBetweenValues, isBetweenValues } from '../persistence/repository.port';
 
 // Las métricas del día se calculan con la zona horaria de la organización, no
 // con la del servidor: un turno a las 00:00 de Asia/Tokyo pertenece al día
@@ -12,7 +13,7 @@ describe('Métricas del día (zona de la organización)', () => {
   function setup() {
     const betweenArgs: Date[][] = [];
     const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org', timezone: TOKYO }) };
-    const shifts = { find: jest.fn(async ({ where }: { where: { startsAt: { _value: Date[] } } }) => { betweenArgs.push(where.startsAt._value); return []; }) };
+    const shifts = { find: jest.fn(async ({ where }: { where: { startsAt: unknown } }) => { if (isBetweenValues(where.startsAt)) betweenArgs.push(getBetweenValues(where.startsAt) as Date[]); return []; }) };
     const bookings = { find: jest.fn().mockResolvedValue([]) };
     const service = new B2bManagementService(
       organizations as never, {} as never, {} as never, {} as never,

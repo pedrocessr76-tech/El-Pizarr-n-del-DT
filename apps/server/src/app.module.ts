@@ -14,6 +14,8 @@ import { SeedModule } from './seed/seed.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { B2bModule, B2B_ENTITIES } from './b2b/b2b.module';
 import { GAME_ENTITIES } from './game-entities';
+import { PersistenceModule } from './persistence/persistence.module';
+import { getResultCacheOptions } from './persistence/result-cache.config';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -57,6 +59,7 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
       synchronize: resolveSynchronize(process.env.DB_SYNCHRONIZE),
       migrations: [__dirname + '/migrations/!(*.spec|*.d).{ts,js}'],
       migrationsRun: process.env.DB_MIGRATIONS === 'true',
+      cache: getResultCacheOptions('game'),
     }),
     TypeOrmModule.forRoot({
       name: 'b2b',
@@ -76,6 +79,7 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
       synchronize: resolveSynchronize(process.env.B2B_DB_SYNCHRONIZE),
       migrations: [__dirname + '/b2b/migrations/!(*.spec|*.d).{ts,js}'],
       migrationsRun: process.env.B2B_DB_MIGRATIONS === 'true',
+      cache: getResultCacheOptions('b2b'),
     }),
 
     PlayerModule,
@@ -87,6 +91,7 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
     NotificationsModule,
     SeedModule,
     B2bModule,
+    PersistenceModule,
   ],
   controllers: [AppController],
   providers: [

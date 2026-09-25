@@ -56,6 +56,7 @@ describe('Notificaciones del ciclo de reservas', () => {
     };
     const blocks = { find: jest.fn().mockResolvedValue([]) };
     const bookings = {
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(async ({ where }) => {
         if (where?.shiftId) return null;
         return {
@@ -67,8 +68,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       save: jest.fn(async (booking) => booking),
     };
     const bookingEvents = { create: jest.fn((event) => event), save: jest.fn(async (event) => event) };
-    const dataSource = {
-      transaction: jest.fn(async (cb: (manager: any) => unknown) => cb({
+    const manager = {
         getRepository: jest.fn((entity: { name: string }) => {
           const map: Record<string, unknown> = {
             B2bShiftEntity: shifts,
@@ -77,14 +77,16 @@ describe('Notificaciones del ciclo de reservas', () => {
           };
           return (map[entity.name] ?? {}) as never;
         }),
-      } as never)),
+      };
+    const unitOfWork = {
+      execute: jest.fn(async (work: (session: any) => unknown) => work({ get: (entity: any) => manager.getRepository(entity) })),
     };
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, {} as never,
       shifts as never, blocks as never, bookings as never, bookingEvents as never,
       {} as never,
       notifications as never,
-      dataSource as never,
+      unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
     return { service, notifications, bookings, shifts, status };
@@ -196,9 +198,8 @@ describe('Notificaciones del ciclo de reservas', () => {
       notifyUser: jest.fn().mockResolvedValue([]),
       getUserDisplayName: jest.fn().mockResolvedValue('Carlos Cliente'),
     };
-    const bookings = { findOne: jest.fn().mockResolvedValue(null), create: jest.fn(), save: jest.fn() };
-    const dataSource = {
-      transaction: jest.fn(async (cb: (manager: any) => unknown) => cb({
+    const bookings = { find: jest.fn().mockResolvedValue([]), findOne: jest.fn().mockResolvedValue(null), create: jest.fn(), save: jest.fn() };
+    const manager = {
         getRepository: jest.fn((entity: { name: string }) => {
           const map: Record<string, unknown> = {
             B2bShiftEntity: shifts,
@@ -207,7 +208,9 @@ describe('Notificaciones del ciclo de reservas', () => {
           };
           return (map[entity.name] ?? {}) as never;
         }),
-      } as never)),
+      };
+    const unitOfWork = {
+      execute: jest.fn(async (work: (session: any) => unknown) => work({ get: (entity: any) => manager.getRepository(entity) })),
     };
     const service = new B2bManagementService(
       organizations as never, {} as never,
@@ -217,7 +220,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       { save: jest.fn() } as never,
       {} as never,
       notifications as never,
-      dataSource as never,
+      unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
 
