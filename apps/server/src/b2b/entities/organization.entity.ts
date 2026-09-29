@@ -30,6 +30,10 @@ export class B2bOrganizationEntity {
   @Column({ type: 'boolean', default: false })
   whatsappOptIn!: boolean;
 
+  /** Anticipaciones de recordatorios automáticos, en minutos antes del turno. */
+  @Column({ type: 'jsonb', default: () => "'[1440, 60]'::jsonb" })
+  whatsappReminderIntervalsMinutes!: number[];
+
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 
