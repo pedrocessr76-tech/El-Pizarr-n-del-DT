@@ -51,7 +51,7 @@ export interface B2bOrganizationOption { id: string; name: string; slug: string;
 export interface B2bPublicFacility { id: string; name: string; address?: string | null; courts: Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>; }
 export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
 export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
-export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; whatsappPhone?: string | null; whatsappOptIn?: boolean; }
+export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; whatsappPhone?: string | null; whatsappOptIn?: boolean; whatsappReminderIntervalsMinutes?: number[]; }
 
 // El access token B2B vive sólo EN MEMORIA (issue #17): la sesión larga la
 // renueva el refresh token que la API guarda en cookie HttpOnly.
@@ -175,6 +175,10 @@ export const b2bService = {
   },
   async getOrganization() {
     const { data } = await b2bApi.get<B2bOrganizationSettings>('/v1/organizations/me');
+    return data;
+  },
+  async updateOrganizationReminderIntervals(whatsappReminderIntervalsMinutes: number[]) {
+    const { data } = await b2bApi.patch<B2bOrganizationSettings>('/v1/organizations/me', { whatsappReminderIntervalsMinutes });
     return data;
   },
   async refresh(): Promise<B2bAuthResponse | null> {

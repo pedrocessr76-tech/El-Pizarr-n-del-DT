@@ -521,3 +521,30 @@ body.b2b-route {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+.dashboard-clock { display: inline-flex; align-items: center; gap: 9px; margin: 8px 0 3px; padding: 8px 11px; width: fit-content; border: 1px solid var(--b2b-line); border-radius: 12px; background: #fff; color: #15803d; }
+.dashboard-clock strong { font-size: 20px; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.dashboard-clock span { color: #64748b; font-size: 12px; text-transform: capitalize; }
+.reminder-settings { margin-bottom: 16px; }
+.reminder-settings-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.reminder-settings-heading h2 { margin: 0; }
+.reminder-settings-heading p { margin: 3px 0 0; color: #64748b; font-size: 13px; }
+.reminder-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #ecfdf3; color: #15803d; }
+.reminder-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.reminder-presets button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid var(--b2b-line); border-radius: 9px; background: #fff; color: #475569; font-size: 13px; }
+.reminder-presets button.selected { border-color: #15803d; background: #f0fdf4; color: #166534; }
+.reminder-presets button:disabled { opacity: .6; cursor: not-allowed; }
+.reminder-custom-row { display: flex; align-items: center; gap: 9px; margin-top: 15px; max-width: 470px; }
+.reminder-custom-row label { color: #475569; font-size: 13px; white-space: nowrap; }
+.reminder-custom-row input { min-width: 100px; }
+.reminder-summary { margin: 14px 0; color: #334155; font-size: 13px; }
+.reminder-help, .reminder-provider-note { color: #64748b; font-size: 12px; }
+.reminder-provider-note { margin: 16px 0 0; padding: 10px 12px; border-radius: 9px; background: #fffbeb; color: #92400e; }
+.reminder-custom-row .b2b-input { flex: 1; min-width: 90px; }
+.reminder-settings > .primary-action { margin-top: 4px; }
+@media (max-width: 767px) {
+  .dashboard-clock { flex-wrap: wrap; gap: 7px; }
+  .dashboard-clock strong { font-size: 18px; }
+  .dashboard-clock span { font-size: 11px; }
+  .reminder-custom-row { align-items: stretch; flex-wrap: wrap; }
+  .reminder-custom-row label { width: 100%; }
+}

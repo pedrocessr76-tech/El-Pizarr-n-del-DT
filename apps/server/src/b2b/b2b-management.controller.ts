@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { B2bRoles, CurrentB2bUser } from './auth/b2b-auth.decorators';
 import { B2bJwtGuard } from './auth/b2b-jwt.guard';
 import { B2bRolesGuard } from './auth/b2b-roles.guard';
@@ -22,6 +22,7 @@ class CourtDto {
 class OrganizationUpdateDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(120) name?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(255) address?: string;
+  @ApiProperty({ required: false, type: [Number], example: [1440, 60] }) @IsOptional() @IsArray() whatsappReminderIntervalsMinutes?: number[];
 }
 class FacilityUpdateDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(120) name?: string;

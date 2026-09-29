@@ -4,6 +4,8 @@ import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
 import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
+import { B2bBookingReminderEntity } from './entities/booking-reminder.entity';
+import { BookingRemindersService } from './booking-reminders.service';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
 import { B2bOrganizationEntity } from './entities/organization.entity';
@@ -30,6 +32,7 @@ export const B2B_ENTITIES = [
   B2bShiftEntity,
   B2bAvailabilityBlockEntity,
   B2bBookingEntity,
+  B2bBookingReminderEntity,
   B2bBookingEventEntity,
   B2bNotificationEntity,
 ];
@@ -37,7 +40,7 @@ export const B2B_ENTITIES = [
 @Module({
   imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
   controllers: [B2bManagementController],
-  providers: [B2bManagementService, B2bSeedService],
+  providers: [B2bManagementService, B2bSeedService, BookingRemindersService],
   exports: [B2bManagementService],
 })
 export class B2bModule {}

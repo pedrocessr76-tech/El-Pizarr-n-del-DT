@@ -48,9 +48,17 @@ export class B2bManagementService {
     return this.organizations.findOneByOrFail({ id: user.organizationId });
   }
 
-  async updateOrganization(user: B2bJwtUser, input: { name?: string; address?: string }) {
+  async updateOrganization(user: B2bJwtUser, input: { name?: string; address?: string; whatsappReminderIntervalsMinutes?: number[] }) {
     const organization = await this.getOrganization(user);
     if (input.name) organization.name = input.name;
+    if (input.whatsappReminderIntervalsMinutes !== undefined) {
+      const intervals = input.whatsappReminderIntervalsMinutes;
+      if (!Array.isArray(intervals) || intervals.length < 1 || intervals.length > 5 ||
+          intervals.some((minutes) => !Number.isInteger(minutes) || minutes < 5 || minutes > 7 * 24 * 60)) {
+        throw new BadRequestException('Elegí entre 1 y 5 anticipaciones de 5 minutos a 7 días.');
+      }
+      organization.whatsappReminderIntervalsMinutes = [...new Set(intervals)].sort((a, b) => b - a);
+    }
     return this.organizations.save(organization);
   }
 
