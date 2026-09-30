@@ -12,10 +12,10 @@ import { TournamentBracketPage } from './pages/TournamentBracketPage';
 import { ensureGuestToken, type AuthResponse } from './services/authService';
 import { getGuestToken, hasUserToken } from './utils/session';
 import { B2bApp } from './pages/B2bApp';
+import { B2bEmailVerification } from './pages/B2bEmailVerification';
 import { PwaOverlays } from './components/pwa/PwaOverlays';
 import { MobileTopBar } from './components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from './components/layout/MobileTabBar';
-import { PivotePage } from './pages/PivotePage';
 
 const MOBILE_TITLES: Record<ActiveTab, string> = {
   home: 'Inicio',
@@ -23,7 +23,6 @@ const MOBILE_TITLES: Record<ActiveTab, string> = {
   catalog: 'Historial y Cartas',
   history: 'Historial y Cartas',
   bracket: 'Copa Élite',
-  pivot: 'Jugador pivote',
 };
 
 const GAME_MOBILE_TABS: MobileTab<ActiveTab>[] = [
@@ -31,18 +30,20 @@ const GAME_MOBILE_TABS: MobileTab<ActiveTab>[] = [
   { id: 'builder', label: 'Equipo', icon: 'groups' },
   { id: 'catalog', label: 'Cartas', icon: 'style' },
   { id: 'bracket', label: 'Torneo', icon: 'emoji_events' },
-  { id: 'pivot', label: 'Pivote', icon: 'sports' },
 ];
 
 function App() {
   const isB2bRoute = window.location.pathname.startsWith('/canchas');
+  // El enlace de verificación entra por GET sin sesión: es una pantalla propia,
+  // no un estado del panel, así no monta el dashboard ni intenta hidratar.
+  const isB2bVerifyRoute = window.location.pathname.replace(/\/+$/, '') === '/canchas/verificar-email';
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
 
   if (isB2bRoute && import.meta.env.VITE_B2B_ENABLED !== 'false') {
     return (
       <>
-        <B2bApp />
+        {isB2bVerifyRoute ? <B2bEmailVerification /> : <B2bApp />}
         <PwaOverlays />
       </>
     );
@@ -112,8 +113,6 @@ function App() {
             onNavigate={(tab) => setActiveTab(tab)}
           />
         );
-      case 'pivot':
-        return <PivotePage onOpenLogin={() => setIsLoginOpen(true)} />;
       default:
         return <HomePage onNavigate={(tab) => setActiveTab(tab)} onOpenLogin={() => setIsLoginOpen(true)} />;
     }

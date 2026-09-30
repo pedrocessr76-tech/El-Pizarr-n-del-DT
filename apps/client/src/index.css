@@ -541,6 +541,27 @@ body.b2b-route {
 .reminder-provider-note { margin: 16px 0 0; padding: 10px 12px; border-radius: 9px; background: #fffbeb; color: #92400e; }
 .reminder-custom-row .b2b-input { flex: 1; min-width: 90px; }
 .reminder-settings > .primary-action { margin-top: 4px; }
+.reminder-channel { padding: 15px 0; border-top: 1px solid var(--b2b-line); }
+.reminder-channel:first-of-type { border-top: 0; padding-top: 0; }
+.reminder-channel-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.reminder-channel-heading h3 { margin: 0; font-size: 15px; }
+.reminder-channel-heading p { margin: 3px 0 0; color: #64748b; font-size: 13px; }
+
+/* Avisos de WhatsApp pendientes de despacho manual (#34) */
+.pending-alerts { margin-top: 18px; }
+.pending-alerts .reminder-settings-heading { align-items: center; }
+.pending-alerts .reminder-settings-heading > div { flex: 1; }
+.pending-alerts-empty { margin: 0; color: #64748b; font-size: 13px; }
+.pending-alerts-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.pending-alerts-item { padding: 13px 15px; border: 1px solid var(--b2b-line); border-radius: 12px; background: #fff; }
+.pending-alerts-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; }
+.pending-alerts-meta strong { font-size: 14px; color: #0f172a; }
+.pending-alerts-meta span { color: #334155; font-size: 13px; }
+.pending-alerts-meta small { color: #94a3b8; font-size: 12px; }
+.pending-alerts-body { margin: 9px 0 11px; padding: 9px 11px; border-radius: 9px; background: #f8fafc; color: #334155; font-size: 13px; }
+.pending-alerts-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.pending-alerts-actions a, .pending-alerts-actions button { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.pending-alerts-actions button:disabled { opacity: .6; cursor: not-allowed; }
 .dashboard-court-toolbar { justify-content: space-between; }
 .dashboard-navigation-hint { display: inline-flex; align-items: center; gap: 7px; color: #64748b; font-size: 12px; font-weight: 700; }
 .dashboard-navigation-hint svg { color: #94a3b8; }

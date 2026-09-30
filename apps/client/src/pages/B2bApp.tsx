@@ -4,7 +4,9 @@ import { OperationalMetrics } from '../components/b2b/OperationalMetrics';
 import { DashboardCourts } from '../components/b2b/DashboardCourts';
 
 import { ProfileView } from '../components/b2b/ProfileView';
+import { PivotsView } from '../components/b2b/PivotsView';
 import { ReminderSettings } from '../components/b2b/ReminderSettings';
+import { PendingAlertsPanel } from '../components/b2b/PendingAlertsPanel';
 
 import { useEffect, useState } from 'react';
 import {
@@ -19,6 +21,7 @@ import {
   Menu,
   MessageCircle,
   SlidersHorizontal,
+  ShieldCheck,
   Trophy,
   UserRound,
   UsersRound,
@@ -34,7 +37,7 @@ import { B2bNotificationToasts } from '../components/b2b/B2bNotificationToasts';
 import { addOrgDays, dayKeyToOrgMidnight, formatDayLabel, formatHourLabel, formatWeekdayLabel, orgTzLabel, resolveOrgTimeZone, startOfOrgDay, startOfWeekKey, toDayKey } from '../utils/orgTime';
 
 type B2bRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'CLIENT';
-type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'schedule' | 'portal' | 'payment' | 'profile';
+type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'schedule' | 'portal' | 'payment' | 'profile' | 'pivots';
 
 const roleLabels: Record<B2bRole, string> = {
   OWNER: 'Propietario',
@@ -98,6 +101,7 @@ export function B2bApp() {
   const login = useB2bStore((state) => state.login);
   const registerClient = useB2bStore((state) => state.registerClient);
   const onboardOwner = useB2bStore((state) => state.onboardOwner);
+  const pendingVerificationEmail = useB2bStore((state) => state.pendingVerificationEmail);
 
   // Restaura la sesión B2B desde la cookie HttpOnly al entrar a /canchas
   // (issue #17): el token ya no se persiste, la sesión larga viaja en cookie.
@@ -178,17 +182,13 @@ export function B2bApp() {
   };
 
   const registerClientAccount = async (input: { email: string; fullName: string; password: string }) => {
-    const created = await registerClient(input);
-    if (!created) return;
-    // Un cliente recién registrado entra a su portal: ahí elige en qué complejo reservar.
-    navigate('portal');
+    // El registro ya no crea sesión: si salió bien, queda pendiente la
+    // verificación y la pantalla de "revisá tu email" la levanta el store.
+    await registerClient(input);
   };
 
   const registerOwnerAccount = async (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => {
-    const created = await onboardOwner(input);
-    if (!created) return;
-    // El propietario recién dado de alta entra directo a su dashboard operativo.
-    navigate('dashboard');
+    await onboardOwner(input);
   };
 
   if (!hydrated) {
@@ -203,6 +203,9 @@ export function B2bApp() {
   }
 
   if (view === 'login') {
+    if (pendingVerificationEmail) {
+      return <B2bCheckEmail email={pendingVerificationEmail} />;
+    }
     return <B2bLogin onEnter={enterB2b} onRegisterClient={registerClientAccount} onRegisterOwner={registerOwnerAccount} />;
   }
 
@@ -211,10 +214,12 @@ export function B2bApp() {
         { id: 'dashboard', label: 'Operativa', icon: 'dashboard' },
         { id: 'availability', label: 'Canchas', icon: 'calendar_month' },
         { id: 'bookings', label: 'Reservas', icon: 'groups' },
+        { id: 'pivots', label: 'Pivotes', icon: 'sports_soccer' },
         { id: 'profile', label: 'Perfil', icon: 'person' },
       ]
     : [
         { id: 'portal', label: 'Reservar', icon: 'sports_soccer' },
+        { id: 'pivots', label: 'Pivotes', icon: 'groups' },
         { id: 'payment', label: 'Pago', icon: 'credit_card' },
         { id: 'bookings', label: 'Mis turnos', icon: 'event_available' },
         { id: 'profile', label: 'Perfil', icon: 'person' },
@@ -241,8 +246,12 @@ export function B2bApp() {
             <B2bNavButton icon={<Trophy size={17} />} label="Complejos y Canchas" active={view === 'settings'} onClick={() => navigate('settings')} />
             <B2bNavButton icon={<CalendarDays size={17} />} label="Disponibilidad" active={view === 'availability'} onClick={() => navigate('availability')} />
             <B2bNavButton icon={<UsersRound size={17} />} label="Reservas" active={view === 'bookings'} onClick={() => navigate('bookings')} />
+            <B2bNavButton icon={<ShieldCheck size={17} />} label="Jugador pivote" active={view === 'pivots'} onClick={() => navigate('pivots')} />
             <B2bNavButton icon={<SlidersHorizontal size={17} />} label="Horarios y Configuración" active={view === 'schedule'} onClick={() => navigate('schedule')} />
-          </> : <B2bNavButton icon={<CalendarDays size={17} />} label="Reservar cancha" active={view === 'portal'} onClick={() => navigate('portal')} />}
+          </> : <>
+            <B2bNavButton icon={<CalendarDays size={17} />} label="Reservar cancha" active={view === 'portal'} onClick={() => navigate('portal')} />
+            <B2bNavButton icon={<ShieldCheck size={17} />} label="Jugador pivote" active={view === 'pivots'} onClick={() => navigate('pivots')} />
+          </>}
         </nav>
         <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span></div><button type="button" onClick={() => { void logoutB2b(); }} disabled={loggingOut} aria-label="Cerrar sesión del Sistema Canchas" title="Cerrar sesión" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10, padding: '10px 12px', border: '1px solid #fecaca', borderRadius: 9, color: '#b91c1c', background: '#fff', fontSize: 13, fontWeight: 600, cursor: loggingOut ? 'wait' : 'pointer', opacity: loggingOut ? 0.65 : 1 }}><LogOut size={16} />{loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</button></div>
       </aside>
@@ -253,6 +262,49 @@ export function B2bApp() {
       <MobileTabBar variant="canchas" tabs={mobileTabs} activeTab={view} onSelect={(next) => navigate(next)} />
       {selectedBooking && <BookingDrawer booking={selectedBooking} timezone={timezone} onClose={() => setSelectedBooking(null)} onAction={async (action) => { if (selectedBooking.id) { if (action === 'confirm') await b2bService.confirmBooking(selectedBooking.id); if (action === 'cancel') await b2bService.cancelBooking(selectedBooking.id); } setSelectedBooking(null); }} />}
       <B2bNotificationToasts />
+    </div>
+  );
+}
+
+function B2bCheckEmail({ email }: { email: string }) {
+  const resendVerification = useB2bStore((state) => state.resendVerification);
+  const clearPendingVerification = useB2bStore((state) => state.clearPendingVerification);
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [feedback, setFeedback] = useState<string>('');
+
+  const resend = async () => {
+    setState('sending');
+    const result = await resendVerification(email);
+    setState('sent');
+    // El servidor responde genérico; se muestra su mensaje tal cual para no
+    // filtrar si la cuenta existe.
+    setFeedback(result.message);
+  };
+
+  return (
+    <div className="b2b-login">
+      <div className="b2b-login-card">
+        <div className="b2b-brand b2b-login-brand">
+          <div className="b2b-brand-mark"><span>SC</span></div>
+          <div><strong>Sistema<br />Canchas</strong><small>B2B FACILITY SUITE</small></div>
+        </div>
+        <div className="b2b-login-copy">
+          <span>Un paso más</span>
+          <h1>Revisá tu<br /><em>email.</em></h1>
+          <p>Te enviamos un enlace a <strong>{email}</strong> para activar tu cuenta. Hasta confirmarlo, el acceso queda bloqueado.</p>
+        </div>
+        <div className="b2b-login-form">
+          {feedback && <p className="login-footnote" role="status">{feedback}</p>}
+          <button type="button" className="primary-action wide" onClick={() => { void resend(); }} disabled={state !== 'idle'}>
+            {state === 'sending' ? 'Reenviando…' : state === 'sent' ? 'Enlace reenviado' : 'Reenviar el enlace'}
+          </button>
+          <p className="login-footnote">
+            <a href="#" onClick={(event) => { event.preventDefault(); clearPendingVerification(); }}>Volver al acceso</a>
+          </p>
+          <p className="login-footnote">¿No lo ves? Revisá la carpeta de spam o correo no deseado.</p>
+        </div>
+      </div>
+      <div className="b2b-login-visual"><div className="visual-overlay"><span>CUENTA SEGURA</span><h2>Confirmá tu correo.<br />Entrá tranquilo.</h2><p>Verificamos tu email para proteger tus reservas y tu complejo.</p></div></div>
     </div>
   );
 }
@@ -273,6 +325,9 @@ function B2bLogin({ onEnter, onRegisterClient, onRegisterOwner }: {
   const authError = useB2bStore((state) => state.error);
   const isLoading = useB2bStore((state) => state.isLoading);
   const clearError = useB2bStore((state) => state.clearError);
+  const loginBlockedByVerification = useB2bStore((state) => state.loginBlockedByVerification);
+  const resendVerification = useB2bStore((state) => state.resendVerification);
+  const [resendSent, setResendSent] = useState(false);
 
   const isRegister = mode === 'register';
   const isOwnerOnboarding = mode === 'register-owner';
@@ -280,6 +335,7 @@ function B2bLogin({ onEnter, onRegisterClient, onRegisterOwner }: {
   const switchMode = (next: 'login' | 'register' | 'register-owner') => {
     clearError();
     setValidationError(null);
+    setResendSent(false);
     setPassword('');
     setConfirmPassword('');
     setMode(next);
@@ -354,6 +410,14 @@ function B2bLogin({ onEnter, onRegisterClient, onRegisterOwner }: {
 
           {(validationError || authError) && <p className="login-error" role="alert">{validationError || authError}</p>}
 
+          {!validationError && loginBlockedByVerification && (
+            <p className="login-footnote">
+              {resendSent
+                ? 'Si esa cuenta existe y falta verificar, te llega un enlace nuevo.'
+                : <a href="#" onClick={(event) => { event.preventDefault(); void resendVerification(email.trim()).then(() => setResendSent(true)); }}>Reenviar el email de verificación</a>}
+            </p>
+          )}
+
           <button type="submit" className="primary-action wide" disabled={isLoading}>
             {isLoading ? 'Procesando...' : isOwnerOnboarding ? 'Crear mi complejo' : isRegister ? 'Crear mi cuenta' : 'Ingresar al sistema'}
           </button>
@@ -405,6 +469,7 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
   if (view === 'bookings') return <BookingsView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} />;
   if (view === 'settings') return <SettingsView />;
   if (view === 'schedule') return <ScheduleView />;
+  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('dashboard')} />;
   if (view === 'profile') return <ProfileView role="staff" onBack={() => onNavigate('dashboard')} />;
   return <DashboardView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} timezone={timezone} />;
 }
@@ -478,6 +543,7 @@ function DashboardView({ bookingRows, onNavigate, onSelectBooking, timezone }: {
       <label className="date-filter"><CalendarDays size={16} /><select value={filterDate} onChange={(event) => setFilterDate(event.target.value)} aria-label="Fecha del dashboard">{dateOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
     </div>
     <OperationalMetrics date={filterDate} courtId={filterCourtId === 'all' ? undefined : filterCourtId} />
+    <PendingAlertsPanel />
     <div className="dashboard-courts-content">
       <DashboardCourts
         facilities={facilities}
@@ -592,6 +658,7 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
   if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} timezone={timezone} lastBooking={lastBooking} selectedShift={selectedShift} duration={duration} organizationName={selectedOrgName} />;
   if (view === 'bookings') return <ClientBookingsView timezone={timezone} onBack={() => onNavigate('portal')} />;
   if (view === 'profile') return <ProfileView role="client" onBack={() => onNavigate('portal')} />;
+  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('portal')} />;
   const reserve = async (courtId: string, shiftId?: string) => {
     if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
     try {

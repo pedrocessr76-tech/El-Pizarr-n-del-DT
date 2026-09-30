@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { b2bService, getB2bAccessToken, setB2bAccessToken } from './b2bService';
+import { b2bService, buildWhatsAppDeepLink, getB2bAccessToken, setB2bAccessToken } from './b2bService';
 
 const harness = vi.hoisted(() => {
   const make = () => {
@@ -137,5 +137,115 @@ describe('b2bService: flujo reserva / cancelación / reprogramación', () => {
     await expect(responseErrHandler(httpError)).rejects.toEqual(httpError);
 
     expect(main.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('b2bService: recordatorios bicanal (#34)', () => {
+  it('guarda las anticipaciones de email y WhatsApp en una sola llamada', async () => {
+    main.patch.mockResolvedValueOnce({ data: { id: 'org-1', emailReminderIntervalsMinutes: [1440], whatsappReminderIntervalsMinutes: [30] } });
+
+    const saved = await b2bService.updateOrganizationReminderIntervals({
+      emailReminderIntervalsMinutes: [1440],
+      whatsappReminderIntervalsMinutes: [30, 15],
+    });
+
+    expect(main.patch).toHaveBeenCalledWith('/v1/organizations/me', {
+      emailReminderIntervalsMinutes: [1440],
+      whatsappReminderIntervalsMinutes: [30, 15],
+    });
+    expect(saved.emailReminderIntervalsMinutes).toEqual([1440]);
+  });
+
+  it('solo envía las listas que se modificaron, sin pisar el otro canal', async () => {
+    main.patch.mockResolvedValueOnce({ data: { id: 'org-1' } });
+
+    await b2bService.updateOrganizationReminderIntervals({ emailReminderIntervalsMinutes: [] });
+
+    expect(main.patch).toHaveBeenCalledWith('/v1/organizations/me', { emailReminderIntervalsMinutes: [] });
+  });
+
+  it('trae los avisos de WhatsApp pendientes de despacho', async () => {
+    const alerts = [{ reminderId: 'rem-1', bookingId: 'b1' }];
+    main.get.mockResolvedValueOnce({ data: alerts });
+
+    await expect(b2bService.getPendingWhatsAppAlerts()).resolves.toEqual(alerts);
+    expect(main.get).toHaveBeenCalledWith('/v1/reminders/pending');
+  });
+
+  it('confirma el despacho manual de un aviso', async () => {
+    main.post.mockResolvedValueOnce({ data: { dispatched: true } });
+
+    await expect(b2bService.markWhatsAppAlertDispatched('rem-1')).resolves.toEqual({ dispatched: true });
+    expect(main.post).toHaveBeenCalledWith('/v1/reminders/rem-1/sent');
+  });
+
+  it('escapa el identificador del aviso en la URL', async () => {
+    main.post.mockResolvedValueOnce({ data: { dispatched: true } });
+
+    await b2bService.markWhatsAppAlertDispatched('rem 1/../x');
+
+    expect(main.post).toHaveBeenCalledWith('/v1/reminders/rem%201%2F..%2Fx/sent');
+  });
+});
+
+describe('b2bService: verificación de email (#verificacion-de-email)', () => {
+  it('verifyEmail canjea el token contra el endpoint de verificación', async () => {
+    main.post.mockResolvedValueOnce({ data: { verified: true, message: 'Email verificado. Ya podés entrar.' } });
+
+    const result = await b2bService.verifyEmail('tok-abc');
+
+    expect(main.post).toHaveBeenCalledWith('/v1/auth/verify-email', { token: 'tok-abc' });
+    expect(result.verified).toBe(true);
+  });
+
+  it('verifyEmail propaga el 4xx del servidor para que la pantalla muestre el motivo', async () => {
+    const expired = { response: { status: 400, data: { message: 'El enlace venció.' } } };
+    main.post.mockRejectedValueOnce(expired);
+
+    await expect(b2bService.verifyEmail('viejo')).rejects.toEqual(expired);
+  });
+
+  it('resendVerification pide un enlace nuevo con el email en el body', async () => {
+    main.post.mockResolvedValueOnce({ data: { message: 'Si la cuenta existe, te enviamos un enlace nuevo.' } });
+
+    const result = await b2bService.resendVerification('ana@club.com');
+
+    expect(main.post).toHaveBeenCalledWith('/v1/auth/resend-verification', { email: 'ana@club.com' });
+    expect(result.message).toContain('existe');
+  });
+
+  it('el registro y el onboarding devuelven la cuenta pendiente, no una sesión', async () => {
+    main.post.mockResolvedValueOnce({ data: { email: 'ana@club.com', emailVerified: false, message: 'Revisá tu email.' } });
+
+    const result = await b2bService.registerClient({ email: 'ana@club.com', fullName: 'Ana', password: '123456' });
+
+    expect(main.post).toHaveBeenCalledWith('/v1/auth/register-client', { email: 'ana@club.com', fullName: 'Ana', password: '123456' });
+    // Sin accessToken: una cuenta sin verificar no debe podersesionarse.
+    expect((result as unknown as Record<string, unknown>).accessToken).toBeUndefined();
+    expect(result.emailVerified).toBe(false);
+  });
+
+  it('onboardOwner también queda pendiente de verificación', async () => {
+    main.post.mockResolvedValueOnce({ data: { email: 'owner@club.com', emailVerified: false, message: 'Revisá tu email.' } });
+
+    const result = await b2bService.onboardOwner({ organizationName: 'Los Amigos', ownerFullName: 'Ana', email: 'owner@club.com', password: '123456' });
+
+    expect(main.post).toHaveBeenCalledWith('/v1/auth/onboarding', {
+      organizationName: 'Los Amigos',
+      ownerFullName: 'Ana',
+      email: 'owner@club.com',
+      password: '123456',
+    });
+    expect((result as unknown as Record<string, unknown>).accessToken).toBeUndefined();
+  });
+});
+
+describe('buildWhatsAppDeepLink', () => {
+  it('arma el enlace con el teléfono en E.164 y el mensaje precargado', () => {
+    expect(buildWhatsAppDeepLink('+54 9 11 5555-1234', 'Hola Ana')).toBe('https://wa.me/5491155551234?text=Hola%20Ana');
+  });
+
+  it('descarta cualquier carácter que no sea dígito', () => {
+    expect(buildWhatsAppDeepLink('(011) 15-5555-1234', 'x')).toContain('https://wa.me/0111555551234?text=x');
   });
 });

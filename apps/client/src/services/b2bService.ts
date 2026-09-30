@@ -4,6 +4,8 @@ export interface B2bUser {
   userId: string;
   organizationId: string;
   email: string;
+  /** Verificación obligatoria del email: el login se frena mientras sea false. */
+  emailVerified?: boolean;
   roles: string[];
   whatsappPhone?: string | null;
   whatsappOptIn?: boolean;
@@ -12,6 +14,17 @@ export interface B2bUser {
 export interface B2bAuthResponse {
   accessToken: string;
   user: B2bUser;
+}
+
+/**
+ * Respuesta del registro y del onboarding. Ya NO trae sesión: la cuenta nace
+ * sin verificar, así que el servidor devuelve qué hacer a continuación en vez
+ * de un token.
+ */
+export interface B2bPendingVerification {
+  email: string;
+  emailVerified: false;
+  message: string;
 }
 
 export interface B2bBooking {
@@ -51,7 +64,25 @@ export interface B2bOrganizationOption { id: string; name: string; slug: string;
 export interface B2bPublicFacility { id: string; name: string; address?: string | null; courts: Array<{ id: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>; }
 export interface B2bShiftRule { id: string; courtId: string; weekday: number; startTime: string; endTime: string; durationHours: number; priceCentsArs: number; active: boolean; }
 export interface B2bShift { id: string; courtId: string; startsAt: string; endsAt: string; priceCentsArs: number; status: string; }
-export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; whatsappPhone?: string | null; whatsappOptIn?: boolean; whatsappReminderIntervalsMinutes?: number[]; }
+export interface B2bOrganizationSettings { id: string; name: string; slug: string; timezone: string | null; whatsappPhone?: string | null; whatsappOptIn?: boolean; whatsappReminderIntervalsMinutes?: number[]; emailReminderIntervalsMinutes?: number[]; }
+
+/** Aviso de WhatsApp que el processor dejó esperando despacho manual (#34). */
+export interface B2bPendingWhatsAppAlert {
+  reminderId: string;
+  bookingId: string;
+  clientName: string;
+  phone: string;
+  courtName: string;
+  startsAt: string;
+  dateLabel: string;
+  timeLabel: string;
+  minutesBefore: number;
+  body: string;
+}
+
+export type B2bPivotRole = 'GOALKEEPER' | 'FIELD' | 'BOTH';
+export interface B2bPivotProfile { userId: string; fullName: string; email: string; available: boolean; role: B2bPivotRole; positions: string[]; whatsappPhone?: string | null; whatsappOptIn?: boolean; }
+export interface B2bPivotPlayer { userId: string; fullName: string; email: string; role: B2bPivotRole; positions: string[]; whatsappPhone: string | null; whatsappOptIn: boolean; organizationId: string; }
 
 // El access token B2B vive sólo EN MEMORIA (issue #17): la sesión larga la
 // renueva el refresh token que la API guarda en cookie HttpOnly.
@@ -141,12 +172,30 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/login', { email, password });
     return data;
   },
+  /**
+   * Canjea el token del enlace por una cuenta verificada. Devuelve 200 con
+   * `verified: true` o 400 con el motivo (vencido, usado, inválido) para que la
+   * pantalla ofrezca reenviar sin inventar nada.
+   */
+  async verifyEmail(token: string) {
+    const { data } = await b2bApi.post<{ verified: boolean; message: string }>('/v1/auth/verify-email', { token });
+    return data;
+  },
+  /**
+   * Pide un enlace nuevo. La respuesta es genérica a propósito: el servidor
+   * responde igual exista o no la cuenta, y el cliente no puede (ni debe)
+   * deducir de la respuesta si el email estaba registrado.
+   */
+  async resendVerification(email: string) {
+    const { data } = await b2bApi.post<{ message: string }>('/v1/auth/resend-verification', { email });
+    return data;
+  },
   async registerClient(input: { email: string; fullName: string; password: string }) {
-    const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/register-client', input);
+    const { data } = await b2bApi.post<B2bPendingVerification>('/v1/auth/register-client', input);
     return data;
   },
   async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
-    const { data } = await b2bApi.post<B2bAuthResponse>('/v1/auth/onboarding', input);
+    const { data } = await b2bApi.post<B2bPendingVerification>('/v1/auth/onboarding', input);
     return data;
   },
   async getPublicOrganizations() {
@@ -177,8 +226,26 @@ export const b2bService = {
     const { data } = await b2bApi.get<B2bOrganizationSettings>('/v1/organizations/me');
     return data;
   },
-  async updateOrganizationReminderIntervals(whatsappReminderIntervalsMinutes: number[]) {
-    const { data } = await b2bApi.patch<B2bOrganizationSettings>('/v1/organizations/me', { whatsappReminderIntervalsMinutes });
+  /**
+   * Guarda las anticipaciones de cada canal por separado (#34). El email lo
+   * manda el servidor solo; el de WhatsApp genera un aviso que despacha el
+   * personal. Enviar solo los campos provistos deja el otro canal intacto.
+   */
+  async updateOrganizationReminderIntervals(input: {
+    whatsappReminderIntervalsMinutes?: number[];
+    emailReminderIntervalsMinutes?: number[];
+  }) {
+    const { data } = await b2bApi.patch<B2bOrganizationSettings>('/v1/organizations/me', input);
+    return data;
+  },
+  async getPendingWhatsAppAlerts() {
+    const { data } = await b2bApi.get<B2bPendingWhatsAppAlert[]>('/v1/reminders/pending');
+    return data;
+  },
+  async markWhatsAppAlertDispatched(reminderId: string) {
+    const { data } = await b2bApi.post<{ dispatched: boolean }>(
+      `/v1/reminders/${encodeURIComponent(reminderId)}/sent`,
+    );
     return data;
   },
   async refresh(): Promise<B2bAuthResponse | null> {
@@ -272,6 +339,29 @@ export const b2bService = {
   },
   async generateShifts(courtId: string, from: string, to: string) {
     const { data } = await b2bApi.post(`/v1/courts/${courtId}/shifts/generate`, { from, to });
+    return data;
+  },
+  // Jugador pivote: el perfil y el directorio de reemplazos son del Sistema
+  // Canchas, así que viajan por el mismo cliente y la misma sesión B2B.
+  async getMyPivotProfile() {
+    const { data } = await b2bApi.get<B2bPivotProfile>('/v1/pivots/me');
+    return data;
+  },
+  async updateMyPivotProfile(input: { available?: boolean; role?: B2bPivotRole; positions?: string[] }) {
+    const { data } = await b2bApi.patch<B2bPivotProfile>('/v1/pivots/me', input);
+    return data;
+  },
+  async getAvailablePivots(position?: string, organizationId?: string) {
+    const { data } = await b2bApi.get<B2bPivotPlayer[]>('/v1/pivots', {
+      params: { ...(position ? { position } : {}), ...(organizationId ? { organizationId } : {}) },
+    });
+    return data;
+  },
+  async contactPivot(userId: string, message?: string) {
+    const { data } = await b2bApi.post<{ sent: boolean; whatsappPhone: string | null }>(
+      `/v1/pivots/${encodeURIComponent(userId)}/contact`,
+      { message },
+    );
     return data;
   },
 };
