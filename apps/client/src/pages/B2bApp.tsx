@@ -1,6 +1,7 @@
 import { ScheduleSettings } from '../components/b2b/ScheduleSettings';
 
 import { OperationalMetrics } from '../components/b2b/OperationalMetrics';
+import { DashboardCourts } from '../components/b2b/DashboardCourts';
 
 import { ProfileView } from '../components/b2b/ProfileView';
 import { ReminderSettings } from '../components/b2b/ReminderSettings';
@@ -24,7 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { useB2bStore } from '../store/useB2bStore';
-import { b2bService, buildWhatsAppDeepLink, type B2bBooking, type B2bOrganizationOption, type B2bPublicFacility, type B2bWeeklyAvailability } from '../services/b2bService';
+import { b2bService, buildWhatsAppDeepLink, type B2bBooking, type B2bCourt, type B2bFacility, type B2bOrganizationOption, type B2bPublicFacility, type B2bWeeklyAvailability } from '../services/b2bService';
 import { MobileTopBar } from '../components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from '../components/layout/MobileTabBar';
 import { useB2bNotificationSocket } from '../services/b2bNotificationSocket';
@@ -48,6 +49,7 @@ type BookingRow = {
   time: string;
   dateKey: string;
   dateLabel: string;
+  startsAt?: string;
   courtId?: string;
   court: string;
   type: string;
@@ -92,6 +94,7 @@ export function B2bApp() {
   const isStaff = role !== 'CLIENT';
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const login = useB2bStore((state) => state.login);
   const registerClient = useB2bStore((state) => state.registerClient);
   const onboardOwner = useB2bStore((state) => state.onboardOwner);
@@ -155,6 +158,18 @@ export function B2bApp() {
     setMobileMenu(false);
   };
 
+  const logoutB2b = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await useB2bStore.getState().logout();
+      setSelectedBooking(null);
+      navigate('login');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   const enterB2b = async (email: string, password: string) => {
     const authenticated = await login(email, password);
     if (!authenticated) return;
@@ -211,7 +226,7 @@ export function B2bApp() {
         variant="canchas"
         brand="Sistema Canchas"
         title={orgName || 'Sistema Canchas'}
-        actions={[{ icon: 'logout', label: 'Salir', onClick: () => { useB2bStore.getState().logout(); navigate('login'); } }]}
+        actions={[{ icon: 'logout', label: loggingOut ? 'Cerrando sesión' : 'Cerrar sesión', onClick: () => { void logoutB2b(); } }]}
       />
       <aside className={`b2b-sidebar ${mobileMenu ? 'is-open' : ''}`}>
         <div className="b2b-brand">
@@ -229,7 +244,7 @@ export function B2bApp() {
             <B2bNavButton icon={<SlidersHorizontal size={17} />} label="Horarios y Configuración" active={view === 'schedule'} onClick={() => navigate('schedule')} />
           </> : <B2bNavButton icon={<CalendarDays size={17} />} label="Reservar cancha" active={view === 'portal'} onClick={() => navigate('portal')} />}
         </nav>
-        <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span><LogOut size={16} /></div></div>
+        <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span></div><button type="button" onClick={() => { void logoutB2b(); }} disabled={loggingOut} aria-label="Cerrar sesión del Sistema Canchas" title="Cerrar sesión" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10, padding: '10px 12px', border: '1px solid #fecaca', borderRadius: 9, color: '#b91c1c', background: '#fff', fontSize: 13, fontWeight: 600, cursor: loggingOut ? 'wait' : 'pointer', opacity: loggingOut ? 0.65 : 1 }}><LogOut size={16} />{loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</button></div>
       </aside>
       <main className="b2b-main">
         <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell /><button className="profile-button" onClick={() => navigate('profile')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
@@ -367,12 +382,14 @@ function B2bNavButton({ icon, label, active, onClick }: { icon: React.ReactNode;
 function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bView; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: typeof bookings[number]) => void; timezone: string }) {
   const [bookingRows, setBookingRows] = useState<BookingRow[]>(bookings);
   useEffect(() => {
+    let active = true;
     b2bService.getBookings().then((items) => {
-      if (!items.length) return;
+      if (!active || !items.length) return;
       setBookingRows(items.map((item, index) => ({
         time: formatHourLabel(timezone, item.shiftStartsAt),
         dateKey: item.shiftStartsAt ? toDayKey(timezone, item.shiftStartsAt) : '',
         dateLabel: formatDayLabel(timezone, item.shiftStartsAt),
+        startsAt: item.shiftStartsAt ?? undefined,
         courtId: item.courtId,
         court: item.courtName ?? `Cancha ${index + 1}`,
         type: item.courtSportType ?? 'Fútbol',
@@ -382,7 +399,8 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
         price: `$ ${(item.priceCentsArs / 100).toLocaleString('es-AR')}`,
       })) as BookingRow[]);
     }).catch(() => undefined);
-  }, []);
+    return () => { active = false; };
+  }, [timezone]);
   if (view === 'availability') return <AvailabilityView onNavigate={onNavigate} timezone={timezone} />;
   if (view === 'bookings') return <BookingsView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} />;
   if (view === 'settings') return <SettingsView />;
@@ -393,34 +411,91 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
 
 function DashboardView({ bookingRows, onNavigate, onSelectBooking, timezone }: { bookingRows: BookingRow[]; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: BookingRow) => void; timezone: string }) {
   const [filterDate, setFilterDate] = useState<string>(toDayKey(timezone, new Date()));
-  // Si la zona carga con posterioridad al montaje (primer login), la fecha de
-  // hoy se recalcula con la tz definitiva de la organización (#24).
+  const [filterCourtId, setFilterCourtId] = useState('all');
+  const [facilities, setFacilities] = useState<B2bFacility[]>([]);
+  const [courts, setCourts] = useState<B2bCourt[]>([]);
+  const [facilityId, setFacilityId] = useState('');
+  const [availability, setAvailability] = useState<B2bWeeklyAvailability[]>([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(true);
+  const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const [facilityError, setFacilityError] = useState('');
+  const [availabilityError, setAvailabilityError] = useState('');
+
   useEffect(() => {
     setFilterDate(toDayKey(timezone, new Date()));
   }, [timezone]);
-  const [filterCourtId, setFilterCourtId] = useState('all');
-  const [facilities, setFacilities] = useState<Array<{ id: string; name: string }>>([]);
-  const [courts, setCourts] = useState<Array<{ id: string; facilityId: string; name: string }>>([]);
+
   useEffect(() => {
+    let active = true;
     Promise.all([b2bService.getFacilities(), b2bService.getCourts()])
       .then(([loadedFacilities, loadedCourts]) => {
-        setFacilities(loadedFacilities);
-        setCourts(loadedCourts);
+        if (!active) return;
+        const activeFacilities = loadedFacilities.filter((facility) => facility.status === 'ACTIVE');
+        const activeCourts = loadedCourts.filter((court) => court.status === 'ACTIVE');
+        setFacilities(activeFacilities);
+        setCourts(activeCourts);
+        setFacilityId((current) => activeFacilities.some((facility) => facility.id === current) ? current : activeFacilities[0]?.id ?? '');
       })
-      .catch(() => undefined);
+      .catch(() => { if (active) setFacilityError('No se pudieron cargar los complejos y las canchas.'); })
+      .finally(() => { if (active) setLoadingFacilities(false); });
+    return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoadingAvailability(true);
+    setAvailabilityError('');
+    const from = dayKeyToOrgMidnight(filterDate, timezone);
+    const to = addOrgDays(from, 1, timezone);
+    b2bService.getWeeklyAvailability(from.toISOString(), to.toISOString())
+      .then((items) => { if (active) setAvailability(items); })
+      .catch(() => { if (active) setAvailabilityError('No se pudieron cargar los horarios de las canchas.'); })
+      .finally(() => { if (active) setLoadingAvailability(false); });
+    return () => { active = false; };
+  }, [filterDate, timezone]);
+
   const dateOptions = Array.from({ length: 7 }, (_, i) => {
     const d = addOrgDays(new Date(), i, timezone);
     const key = toDayKey(timezone, d);
     const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', timeZone: timezone });
     return { key, label };
   });
-  const filtered = bookingRows.filter((booking) => {
-    if (!booking.dateKey || booking.dateKey !== filterDate) return false;
-    if (filterCourtId !== 'all' && booking.courtId !== filterCourtId) return false;
-    return true;
-  });
-  return <div className="b2b-content"><div className="b2b-page-heading"><div><span className="eyebrow"><i /> OPERACIÓN EN VIVO</span><h1>Dashboard Operativo</h1><DashboardClock timezone={timezone} /><p>Jornada en curso — {orgTzLabel(timezone)}</p></div><div className="heading-actions"><button className="secondary-action" onClick={() => onNavigate('availability')}><SlidersHorizontal size={16} /> Administrar canchas</button><button className="primary-action" onClick={() => onNavigate('bookings')}>＋ Nueva reserva</button></div></div><div className="b2b-filter-row"><div className="court-tabs"><button className={filterCourtId === 'all' ? 'active' : ''} onClick={() => setFilterCourtId('all')}>Todas las canchas</button>{courts.map((court) => <button key={court.id} className={filterCourtId === court.id ? 'active' : ''} onClick={() => setFilterCourtId(court.id)}>{court.name}</button>)}</div><label className="date-filter"><CalendarDays size={16} /><select value={filterDate} onChange={(event) => setFilterDate(event.target.value)} aria-label="Fecha del dashboard">{dateOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label></div><OperationalMetrics date={filterDate} courtId={filterCourtId === 'all' ? undefined : filterCourtId} /><div className="operations-grid"><section className="panel schedule-panel"><div className="panel-heading"><div><h2>Agenda de turnos <span className="schedule-date-label">{formatDayLabel(timezone, filterDate)}</span></h2><small>{filtered.length} turnos visibles</small></div><button className="text-button" onClick={() => onNavigate('availability')}>Vista cronológica <ArrowRight size={15} /></button></div><div className="schedule-table"><div className="schedule-head"><span>Horario</span><span>Cancha / Formato</span><span>Cliente / Reserva</span><span>Estado</span><span>Importe</span></div>{filtered.length === 0 && <div className="empty-state">No hay turnos registrados para {formatDayLabel(timezone, filterDate)} con los filtros elegidos.</div>}{filtered.slice(0, 10).map((booking) => <button className="schedule-row" key={`${booking.id ?? booking.time}-${booking.court}`} onClick={() => onSelectBooking(booking)}><span><strong>{booking.time}</strong><small>{booking.dateLabel}</small></span><span><strong>{booking.court}</strong><small>{booking.type}</small></span><span>{booking.client}</span><StatusBadge status={booking.status} /><span>{booking.price}</span><ArrowRight size={15} /></button>)}</div></section><aside className="side-stack"><section className="panel live-panel"><div className="panel-heading"><h2>Complejos y canchas</h2><span className="muted">{facilities.length} complejos</span></div><div className="availability-empty">{facilities.length === 0 ? 'Sin complejos registrados todavía.' : facilities.map((facility) => <div className="live-facility" key={facility.id}><strong>{facility.name}</strong><span>{courts.filter((court) => court.facilityId === facility.id).length} canchas ·{courts.filter((court) => court.facilityId === facility.id).map((court) => <em key={court.id}> {court.name}</em>)}</span></div>)}</div></section></aside></div></div>;
+  const openShiftBooking = (courtId: string, lane: B2bWeeklyAvailability['lanes'][number]) => {
+    setFilterCourtId(courtId);
+    const startsAt = new Date(lane.startsAt).getTime();
+    const booking = bookingRows.find((row) => row.courtId === courtId && row.dateKey === filterDate && row.id && row.startsAt && new Date(row.startsAt).getTime() === startsAt);
+    if (booking) onSelectBooking(booking);
+    else onNavigate('bookings');
+  };
+
+  return <div className="b2b-content">
+    <div className="b2b-page-heading">
+      <div><span className="eyebrow"><i /> OPERACIÓN EN VIVO</span><h1>Dashboard Operativo</h1><DashboardClock timezone={timezone} /><p>Jornada en curso — {orgTzLabel(timezone)}</p></div>
+      <div className="heading-actions"><button className="secondary-action" onClick={() => onNavigate('availability')}><SlidersHorizontal size={16} /> Administrar canchas</button><button className="primary-action" onClick={() => onNavigate('bookings')}>＋ Nueva reserva</button></div>
+    </div>
+    <div className="b2b-filter-row dashboard-court-toolbar">
+      <span className="dashboard-navigation-hint">Complejo <ArrowRight size={14} /> Cancha <ArrowRight size={14} /> Turnos</span>
+      <label className="date-filter"><CalendarDays size={16} /><select value={filterDate} onChange={(event) => setFilterDate(event.target.value)} aria-label="Fecha del dashboard">{dateOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+    </div>
+    <OperationalMetrics date={filterDate} courtId={filterCourtId === 'all' ? undefined : filterCourtId} />
+    <div className="dashboard-courts-content">
+      <DashboardCourts
+        facilities={facilities}
+        courts={courts}
+        availability={availability}
+        selectedDate={filterDate}
+        timezone={timezone}
+        facilityId={facilityId}
+        selectedCourtId={filterCourtId}
+        loading={loadingFacilities || loadingAvailability}
+        error={facilityError || availabilityError}
+        onFacilityChange={(id) => { setFacilityId(id); setFilterCourtId('all'); }}
+        onCourtChange={setFilterCourtId}
+        onSelectShift={openShiftBooking}
+        onManage={() => onNavigate('settings')}
+      />
+    </div>
+  </div>;
 }
 
 function DashboardClock({ timezone }: { timezone: string }) {
@@ -540,7 +615,208 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
     if (selectedShift) void reserve(selectedShift.courtId, selectedShift.shiftId);
     else setMessage('Seleccioná un turno disponible para continuar al pago.');
   };
-  return <div className="b2b-content client-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> PORTAL CLIENTE</span><h1>Reservá tu cancha</h1><p>Elegí el complejo, horario y duración de tu turno.</p></div><div className="client-chip"><UserRound size={15} /> Cliente autenticado</div></div>{message && <p className="settings-feedback">{message}</p>}<div className="client-booking-layout"><section className="panel client-selector"><div className="selector-block"><label>Complejo</label><select className="b2b-input" value={facilityId} onChange={(event) => setFacilityId(event.target.value)}>{facilities.length === 0 && <option value="">Cargando complejos…</option>}{facilities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="selector-block"><label>Fecha</label><div className="flex flex-wrap gap-2">{weekDayKeys.map((key) => { const isActive = activeDay === key; return <button key={key} onClick={() => { setSelectedDate(key); setSelectedShift(null); }} className={`min-h-11 px-3 rounded-lg border text-xs font-label-md ${isActive ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-slate-600 border-slate-200'}`}>{formatWeekdayLabel(timezone, key)}</button>; })}</div></div><div className="selector-block"><label>Duración</label><div className="duration-toggle"><button className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button><button className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button></div></div><h2>Turnos disponibles</h2><div className="client-court-list">{demoCourts.map((court) => { const courtShifts = shifts.filter((shift) => shift.courtId === court.id && toDayKey(timezone, shift.startsAt) === activeDay).slice(0, 4); return <div className="client-court" key={court.id}><span><strong>{court.name} · {court.sportType}</strong><small>Superficie sintética · Precio desde ${(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</small></span><div className="flex flex-wrap gap-2">{(courtShifts.length ? courtShifts : []).map((shift) => { const isSel = selectedShift?.shiftId === shift.id; const label = formatHourLabel(timezone, shift.startsAt); return <button key={`${court.id}-${shift.id || 'shift'}`} className={isSel ? 'selected' : ''} onClick={() => setSelectedShift({ courtName: court.name, courtId: court.id, shiftId: shift.id, startsAt: shift.startsAt, label, priceCents: shift.priceCentsArs })}>{label}<small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small></button>; })}</div>{courtShifts.length === 0 && <small className="text-slate-400">Sin turnos para este día.</small>}</div>; })}</div></section><aside className="panel booking-receipt"><span className="eyebrow">RESUMEN DEL TURNO</span><h2>Tu reserva</h2><div className="receipt-row"><span>Complejo</span><strong>{selectedOrgName || 'Seleccioná un complejo'}</strong></div><div className="receipt-row"><span>Cancha</span><strong>{selectedShift?.courtName || 'Elegí un turno'}</strong></div><div className="receipt-row"><span>Horario</span><strong>{selectedShift?.label || '—'}</strong></div><div className="receipt-row"><span>Duración</span><strong>{durationLabel}</strong></div><div className="receipt-total"><span>Total estimado</span><strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong></div><button className="primary-action wide hidden md:inline-flex" disabled={!selectedShift} onClick={confirmSelection}><Check size={16} /> Continuar a Pago</button><small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small></aside></div>{selectedShift && <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]"><div className="min-w-0"><div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div><div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div></div><button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>Continuar a Pago</button></div>}</div>;
+  return (
+    <div className="b2b-content client-content">
+      <div className="b2b-page-heading compact">
+        <div>
+          <span className="eyebrow"><i /> PORTAL CLIENTE</span>
+          <h1>Reservá tu cancha</h1>
+          <p>Elegí el complejo, horario y duración de tu turno.</p>
+        </div>
+        <div className="client-chip"><UserRound size={15} /> Cliente autenticado</div>
+      </div>
+
+      {message && <p className="settings-feedback">{message}</p>}
+
+      <div className="client-booking-layout">
+        <section className="panel client-selector">
+          <div className="selector-block">
+            <label>Complejo</label>
+            {facilities.length > 1 ? (
+              <div className="dashboard-facility-tabs" role="tablist" aria-label="Complejos" style={{ padding: 0, borderBottom: 'none', marginBottom: 12 }}>
+                {facilities.map((facility) => {
+                  const count = facility.courts?.length ?? 0;
+                  const selected = facility.id === facilityId;
+                  return (
+                    <button
+                      key={facility.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      className={selected ? 'active' : ''}
+                      onClick={() => {
+                        setFacilityId(facility.id);
+                        setSelectedShift(null);
+                      }}
+                    >
+                      <span>{facility.name}</span>
+                      <small>{count}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <select className="b2b-input" value={facilityId} onChange={(event) => { setFacilityId(event.target.value); setSelectedShift(null); }}>
+                {facilities.length === 0 && <option value="">Cargando complejos…</option>}
+                {facilities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            )}
+          </div>
+
+          <div className="selector-block">
+            <label>Fecha</label>
+            <div className="flex flex-wrap gap-2">
+              {weekDayKeys.map((key, i) => {
+                const isActive = activeDay === key;
+                const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : formatWeekdayLabel(timezone, key);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(key);
+                      setSelectedShift(null);
+                    }}
+                    className={`min-h-11 px-3 rounded-lg border text-xs font-label-md transition-colors ${
+                      isActive
+                        ? 'bg-[#15803d] text-white border-[#15803d] shadow-sm font-bold'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="selector-block">
+            <label>Duración</label>
+            <div className="duration-toggle">
+              <button type="button" className={duration === 1 ? 'active' : ''} onClick={() => setDuration(1)}>1 hora</button>
+              <button type="button" className={duration === 2 ? 'active' : ''} onClick={() => setDuration(2)}>2 horas</button>
+            </div>
+          </div>
+
+          <h2>Canchas y turnos disponibles</h2>
+
+          <div className="dashboard-court-grid client-court-grid" style={{ padding: 0 }}>
+            {courts.length === 0 ? (
+              <div className="dashboard-courts-empty" style={{ gridColumn: '1 / -1' }}>
+                <strong>Este complejo todavía no tiene canchas disponibles.</strong>
+                <span>Seleccioná otro complejo para consultar sus turnos.</span>
+              </div>
+            ) : (
+              courts.map((court, index) => {
+                const isShiftFuture = (shift: { startsAt: string }) => new Date(shift.startsAt).getTime() > Date.now();
+                const courtShifts = shifts.filter(
+                  (shift) => shift.courtId === court.id && toDayKey(timezone, shift.startsAt) === activeDay && isShiftFuture(shift)
+                );
+                const isCourtSelected = selectedShift?.courtId === court.id;
+                const minPrice = court.defaultPriceCentsArs;
+
+                return (
+                  <article
+                    className={`dashboard-court-card client-court-card ${isCourtSelected ? 'is-selected' : ''}`}
+                    key={court.id}
+                  >
+                    <div className={`dashboard-court-visual pitch-variant-${index % 3}`}>
+                      <span className="pitch-lines" aria-hidden="true"><i /><b /></span>
+                      <span className={`court-occupancy-badge ${courtShifts.length ? 'free' : 'empty'}`}>
+                        {courtShifts.length ? `${courtShifts.length} libres` : 'Sin turnos'}
+                      </span>
+                      <span className="dashboard-court-name">{court.name}</span>
+                      <span className="dashboard-court-sport">{court.sportType} · Desde ${(minPrice / 100).toLocaleString('es-AR')} / h</span>
+                    </div>
+
+                    <div className="dashboard-court-times client-shift-picker">
+                      <h3><Clock3 size={14} /> Turnos disponibles</h3>
+                      {courtShifts.length === 0 ? (
+                        <p className="court-times-empty">No hay turnos disponibles para esta fecha.</p>
+                      ) : (
+                        <div className="client-shift-buttons">
+                          {courtShifts.map((shift) => {
+                            const isSel = selectedShift?.shiftId === shift.id;
+                            const label = formatHourLabel(timezone, shift.startsAt);
+                            const endLabel = formatHourLabel(timezone, shift.endsAt);
+                            return (
+                              <button
+                                type="button"
+                                key={`${court.id}-${shift.id}`}
+                                className={`client-shift-btn ${isSel ? 'selected' : ''}`}
+                                onClick={() =>
+                                  setSelectedShift({
+                                    courtName: court.name,
+                                    courtId: court.id,
+                                    shiftId: shift.id,
+                                    startsAt: shift.startsAt,
+                                    label: `${label} - ${endLabel}`,
+                                    priceCents: shift.priceCentsArs,
+                                  })
+                                }
+                              >
+                                <strong>{label}</strong>
+                                <small>$ {(shift.priceCentsArs / 100).toLocaleString('es-AR')}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <aside className="panel booking-receipt">
+          <span className="eyebrow">RESUMEN DEL TURNO</span>
+          <h2>Tu reserva</h2>
+          <div className="receipt-row">
+            <span>Complejo</span>
+            <strong>{selectedOrgName || 'Seleccioná un complejo'}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>Cancha</span>
+            <strong>{selectedShift?.courtName || 'Elegí un turno'}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>Horario</span>
+            <strong>{selectedShift?.label || '—'}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>Duración</span>
+            <strong>{durationLabel}</strong>
+          </div>
+          <div className="receipt-total">
+            <span>Total estimado</span>
+            <strong>$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</strong>
+          </div>
+          <button
+            className="primary-action wide hidden md:inline-flex"
+            disabled={!selectedShift}
+            onClick={confirmSelection}
+          >
+            <Check size={16} /> Continuar a Pago
+          </button>
+          <small className="receipt-note">Se requiere una cuenta autenticada para reservar.</small>
+        </aside>
+      </div>
+
+      {selectedShift && (
+        <div className="mobile-sticky-bar md:hidden bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-6px_20px_rgba(15,23,42,0.12)]">
+          <div className="min-w-0">
+            <div className="text-xs text-slate-500 truncate">{selectedShift.courtName} · {selectedShift.label} · {durationLabel}</div>
+            <div className="font-bold text-[#15803d]">$ {(selectedTotalCents / 100).toLocaleString('es-AR')} ARS</div>
+          </div>
+          <button className="shrink-0 min-h-11 px-5 rounded-lg bg-[#15803d] text-white font-bold text-sm" onClick={confirmSelection}>
+            Continuar a Pago
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
 }
 

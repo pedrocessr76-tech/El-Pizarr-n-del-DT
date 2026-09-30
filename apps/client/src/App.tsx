@@ -15,6 +15,7 @@ import { B2bApp } from './pages/B2bApp';
 import { PwaOverlays } from './components/pwa/PwaOverlays';
 import { MobileTopBar } from './components/layout/MobileTopBar';
 import { MobileTabBar, type MobileTab } from './components/layout/MobileTabBar';
+import { PivotePage } from './pages/PivotePage';
 
 const MOBILE_TITLES: Record<ActiveTab, string> = {
   home: 'Inicio',
@@ -22,6 +23,7 @@ const MOBILE_TITLES: Record<ActiveTab, string> = {
   catalog: 'Historial y Cartas',
   history: 'Historial y Cartas',
   bracket: 'Copa Élite',
+  pivot: 'Jugador pivote',
 };
 
 const GAME_MOBILE_TABS: MobileTab<ActiveTab>[] = [
@@ -29,6 +31,7 @@ const GAME_MOBILE_TABS: MobileTab<ActiveTab>[] = [
   { id: 'builder', label: 'Equipo', icon: 'groups' },
   { id: 'catalog', label: 'Cartas', icon: 'style' },
   { id: 'bracket', label: 'Torneo', icon: 'emoji_events' },
+  { id: 'pivot', label: 'Pivote', icon: 'sports' },
 ];
 
 function App() {
@@ -109,6 +112,8 @@ function App() {
             onNavigate={(tab) => setActiveTab(tab)}
           />
         );
+      case 'pivot':
+        return <PivotePage onOpenLogin={() => setIsLoginOpen(true)} />;
       default:
         return <HomePage onNavigate={(tab) => setActiveTab(tab)} onOpenLogin={() => setIsLoginOpen(true)} />;
     }
