@@ -13,6 +13,9 @@ import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TYPE } from '../../a
 import { normalizeWhatsAppPhone } from '../phone';
 import { B2B_UNIT_OF_WORK } from '../../persistence/persistence.module';
 import { RepositoryPort, UnitOfWork, getRepositoryPortToken } from '../../persistence/repository.port';
+import { DisposableEmailService } from './disposable-email.service';
+import { EmailVerificationMailer } from './email-verification.mailer';
+import { EmailVerificationService } from './email-verification.service';
 
 const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OWNER]: 'Propietario',
@@ -20,6 +23,20 @@ const roleNames: Record<B2bRoleCode, string> = {
   [B2bRoleCode.OPERATOR]: 'Operador',
   [B2bRoleCode.CLIENT]: 'Cliente',
 };
+
+/**
+ * Login frenado por email sin verificar (#verificacion-de-email).
+ *
+ * Es una excepción propia y no un `ForbiddenException` genérico: el cliente la
+ * distingue por código para ofrecer "reenviar verificación" sin adivinar, y
+ * para que un login pendiente se entienda como algo transitorio y no como un
+ * rechazo de credenciales.
+ */
+export class EmailNotVerifiedException extends UnauthorizedException {
+  constructor() {
+    super('Verificá tu email para poder entrar. Te enviamos un enlace, revisá también la carpeta de spam.');
+  }
+}
 
 @Injectable()
 export class B2bAuthService {
@@ -32,12 +49,25 @@ export class B2bAuthService {
     @Inject(getRepositoryPortToken(B2bFacilityEntity, 'b2b')) private readonly facilities: RepositoryPort<B2bFacilityEntity>,
     private readonly jwt: JwtService,
     @Inject(B2B_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    private readonly verification: EmailVerificationService,
+    private readonly verificationMailer: EmailVerificationMailer,
+    private readonly disposableEmails: DisposableEmailService,
   ) {}
 
+  /**
+   * Login con verificación obligatoria de email (#verificacion-de-email).
+   *
+   * El orden importa: primero se valida la contraseña, después se mira si la
+   * cuenta está verificada. Al revés, el mensaje "verificá tu email" revelaría
+   * qué emails existen sin necesidad de la contraseña correcta.
+   */
   async login(email: string, password: string) {
     const user = await this.users.findOne({ where: { email: email.toLowerCase() } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+    if (!user.emailVerified) {
+      throw new EmailNotVerifiedException();
     }
     const assignments = await this.userRoles.find({ where: { userId: user.id, organizationId: user.organizationId } });
     return this.issueToken(user, assignments.map((assignment) => assignment.roleId));
@@ -90,6 +120,7 @@ export class B2bAuthService {
 
   async registerClient(input: { email: string; fullName: string; password: string; organizationId?: string }) {
     await this.ensureRoles();
+    this.assertEmailIsUsable(input.email);
     let organization = await this.organizations.findOne({ where: { status: B2bRecordStatus.ACTIVE } });
     if (input.organizationId) {
       const selected = await this.organizations.findOne({ where: { id: input.organizationId, status: B2bRecordStatus.ACTIVE } });
@@ -104,9 +135,17 @@ export class B2bAuthService {
       email,
       fullName: input.fullName,
       passwordHash: await bcrypt.hash(input.password, 12),
+      emailVerified: false,
     }));
     await this.userRoles.save({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.CLIENT });
-    return this.issueToken(user, [B2bRoleCode.CLIENT]);
+    // Sin sesión: el spec exige verificar antes de dar acceso, y devolver un
+    // access token acá equivaldría a saltar el paso.
+    await this.startVerification(user);
+    return {
+      email: user.email,
+      emailVerified: false,
+      message: 'Revisá tu email y seguí el enlace para activar la cuenta.',
+    };
   }
 
   /**
@@ -120,6 +159,7 @@ export class B2bAuthService {
       userId: user.id,
       organizationId: user.organizationId,
       email: user.email,
+      emailVerified: user.emailVerified,
       roles: await this.loadRoles(user.id, user.organizationId),
       whatsappPhone: user.whatsappPhone ?? null,
       whatsappOptIn: user.whatsappOptIn,
@@ -184,10 +224,17 @@ export class B2bAuthService {
    * Toda la creación corre en UNA transacción: si falla cualquier paso (usuario,
    * rol o sede), se revierte la organización y no queda un complejo huérfano sin
    * dueño.
+   *
+   * Como el resto de los registros, el owner nace sin verificar y SIN sesión
+   * (#verificacion-de-email): el email de verificación se manda recién después
+   * del commit. Mandarlo dentro de la transacción abriría la posibilidad de que
+   * un rollback dejara un enlace válido para un complejo que no existe.
    */
   async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
     await this.ensureRoles();
-    return this.unitOfWork.execute(async (repositories) => {
+    this.assertEmailIsUsable(input.email);
+
+    const owner = await this.unitOfWork.execute(async (repositories) => {
       const organizations = repositories.get(B2bOrganizationEntity);
       const users = repositories.get(B2bUserEntity);
       const userRoles = repositories.get(B2bUserRoleEntity);
@@ -197,20 +244,54 @@ export class B2bAuthService {
       const slug = await this.buildUniqueSlug(organizations, name);
       const email = input.email.toLowerCase();
       const organization = await organizations.save(organizations.create({ name, slug }));
-      const owner = await users.save(
+      const created = await users.save(
         users.create({
           organizationId: organization.id,
           email,
           fullName: input.ownerFullName.trim(),
           passwordHash: await bcrypt.hash(input.password, 12),
+          emailVerified: false,
         }),
       );
-      await userRoles.save({ userId: owner.id, organizationId: organization.id, roleId: B2bRoleCode.OWNER });
+      await userRoles.save({ userId: created.id, organizationId: organization.id, roleId: B2bRoleCode.OWNER });
       if (input.facilityName && input.facilityName.trim()) {
         await facilities.save(facilities.create({ organizationId: organization.id, name: input.facilityName.trim() }));
       }
-      return this.issueToken(owner, [B2bRoleCode.OWNER]);
+      return created;
     });
+
+    await this.startVerification(owner);
+    return {
+      organizationName: input.organizationName.trim(),
+      email: owner.email,
+      emailVerified: false,
+      message: 'Revisá tu email y seguí el enlace para activar el complejo.',
+    };
+  }
+
+  /**
+   * Emite un token de verificación y manda el email.
+   *
+   * Best-effort a propósito: si el envío falla, la cuenta ya existe y el
+   * reenvío la recupera. Tirar la excepción acá dejaría al usuario con una
+   * cuenta creada que el cliente cree que falló, y sin forma de entrar.
+   */
+  private async startVerification(user: B2bUserEntity): Promise<void> {
+    const token = await this.verification.issueToken(user.id);
+    await this.verificationMailer.send(user.email, user.fullName, token);
+  }
+
+  /**
+   * Frena los dominios desechables (#verificacion-de-email).
+   *
+   * El mensaje no menciona la lista ni el motivo real: el mismo texto sirve
+   * para "no existe" y "no permitido", así que no sirve de oráculo para descubrir
+   * qué dominios están bloqueados.
+   */
+  private assertEmailIsUsable(email: string): void {
+    if (this.disposableEmails.isDisposable(email)) {
+      throw new BadRequestException('No pudimos registrarte con ese email. Usá una dirección de correo válida.');
+    }
   }
 
   private slugify(name: string): string {
@@ -278,6 +359,7 @@ export class B2bAuthService {
    * al JWT):
    *  - el usuario debe existir, pertenecer a la org del token y estar ACTIVE;
    *  - el complejo debe existir y estar ACTIVE;
+   *  - el email debe estar verificado (#verificacion-de-email);
    *  - los roles se recalculan desde b2b_user_roles (nunca desde el token).
    *
    * Lanza UnauthorizedException si algo no cuadra. Lo usan la estrategia
@@ -293,6 +375,11 @@ export class B2bAuthService {
     });
     if (!user) throw invalid();
 
+    // El login ya frena las cuentas sin verificar, pero un refresh cookie de
+    // antes del deploy, o un token emitido por otra vía, no debe seguir
+    // sirviendo: la verificación es una condición de la sesión, no del login.
+    if (!user.emailVerified) throw new EmailNotVerifiedException();
+
     const organization = await this.organizations.findOne({
       where: { id: payload.organizationId, status: B2bRecordStatus.ACTIVE },
     });
@@ -305,5 +392,48 @@ export class B2bAuthService {
     if (roles.length === 0) throw invalid();
 
     return { userId: user.id, organizationId: user.organizationId, email: user.email, roles };
+  }
+
+  /**
+   * Canjea un token de verificación (#verificacion-de-email).
+   *
+   * Acepta el token por body o por query porque el enlace del email es un GET
+   * del navegador: la query es lo que llega solo, y el body lo usan el cliente
+   * y los tests.
+   */
+  async verifyEmail(token: string) {
+    const result = await this.verification.verifyToken(EmailVerificationService.assertTokenShape(token));
+    if (!result.ok) {
+      throw new BadRequestException(EmailVerificationService.messageFor(result.reason ?? 'invalid'));
+    }
+    return { verified: true, message: 'Email verificado. Ya podés entrar.' };
+  }
+
+  /**
+   * Reenvía el email de verificación.
+   *
+   * La respuesta es idéntica exista la cuenta o no, y el trabajo real se hace
+   * solo si corresponde. Responder distinto convertiría este endpoint en un
+   * oráculo de qué emails están registrados.
+   *
+   * El dominio desechable se filtra acá y no en el envío: repetir el mismo
+   * rechazo genérico que en el registro, sin revelar la lista.
+   */
+  async resendVerification(email: string) {
+    const normalized = email.toLowerCase();
+    const generic = { message: 'Si esa cuenta existe y necesita verificación, te enviamos un email nuevo.' };
+
+    if (this.disposableEmails.isDisposable(normalized)) {
+      throw new BadRequestException('No pudimos registrarte con ese email. Usá una dirección de correo válida.');
+    }
+
+    // El mismo `find` que usa el login: el email es único por complejo, así que
+    // una dirección dada corresponde a una sola cuenta.
+    const user = await this.users.findOne({ where: { email: normalized } });
+    if (!user || user.emailVerified) return generic;
+
+    const token = await this.verification.issueToken(user.id);
+    await this.verificationMailer.send(user.email, user.fullName, token);
+    return generic;
   }
 }

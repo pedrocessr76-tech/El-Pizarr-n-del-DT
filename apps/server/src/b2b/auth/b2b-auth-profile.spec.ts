@@ -24,7 +24,10 @@ describe('B2bAuthService - perfil y contacto de WhatsApp (getProfile/updateProfi
     const facilities = {};
     const jwt = { sign: jest.fn() };
     const dataSource = { transaction: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    const verification = { issueToken: jest.fn(), verifyToken: jest.fn(), markVerified: jest.fn() };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => false) };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never, verification as never, verificationMailer as never, disposableEmails as never);
     return { service, users, organizations, userRoles };
   }
 
@@ -35,6 +38,7 @@ describe('B2bAuthService - perfil y contacto de WhatsApp (getProfile/updateProfi
     fullName: 'Martina',
     passwordHash: 'x',
     status: B2bRecordStatus.ACTIVE,
+    emailVerified: true,
     whatsappPhone: null,
     whatsappOptIn: false,
   };
@@ -48,6 +52,7 @@ describe('B2bAuthService - perfil y contacto de WhatsApp (getProfile/updateProfi
       userId: 'user-1',
       organizationId: org,
       email: 'cliente@correo.com',
+      emailVerified: true,
       roles: [B2bRoleCode.CLIENT],
       whatsappPhone: '+5491155551234',
       whatsappOptIn: true,
@@ -107,7 +112,10 @@ describe('B2bAuthService - contacto de la organización (updateOrganizationConta
     const facilities = {};
     const jwt = { sign: jest.fn() };
     const dataSource = { transaction: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never);
+    const verification = { issueToken: jest.fn(), verifyToken: jest.fn(), markVerified: jest.fn() };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => false) };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, dataSource as never, verification as never, verificationMailer as never, disposableEmails as never);
     return { service, organizations };
   }
 

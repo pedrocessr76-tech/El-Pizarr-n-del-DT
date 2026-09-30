@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
+import { B2bEmailVerificationTokenEntity } from './entities/email-verification-token.entity';
 import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
 import { B2bBookingReminderEntity } from './entities/booking-reminder.entity';
@@ -38,6 +39,7 @@ export const B2B_ENTITIES = [
   B2bBookingReminderEntity,
   B2bBookingEventEntity,
   B2bNotificationEntity,
+  B2bEmailVerificationTokenEntity,
 ];
 
 @Module({
