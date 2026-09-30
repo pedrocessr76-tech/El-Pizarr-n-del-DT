@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { NotificationBell } from './NotificationBell';
 
-export type ActiveTab = 'home' | 'builder' | 'catalog' | 'bracket' | 'history';
+export type ActiveTab = 'home' | 'builder' | 'catalog' | 'bracket' | 'history' | 'pivot';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -17,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab, onOpenLo
     { id: 'builder', label: 'Formación y Equipo', icon: 'tactics' },
     { id: 'catalog', label: 'Historial y Cartas', icon: 'style' },
     { id: 'bracket', label: 'Copa Élite', icon: 'emoji_events' },
+    { id: 'pivot', label: 'Jugador pivote', icon: 'sports' },
   ];
 
   return (

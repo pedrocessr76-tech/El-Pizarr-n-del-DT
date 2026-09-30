@@ -205,7 +205,9 @@ export class B2bManagementService {
       this.shifts.find({ where: { organizationId: user.organizationId, courtId, startsAt: betweenValues(startsAt, endsAt), status: ShiftStatus.AVAILABLE }, order: { startsAt: 'ASC' } }),
       this.blocks.find({ where: { organizationId: user.organizationId, courtId } }),
     ]);
-    return shifts.filter((shift) => !blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt));
+    return shifts
+      .filter((shift) => new Date(shift.startsAt).getTime() > Date.now())
+      .filter((shift) => !blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt));
   }
 
   /**
@@ -347,7 +349,7 @@ export class B2bManagementService {
           where: { id: input.shiftId, courtId: input.courtId, organizationId: user.organizationId },
           lock: { mode: 'pessimistic_write' },
         });
-        if (!shift || shift.status !== ShiftStatus.AVAILABLE) throw new ConflictException('El turno no está disponible');
+        if (!shift || shift.status !== ShiftStatus.AVAILABLE || new Date(shift.startsAt).getTime() <= Date.now()) throw new ConflictException('El turno no está disponible o ya pasó');
         await this.assertUnblocked(shift, repositories.get(B2bAvailabilityBlockEntity));
         const existing = await bookings.find({ where: { shiftId: shift.id, status: inValues([BookingStatus.PENDING, BookingStatus.CONFIRMED]) } }).then((items) => items[0] ?? null);
         if (existing) throw new ConflictException('El turno ya fue reservado');

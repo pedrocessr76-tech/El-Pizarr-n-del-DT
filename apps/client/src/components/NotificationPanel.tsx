@@ -12,6 +12,7 @@ const ICON_BY_TYPE: Partial<Record<NotificationType, string>> = {
   tournament_end: 'military_tech',
   achievement_unlocked: 'celebration',
   system_maintenance: 'report',
+  pivot_contact_request: 'sports',
 };
 
 const SEVERITY_DOT: Record<Severity, string> = {

@@ -110,4 +110,27 @@ describe('Horarios y bloqueos', () => {
     });
     expect(await service.availability(user, 'court', from, to)).toHaveLength(1);
   });
+
+  it('excluye turnos en el pasado de la disponibilidad y rechaza reservarlos', async () => {
+    const { service, generated } = setup();
+    const pastStart = new Date(Date.now() - 7200000);
+    const pastEnd = new Date(Date.now() - 3600000);
+    generated.push({
+      id: 'past-shift',
+      organizationId: 'org',
+      courtId: 'court',
+      startsAt: pastStart,
+      endsAt: pastEnd,
+      status: ShiftStatus.AVAILABLE,
+      priceCentsArs: 10000,
+    } as B2bShiftEntity);
+
+    const from = new Date(Date.now() - 86400000).toISOString();
+    const to = new Date(Date.now() + 86400000).toISOString();
+    const available = await service.availability(user, 'court', from, to);
+    expect(available.some((s) => s.id === 'past-shift')).toBe(false);
+
+    await expect(service.createBooking(user, { courtId: 'court', shiftId: 'past-shift' }))
+      .rejects.toThrow(new ConflictException('El turno no está disponible o ya pasó'));
+  });
 });
