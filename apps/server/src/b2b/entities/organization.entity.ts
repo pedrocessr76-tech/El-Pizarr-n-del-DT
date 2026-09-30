@@ -30,8 +30,20 @@ export class B2bOrganizationEntity {
   @Column({ type: 'boolean', default: false })
   whatsappOptIn!: boolean;
 
-  /** Anticipaciones de recordatorios automáticos, en minutos antes del turno. */
-  @Column({ type: 'jsonb', default: () => "'[1440, 60]'::jsonb" })
+  /**
+   * Anticipaciones de los recordatorios que el servidor envía solo, en minutos
+   * antes del turno. El aviso con antelación llega por email: es un canal que
+   * no necesita proveedor pago ni que nadie esté mirando el dashboard.
+   */
+  @Column({ type: 'jsonb', default: () => "'[1440]'::jsonb" })
+  emailReminderIntervalsMinutes!: number[];
+
+  /**
+   * Anticipaciones de los avisos cortos, en minutos antes del turno. El servidor
+   * no envía WhatsApp: deja el aviso pendiente y el staff lo despacha desde el
+   * dashboard con un deep link (#34).
+   */
+  @Column({ type: 'jsonb', default: () => "'[30]'::jsonb" })
   whatsappReminderIntervalsMinutes!: number[];
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
