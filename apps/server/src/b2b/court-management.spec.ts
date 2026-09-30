@@ -10,6 +10,8 @@ describe('Gestión de canchas', () => {
 
   function setup() {
     const savedCourts: Array<Record<string, unknown>> = [];
+    const savedShifts: Array<Record<string, unknown>> = [];
+    const savedRules: Array<Record<string, unknown>> = [];
     const facilities = { findOneBy: jest.fn().mockResolvedValue({ id: 'facility', organizationId: 'org' }) };
     const courts = {
       findOneBy: jest.fn(async ({ id }: { id: string }) =>
@@ -24,12 +26,20 @@ describe('Gestión de canchas', () => {
     };
     const rules = {
       create: jest.fn((row) => ({ id: 'rule', ...row })),
-      save: jest.fn(async (rows) => rows),
-      find: jest.fn(async () => []),
+      save: jest.fn(async (rows) => {
+        savedRules.push(...rows);
+        return rows;
+      }),
+      // Devuelve lo persistido para que la generación de turnos vea las mismas
+      // reglas que después releer de la base.
+      find: jest.fn(async () => savedRules),
     };
     const shifts = {
       create: jest.fn((row) => ({ id: 'shift', ...row })),
-      save: jest.fn(async (rows) => rows),
+      save: jest.fn(async (rows) => {
+        savedShifts.push(...rows);
+        return rows;
+      }),
       findOne: jest.fn(async () => null),
     };
     const notifications = {
@@ -45,8 +55,35 @@ describe('Gestión de canchas', () => {
       { transaction: jest.fn() } as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
-    return { service, courts, savedCourts };
+    return { service, courts, savedCourts, savedShifts, rules };
   }
+
+  it('alta la cancha con la agenda automática de 15:00 a 23:00 los 7 días', async () => {
+    const { service, rules } = setup();
+
+    await service.createCourt(user, 'facility', { name: 'Cancha A', sportType: 'FUTBOL 5', defaultPriceCentsArs: 12000 });
+
+    // 8 horarios (15 a 22) por cada uno de los 7 días.
+    expect(rules.save).toHaveBeenCalledTimes(1);
+    const saved = rules.save.mock.calls[0][0] as Array<Record<string, unknown>>;
+    expect(saved).toHaveLength(8 * 7);
+
+    // Cada regla es UN turno, no una franja: si no, el generador de turnos sólo
+    // abriría el primer horario del día.
+    expect(new Set(saved.map((rule) => rule.startTime))).toEqual(
+      new Set(['15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00']),
+    );
+    expect(new Set(saved.map((rule) => rule.weekday))).toEqual(new Set([0, 1, 2, 3, 4, 5, 6]));
+
+    const slot = (startTime: string) => saved.find((rule) => rule.startTime === startTime)!;
+    for (const hour of [15, 16, 17, 18, 19, 20, 21, 22]) {
+      const rule = slot(`${String(hour).padStart(2, '0')}:00`);
+      expect(rule.endTime).toBe(`${String(hour + 1).padStart(2, '0')}:00`);
+      expect(rule.durationHours).toBe(1);
+      // El precio sale de la cancha, para que agendar no cueste nada extra.
+      expect(rule.priceCentsArs).toBe(12000);
+    }
+  });
 
   it('deriva la capacidad según el tamaño (Fútbol 7 → 14)', async () => {
     const { service, savedCourts } = setup();
@@ -54,6 +91,25 @@ describe('Gestión de canchas', () => {
     expect(court.capacity).toBe(14);
     expect(court.sportType).toBe('FUTBOL 7');
     expect(savedCourts[0].capacity).toBe(14);
+  });
+
+  it('genera turnos reservables de 15 a 23 en los 7 días siguientes', async () => {
+    const { service, savedShifts } = setup();
+
+    await service.createCourt(user, 'facility', { name: 'Cancha A', sportType: 'FUTBOL 5', defaultPriceCentsArs: 12000 });
+
+    // 8 tramos de una hora por día (15 a 23) durante 7 días.
+    expect(savedShifts).toHaveLength(8 * 7);
+    for (const shift of savedShifts) {
+      expect(shift.priceCentsArs).toBe(12000);
+      expect(shift.status).toBe('AVAILABLE');
+      const start = new Date(shift.startsAt as string);
+      const end = new Date(shift.endsAt as string);
+      expect(end.getTime() - start.getTime()).toBe(60 * 60 * 1000);
+      // Ningún turno arranca antes de las 15:00 ni termina después de las 23:00.
+      expect(start.getHours()).toBeGreaterThanOrEqual(15);
+      expect(end.getHours()).toBeLessThanOrEqual(23);
+    }
   });
 
   it('deriva la capacidad según el tamaño (Fútbol 11 → 22)', async () => {

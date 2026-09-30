@@ -23,8 +23,32 @@ import { B2bJwtUser } from './auth/b2b-auth.types';
 import { canChangeBookingStatus, canSendWhatsApp, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from './domain-policy';
 import { B2bNotificationsService, B2bNotifyOptions } from './notifications/b2b-notifications.service';
 import { MessagingService } from './messaging/messaging.service';
-import { WhatsAppMessageKind } from './messaging/messaging.types';
+import { MessageKind } from './messaging/messaging.types';
 import { addOrgDays, addOrgHours, orgDateString, orgParts, orgTimeString, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
+
+const MAX_REMINDER_INTERVALS = 5;
+const MAX_REMINDER_INTERVAL_MINUTES = 7 * 24 * 60;
+
+/**
+ * Franja con la que nace agenda una cancha nueva: todos los días, de 15:00 a
+ * 23:00, en turnos de una hora. Centralizado acá para que el nombre del negocio
+ * (qué hora abre) no esté repetido en la lógica.
+ */
+const DEFAULT_COURT_START_HOUR = 15;
+const DEFAULT_COURT_SLOTS = 8; // 15, 16, ... 22 -> último turno cierra 23:00
+
+/**
+ * Normaliza una lista de anticipaciones (#34). Una lista vacía es válida y
+ * significa "no generar recordatorios por este canal"; cualquier otro valor
+ * inválido se rechaza conservando la configuración previa.
+ */
+function validateReminderIntervals(intervals: number[]): number[] {
+  if (!Array.isArray(intervals) || intervals.length > MAX_REMINDER_INTERVALS ||
+      intervals.some((minutes) => !Number.isInteger(minutes) || minutes < 5 || minutes > MAX_REMINDER_INTERVAL_MINUTES)) {
+    throw new BadRequestException(`Elegí hasta ${MAX_REMINDER_INTERVALS} anticipaciones de 5 minutos a 7 días, o una lista vacía.`);
+  }
+  return [...new Set(intervals)].sort((a, b) => b - a);
+}
 
 @Injectable()
 export class B2bManagementService {
@@ -48,16 +72,19 @@ export class B2bManagementService {
     return this.organizations.findOneByOrFail({ id: user.organizationId });
   }
 
-  async updateOrganization(user: B2bJwtUser, input: { name?: string; address?: string; whatsappReminderIntervalsMinutes?: number[] }) {
+  async updateOrganization(user: B2bJwtUser, input: {
+    name?: string;
+    address?: string;
+    emailReminderIntervalsMinutes?: number[];
+    whatsappReminderIntervalsMinutes?: number[];
+  }) {
     const organization = await this.getOrganization(user);
     if (input.name) organization.name = input.name;
+    if (input.emailReminderIntervalsMinutes !== undefined) {
+      organization.emailReminderIntervalsMinutes = validateReminderIntervals(input.emailReminderIntervalsMinutes);
+    }
     if (input.whatsappReminderIntervalsMinutes !== undefined) {
-      const intervals = input.whatsappReminderIntervalsMinutes;
-      if (!Array.isArray(intervals) || intervals.length < 1 || intervals.length > 5 ||
-          intervals.some((minutes) => !Number.isInteger(minutes) || minutes < 5 || minutes > 7 * 24 * 60)) {
-        throw new BadRequestException('Elegí entre 1 y 5 anticipaciones de 5 minutos a 7 días.');
-      }
-      organization.whatsappReminderIntervalsMinutes = [...new Set(intervals)].sort((a, b) => b - a);
+      organization.whatsappReminderIntervalsMinutes = validateReminderIntervals(input.whatsappReminderIntervalsMinutes);
     }
     return this.organizations.save(organization);
   }
@@ -98,12 +125,32 @@ export class B2bManagementService {
       capacity: input.capacity ?? deriveCourtCapacity(sportType),
       defaultPriceCentsArs: input.defaultPriceCentsArs,
     }));
-    // Agenda inicial automática: regla diaria 09:00–23:00 (tramos de 1 h) y
-    // turnos generados para los próximos 7 días, para que la cancha se pueda
-    // reservar de inmediato sin configuración manual.
+    // Agenda inicial automática: todos los días de 15:00 a 23:00 en turnos de 1 h,
+    // más los turnos concretos de los próximos 7 días, para que la cancha se
+    // pueda reservar de inmediato sin configuración manual.
+    //
+    // Una regla es UN turno, no una franja: el generador usa el startTime de la
+    // regla y su duración, así que una sola regla 15:00–23:00 abriría únicamente
+    // el primer horario (15–16) y dejaría el resto de la tarde sin turnos.
+    const defaultSlots = Array.from({ length: DEFAULT_COURT_SLOTS }, (_, i) => {
+      const hour = DEFAULT_COURT_START_HOUR + i;
+      return {
+        startTime: `${String(hour).padStart(2, '0')}:00`,
+        endTime: `${String(hour + 1).padStart(2, '0')}:00`,
+      };
+    });
     await this.shiftRules.save(
-      Array.from({ length: 7 }, (_, weekday) =>
-        this.shiftRules.create({ courtId: court.id, weekday, startTime: '09:00', endTime: '23:00', durationHours: 1, priceCentsArs: court.defaultPriceCentsArs }),
+      defaultSlots.flatMap((slot) =>
+        // 0 = domingo (ver `orgParts`): un slot por día de la semana.
+        Array.from({ length: 7 }, (_, weekday) =>
+          this.shiftRules.create({
+            courtId: court.id,
+            weekday,
+            ...slot,
+            durationHours: 1,
+            priceCentsArs: court.defaultPriceCentsArs,
+          }),
+        ),
       ),
     );
     const timezone = await this.orgTimezone(user.organizationId);
@@ -480,7 +527,7 @@ export class B2bManagementService {
     const date = orgDateString(shift.startsAt, timeZone);
     let delivered = false;
     try {
-      const result = await this.messaging.send(
+      const result = await this.messaging.sendWhatsApp(
         organization.whatsappPhone,
         `${clientName} confirmó asistencia al turno de las ${hour} en ${court?.name ?? 'la cancha'} (${date}).`,
         'reminder',
@@ -502,7 +549,7 @@ export class B2bManagementService {
   private async sendBookingWhatsApp(
     audience: 'client' | 'organization',
     booking: B2bBookingEntity,
-    kind: WhatsAppMessageKind,
+    kind: MessageKind,
     context: string,
   ) {
     try {
@@ -526,7 +573,7 @@ export class B2bManagementService {
       const body = audience === 'client'
         ? `Tu reserva en ${courtName} del ${timeLabel} fue confirmada por ${orgName}. ${this.summaryLine(booking)}`
         : `${clientName} confirmó asistencia al turno de las ${timeLabel.split(' a las ')[1] ?? timeLabel} en ${courtName} (${orgName}).`;
-      await this.messaging.send(phone, body, kind, { bookingId: booking.id });
+      await this.messaging.sendWhatsApp(phone, body, kind, { bookingId: booking.id });
     } catch (error) {
       this.logger.error(`sendBookingWhatsApp (${context}, ${booking.id}): ${(error as Error)?.message ?? error}`);
     }
