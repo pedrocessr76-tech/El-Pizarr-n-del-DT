@@ -592,7 +592,6 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
   if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} timezone={timezone} lastBooking={lastBooking} selectedShift={selectedShift} duration={duration} organizationName={selectedOrgName} />;
   if (view === 'bookings') return <ClientBookingsView timezone={timezone} onBack={() => onNavigate('portal')} />;
   if (view === 'profile') return <ProfileView role="client" onBack={() => onNavigate('portal')} />;
-    const demoCourts = courts.length ? courts : [{ id: 'placeholder', name: 'Sin canchas todavía', sportType: 'Seleccioná un complejo', defaultPriceCentsArs: 0 }];
   const reserve = async (courtId: string, shiftId?: string) => {
     if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
     try {
