@@ -19,6 +19,7 @@ import { B2bManagementController } from './b2b-management.controller';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
 import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
+import { B2bPivotModule } from './pivot/b2b-pivot.module';
 import { MessagingModule } from './messaging/messaging.module';
 
 export const B2B_ENTITIES = [
@@ -38,7 +39,7 @@ export const B2B_ENTITIES = [
 ];
 
 @Module({
-  imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
+  imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, B2bPivotModule, MessagingModule],
   controllers: [B2bManagementController],
   providers: [B2bManagementService, B2bSeedService, BookingRemindersService],
   exports: [B2bManagementService],
