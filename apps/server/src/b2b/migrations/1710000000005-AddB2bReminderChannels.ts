@@ -17,7 +17,7 @@ export class AddB2bReminderChannels1710000000005 implements MigrationInterface {
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE b2b_organizations ADD COLUMN IF NOT EXISTS "emailReminderIntervalsMinutes" jsonb NOT NULL DEFAULT '[1440]'::jsonb`,
+      `ALTER TABLE b2b_organizations ADD COLUMN "emailReminderIntervalsMinutes" jsonb NOT NULL DEFAULT '[1440]'::jsonb`,
     );
     // Los valores previos incluían 1440 y 60. 1440 pasa a ser de email; en
     // WhatsApp queda solo la anticipación corta que el staff despacha.
@@ -29,7 +29,7 @@ export class AddB2bReminderChannels1710000000005 implements MigrationInterface {
     );
 
     await queryRunner.query(
-      `ALTER TABLE b2b_booking_reminders ADD COLUMN IF NOT EXISTS "channel" varchar(20) NOT NULL DEFAULT 'whatsapp'`,
+      `ALTER TABLE b2b_booking_reminders ADD COLUMN "channel" varchar(20) NOT NULL DEFAULT 'whatsapp'`,
     );
     // Backfill explícito antes de volver única la clave por canal.
     await queryRunner.query(`UPDATE b2b_booking_reminders SET "channel" = 'whatsapp' WHERE "channel" IS NULL`);
@@ -38,7 +38,7 @@ export class AddB2bReminderChannels1710000000005 implements MigrationInterface {
       `ALTER TABLE b2b_booking_reminders DROP CONSTRAINT IF EXISTS uq_b2b_booking_reminder_interval`,
     );
     await queryRunner.query(
-      `ALTER TABLE b2b_booking_reminders DROP INDEX IF EXISTS "IDX_b2b_booking_reminders_channel"`,
+      `DROP INDEX IF EXISTS "IDX_b2b_booking_reminders_channel"`,
     );
     await queryRunner.query(
       `CREATE UNIQUE INDEX IF NOT EXISTS "IDX_b2b_booking_reminders_channel" ON b2b_booking_reminders ("bookingId", "channel", "minutesBefore")`,
@@ -59,10 +59,10 @@ export class AddB2bReminderChannels1710000000005 implements MigrationInterface {
       `ALTER TABLE b2b_booking_reminders ADD CONSTRAINT uq_b2b_booking_reminder_interval UNIQUE ("bookingId", "minutesBefore")`,
     );
     await queryRunner.query(
-      `ALTER TABLE b2b_booking_reminders DROP COLUMN IF EXISTS "channel"`,
+      `ALTER TABLE b2b_booking_reminders DROP COLUMN "channel"`,
     );
     await queryRunner.query(
-      `ALTER TABLE b2b_organizations DROP COLUMN IF EXISTS "emailReminderIntervalsMinutes"`,
+      `ALTER TABLE b2b_organizations DROP COLUMN "emailReminderIntervalsMinutes"`,
     );
   }
 }
