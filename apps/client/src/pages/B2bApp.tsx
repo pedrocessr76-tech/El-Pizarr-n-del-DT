@@ -460,7 +460,6 @@ function DashboardView({ bookingRows, onNavigate, onSelectBooking, timezone }: {
     const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', timeZone: timezone });
     return { key, label };
   });
-
   const openShiftBooking = (courtId: string, lane: B2bWeeklyAvailability['lanes'][number]) => {
     setFilterCourtId(courtId);
     const startsAt = new Date(lane.startsAt).getTime();
