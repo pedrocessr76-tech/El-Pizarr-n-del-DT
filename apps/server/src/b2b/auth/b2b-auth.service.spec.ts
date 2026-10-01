@@ -17,7 +17,7 @@ describe('B2bAuthService - resolveUserFromToken', () => {
     roles: [B2bRoleCode.OPERATOR], // roles del token: deben ignorarse
   };
 
-  const activeUser = { id: 'user-1', organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE };
+  const activeUser = { id: 'user-1', organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE, emailVerified: true };
 
   function setup({ user = null, organization = null, assignments = [] }: { user?: any; organization?: any; assignments?: any[] }) {
     const users = {
@@ -43,7 +43,10 @@ describe('B2bAuthService - resolveUserFromToken', () => {
     const facilities = {};
     const jwt = { sign: jest.fn() };
     const unitOfWork = { execute: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
+    const verification = { issueToken: jest.fn(), verifyToken: jest.fn(), markVerified: jest.fn() };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => false) };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never, verification as never, verificationMailer as never, disposableEmails as never);
     return { service, users, organizations, userRoles };
   }
 
@@ -140,8 +143,11 @@ describe('B2bAuthService - onboardOwner', () => {
     const unitOfWork = {
       execute: jest.fn(async (work: any) => work({ get: (entity: any) => manager.getRepository(entity) })),
     };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
-    return { service, organizations, users, userRoles, facilities, manager, unitOfWork };
+    const verification = { issueToken: jest.fn(async () => 'token-verificacion'), verifyToken: jest.fn(), markVerified: jest.fn() };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => false) };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never, verification as never, verificationMailer as never, disposableEmails as never);
+    return { service, organizations, users, userRoles, facilities, manager, unitOfWork, verification, verificationMailer, disposableEmails };
   }
 
   const input = {
@@ -152,13 +158,14 @@ describe('B2bAuthService - onboardOwner', () => {
     password: 'clave-segura-2026',
   };
 
-  it('crea la organización con su slug único, la cuenta OWNER, la sede y emite token', async () => {
-    const { service, organizations, users, userRoles, facilities } = setup();
+  it('crea la organización con su slug único, la cuenta OWNER sin verificar y la sede', async () => {
+    const { service, organizations, users, userRoles, facilities, verification, verificationMailer } = setup();
 
     const result = await service.onboardOwner(input);
 
-    expect(result.user.roles).toEqual([B2bRoleCode.OWNER]);
-    expect(result.accessToken).toBe('jwt-firmado');
+    // Sin sesión: el owner tiene que verificar su email antes de entrar.
+    expect(result.emailVerified).toBe(false);
+    expect(result).not.toHaveProperty('accessToken');
     expect(organizations.save).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Complejo Los Amigos', slug: 'complejo-los-amigos' }),
     );
@@ -168,6 +175,7 @@ describe('B2bAuthService - onboardOwner', () => {
         email: 'dueno@amigos.com',
         fullName: 'Carlos Bianchi',
         passwordHash: expect.any(String),
+        emailVerified: false,
       }),
     );
     expect(userRoles.save).toHaveBeenCalledWith({
@@ -178,6 +186,17 @@ describe('B2bAuthService - onboardOwner', () => {
     expect(facilities.save).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: 'org-nueva', name: 'Sede Central' }),
     );
+    // El email sale recién después del commit, no dentro de la transacción.
+    expect(verification.issueToken).toHaveBeenCalledWith('user-nuevo');
+    expect(verificationMailer.send).toHaveBeenCalledWith('dueno@amigos.com', 'Carlos Bianchi', 'token-verificacion');
+  });
+
+  it('bloquea el onboarding con un dominio de correo desechable sin crear nada', async () => {
+    const { service, organizations, disposableEmails } = setup();
+    disposableEmails.isDisposable.mockReturnValue(true);
+
+    await expect(service.onboardOwner({ ...input, email: 'alguien@mailinator.com' })).rejects.toThrow(/dirección de correo válida/);
+    expect(organizations.save).not.toHaveBeenCalled();
   });
 
   it('resuelve slugs únicos agregando sufijo numérico ante colisiones', async () => {
@@ -234,7 +253,7 @@ describe('B2bAuthService - refresh', () => {
         if (!userId) return null;
         if (where.id && where.id !== userId) return null;
         if (where.organizationId && where.organizationId !== org) return null;
-        return { id: userId, organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE };
+        return { id: userId, organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE, emailVerified: true };
       }),
     };
     const organizations = {
@@ -253,7 +272,10 @@ describe('B2bAuthService - refresh', () => {
       verify: jest.fn(() => claims),
     };
     const unitOfWork = { execute: jest.fn() };
-    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never);
+    const verification = { issueToken: jest.fn(), verifyToken: jest.fn(), markVerified: jest.fn() };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => false) };
+    const service = new B2bAuthService(organizations as never, roles as never, users as never, userRoles as never, courts as never, facilities as never, jwt as never, unitOfWork as never, verification as never, verificationMailer as never, disposableEmails as never);
     return { service, users, organizations, jwt };
   }
 
@@ -283,5 +305,133 @@ describe('B2bAuthService - refresh', () => {
 
     await expect(service.refresh('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
     expect(jwt.verify).toHaveBeenCalled();
+  });
+});
+
+// Verificación obligatoria de email (#verificacion-de-email): el login queda
+// bloqueado hasta confirmar la dirección, y el reenvío no revela qué emails
+// existen. El mock de bcrypt va en el setup para que la contraseña siempre
+// entre bien: lo que se prueba acá es la verificación, no el hash.
+describe('B2bAuthService - verificación de email', () => {
+  const org = 'org-1';
+
+  function setup({ user = null, disposable = false }: { user?: any; disposable?: boolean }) {
+    const users = { findOne: jest.fn(async () => user) };
+    const organizations = {};
+    const roles = { upsert: jest.fn() };
+    const userRoles = { find: jest.fn().mockResolvedValue([]) };
+    const courts = {};
+    const facilities = {};
+    const jwt = { sign: jest.fn(() => 'jwt-firmado') };
+    const unitOfWork = { execute: jest.fn() };
+    const verification = {
+      issueToken: jest.fn(async () => 'token-verificacion'),
+      verifyToken: jest.fn(async (): Promise<{ ok: boolean; userId?: string; reason?: string }> => ({ ok: true, userId: 'user-1' })),
+      markVerified: jest.fn(),
+    };
+    const verificationMailer = { send: jest.fn() };
+    const disposableEmails = { isDisposable: jest.fn(() => disposable) };
+    const service = new B2bAuthService(
+      organizations as never, roles as never, users as never, userRoles as never, courts as never,
+      facilities as never, jwt as never, unitOfWork as never, verification as never,
+      verificationMailer as never, disposableEmails as never,
+    );
+    return { service, jwt, verification, verificationMailer };
+  }
+
+  const unverified = {
+    id: 'user-1', organizationId: org, email: 'x@correo.com', fullName: 'Ana',
+    passwordHash: 'hash', emailVerified: false,
+  };
+
+  beforeEach(() => {
+    jest.spyOn(require('bcryptjs'), 'compare').mockResolvedValue(true);
+  });
+
+  it('rechaza el login de una cuenta sin verificar pidiendo verificar el email', async () => {
+    const { service } = setup({ user: unverified });
+
+    await expect(service.login('x@correo.com', '123456')).rejects.toThrow(/Verific/);
+  });
+
+  it('no emite ninguna sesión para una cuenta sin verificar', async () => {
+    const { service, jwt } = setup({ user: unverified });
+
+    await expect(service.login('x@correo.com', '123456')).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(jwt.sign).not.toHaveBeenCalled();
+  });
+
+  it('no revela que el email existe cuando la contraseña está mal', async () => {
+    jest.spyOn(require('bcryptjs'), 'compare').mockResolvedValue(false);
+    const { service } = setup({ user: unverified });
+
+    // Mismo tipo de error que el caso sin verificar: no se lo usa de oráculo.
+    await expect(service.login('x@correo.com', 'mala')).rejects.toThrow('Credenciales inválidas');
+  });
+
+  it('deja entrar a una cuenta verificada', async () => {
+    const { service, jwt } = setup({ user: { ...unverified, emailVerified: true } });
+
+    const session = await service.login('x@correo.com', '123456');
+
+    expect(session.accessToken).toBe('jwt-firmado');
+    expect(jwt.sign).toHaveBeenCalled();
+  });
+
+  it('bloquea también la renovación de sesión de una cuenta sin verificar', async () => {
+    const { service } = setup({ user: unverified });
+
+    await expect(service.resolveUserFromToken({
+      userId: 'user-1', organizationId: org, email: 'x@correo.com', roles: [B2bRoleCode.CLIENT],
+    })).rejects.toThrow(/Verific/);
+  });
+
+  it('verifica el token y confirma la cuenta', async () => {
+    const { service, verification } = setup({ user: unverified });
+    const token = 'a'.repeat(64);
+
+    const result = await service.verifyEmail(token);
+
+    expect(result.verified).toBe(true);
+    expect(verification.verifyToken).toHaveBeenCalledWith(token);
+  });
+
+  it('traduce el motivo del fallo a un mensaje que ofrecer reenviar', async () => {
+    const { service, verification } = setup({ user: unverified });
+    verification.verifyToken.mockResolvedValueOnce({ ok: false, reason: 'expired' });
+
+    await expect(service.verifyEmail('a'.repeat(64))).rejects.toThrow(/venció/);
+  });
+
+  it('el reenvío responde igual exista o no la cuenta', async () => {
+    const conCuenta = await setup({ user: unverified }).service.resendVerification('x@correo.com');
+    const sinCuenta = await setup({ user: null }).service.resendVerification('nadie@correo.com');
+
+    expect(conCuenta).toEqual(sinCuenta);
+  });
+
+  it('el reenvío no manda nada si la cuenta ya está verificada', async () => {
+    const { service, verification, verificationMailer } = setup({ user: { ...unverified, emailVerified: true } });
+
+    await service.resendVerification('x@correo.com');
+
+    expect(verification.issueToken).not.toHaveBeenCalled();
+    expect(verificationMailer.send).not.toHaveBeenCalled();
+  });
+
+  it('el reenvío manda un token nuevo para una cuenta pendiente', async () => {
+    const { service, verification, verificationMailer } = setup({ user: unverified });
+
+    await service.resendVerification('x@correo.com');
+
+    expect(verification.issueToken).toHaveBeenCalledWith('user-1');
+    expect(verificationMailer.send).toHaveBeenCalledWith('x@correo.com', unverified.fullName, 'token-verificacion');
+  });
+
+  it('el reenvío con dominio desechable se rechaza sin revelar la lista', async () => {
+    const { service, verificationMailer } = setup({ user: null, disposable: true });
+
+    await expect(service.resendVerification('x@mailinator.com')).rejects.toThrow(/dirección de correo válida/);
+    expect(verificationMailer.send).not.toHaveBeenCalled();
   });
 });

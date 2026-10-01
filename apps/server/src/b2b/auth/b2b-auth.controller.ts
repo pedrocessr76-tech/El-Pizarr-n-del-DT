@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
@@ -82,6 +82,21 @@ class LoginB2bDto {
   password!: string;
 }
 
+class VerifyEmailDto {
+  @ApiProperty({ required: false, example: 'a1b2c3…', description: 'Token de 64 hex. Opcional si viene por query en el enlace del email.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  token?: string;
+}
+
+class ResendVerificationDto {
+  @ApiProperty({ example: 'pedrocessr76@gmail.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
+}
+
 class UpdateProfileDto {
   @ApiProperty({ required: false, example: '+5491112345678', description: 'WhatsApp en formato internacional (E.164). Vacío desactiva el contacto.' })
   @IsOptional()
@@ -115,20 +130,18 @@ export class B2bAuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('onboarding')
-  @ApiOperation({ summary: 'Onboarding de propietario: crea el complejo, su cuenta OWNER y una sede inicial opcional' })
-  async onboarding(@Body() body: OnboardingDto, @Res({ passthrough: true }) res: ExpressResponse) {
-    const { refreshToken, ...session } = await this.auth.onboardOwner(body);
-    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
-    return session;
+  @ApiOperation({ summary: 'Onboarding de propietario: crea el complejo, su cuenta OWNER (sin sesión, hay que verificar el email) y una sede inicial opcional' })
+  async onboarding(@Body() body: OnboardingDto) {
+    // Sin cookie de refresh: la cuenta nace sin verificar y no hay sesión hasta
+    // confirmar el email (#verificacion-de-email).
+    return this.auth.onboardOwner(body);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register-client')
-  @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })
-  async registerClient(@Body() body: RegisterClientDto, @Res({ passthrough: true }) res: ExpressResponse) {
-    const { refreshToken, ...session } = await this.auth.registerClient(body);
-    setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
-    return session;
+  @ApiOperation({ summary: 'Registrar un cliente en un complejo existente (sin sesión, hay que verificar el email)' })
+  async registerClient(@Body() body: RegisterClientDto) {
+    return this.auth.registerClient(body);
   }
 
   @Get('organizations')
@@ -171,6 +184,23 @@ export class B2bAuthController {
     const { refreshToken, ...session } = await this.auth.refresh(cookieRefresh);
     setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
     return session;
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirmar el email con el token recibido por correo' })
+  async verifyEmail(@Body() body: VerifyEmailDto, @Query('token') tokenFromUrl?: string) {
+    // El enlace del email trae el token en la query; el cliente lo manda en el body.
+    return this.auth.verifyEmail(tokenFromUrl ?? body.token ?? '');
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reenviar el email de verificación (respuesta genérica)' })
+  async resendVerification(@Body() body: ResendVerificationDto) {
+    return this.auth.resendVerification(body.email);
   }
 
   @Throttle({ default: { limit: 30, ttl: 60_000 } })

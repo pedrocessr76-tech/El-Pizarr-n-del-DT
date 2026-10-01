@@ -22,7 +22,10 @@ class CourtDto {
 class OrganizationUpdateDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(120) name?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(255) address?: string;
-  @ApiProperty({ required: false, type: [Number], example: [1440, 60] }) @IsOptional() @IsArray() whatsappReminderIntervalsMinutes?: number[];
+  @ApiProperty({ required: false, type: [Number], example: [1440], description: 'Anticipaciones que el servidor envía solas por email' })
+  @IsOptional() @IsArray() @IsInt({ each: true }) emailReminderIntervalsMinutes?: number[];
+  @ApiProperty({ required: false, type: [Number], example: [30], description: 'Anticipaciones de avisos cortos que el personal despacha a mano' })
+  @IsOptional() @IsArray() @IsInt({ each: true }) whatsappReminderIntervalsMinutes?: number[];
 }
 class FacilityUpdateDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(120) name?: string;

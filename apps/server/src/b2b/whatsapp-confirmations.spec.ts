@@ -59,7 +59,7 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
     };
     const bookingEvents = { create: jest.fn((event: any) => event), save: jest.fn(async (event: any) => event) };
     const users = { findOneBy: jest.fn().mockResolvedValue(clientUser) };
-    const messaging = { send: jest.fn().mockImplementation(sendRejects ? jest.fn().mockRejectedValue(new Error('provider down')) : jest.fn().mockResolvedValue({ delivered: true, provider: 'log', messageId: 'm1' })) };
+    const messaging = { sendWhatsApp: jest.fn().mockImplementation(sendRejects ? jest.fn().mockRejectedValue(new Error('provider down')) : jest.fn().mockResolvedValue({ delivered: true, provider: 'log', messageId: 'm1' })) };
     const unitOfWork = {
       execute: jest.fn(async (work: (session: any) => unknown) => work({
         get: jest.fn(() => ({ findOne: bookings.findOne, save: bookings.save, update: shifts.update })),
@@ -82,8 +82,8 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
       const { service, messaging } = setup();
       await service.transitionBooking(staff, 'booking', BookingStatus.CONFIRMED);
 
-      expect(messaging.send).toHaveBeenCalledTimes(1);
-      const [to, body, kind] = messaging.send.mock.calls[0];
+      expect(messaging.sendWhatsApp).toHaveBeenCalledTimes(1);
+      const [to, body, kind] = messaging.sendWhatsApp.mock.calls[0];
       expect(to).toBe('+5491112345678');
       expect(kind).toBe('confirmation');
       expect(body).toContain('fue confirmada');
@@ -93,13 +93,13 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
     it('no envía si el cliente no tiene opt-in', async () => {
       const { service, messaging } = setup({ clientOptIn: false });
       await service.transitionBooking(staff, 'booking', BookingStatus.CONFIRMED);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
 
     it('no envía si el cliente no cargó teléfono', async () => {
       const { service, messaging } = setup({ clientPhone: null });
       await service.transitionBooking(staff, 'booking', BookingStatus.CONFIRMED);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
 
     it('un fallo del proveedor no rompe la confirmación (best-effort)', async () => {
@@ -115,8 +115,8 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
       const result = await service.confirmAttendance(client, 'booking');
 
       expect(result.sent).toBe(true);
-      expect(messaging.send).toHaveBeenCalledTimes(1);
-      const [to, body, kind] = messaging.send.mock.calls[0];
+      expect(messaging.sendWhatsApp).toHaveBeenCalledTimes(1);
+      const [to, body, kind] = messaging.sendWhatsApp.mock.calls[0];
       expect(to).toBe('+5491199999999');
       expect(kind).toBe('reminder');
       expect(body).toContain('confirmó asistencia');
@@ -125,19 +125,19 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
     it('rechaza con 409 si faltan más de 30 minutos', async () => {
       const { service, messaging } = setup({ shiftStart: new Date(Date.now() + 40 * 60000) });
       await expect(service.confirmAttendance(client, 'booking')).rejects.toBeInstanceOf(ConflictException);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
 
     it('rechaza con 409 si el turno ya comenzó', async () => {
       const { service, messaging } = setup({ shiftStart: new Date(Date.now() - 5 * 60000) });
       await expect(service.confirmAttendance(client, 'booking')).rejects.toBeInstanceOf(ConflictException);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
 
     it('rechaza con 409 una reserva en estado terminal', async () => {
       const { service, messaging } = setup({ bookingStatus: BookingStatus.CANCELLED });
       await expect(service.confirmAttendance(client, 'booking')).rejects.toBeInstanceOf(ConflictException);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
 
     it('rechaza con 404 si la reserva no existe', async () => {
@@ -150,7 +150,7 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
       const { service, messaging } = setup({ orgPhone: null });
       const result = await service.confirmAttendance(client, 'booking');
       expect(result.sent).toBe(false);
-      expect(messaging.send).not.toHaveBeenCalled();
+      expect(messaging.sendWhatsApp).not.toHaveBeenCalled();
     });
   });
 });

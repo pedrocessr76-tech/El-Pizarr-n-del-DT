@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { RepositoryPortModule } from '../persistence/repository-port.module';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
+import { B2bEmailVerificationTokenEntity } from './entities/email-verification-token.entity';
 import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
 import { B2bBookingReminderEntity } from './entities/booking-reminder.entity';
 import { BookingRemindersService } from './booking-reminders.service';
+import { RemindersController } from './reminders.controller';
+import { RemindersService } from './reminders.service';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
 import { B2bOrganizationEntity } from './entities/organization.entity';
@@ -19,6 +22,7 @@ import { B2bManagementController } from './b2b-management.controller';
 import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
 import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
+import { B2bPivotModule } from './pivot/b2b-pivot.module';
 import { MessagingModule } from './messaging/messaging.module';
 
 export const B2B_ENTITIES = [
@@ -35,12 +39,13 @@ export const B2B_ENTITIES = [
   B2bBookingReminderEntity,
   B2bBookingEventEntity,
   B2bNotificationEntity,
+  B2bEmailVerificationTokenEntity,
 ];
 
 @Module({
-  imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, MessagingModule],
-  controllers: [B2bManagementController],
-  providers: [B2bManagementService, B2bSeedService, BookingRemindersService],
+  imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, B2bPivotModule, MessagingModule],
+  controllers: [B2bManagementController, RemindersController],
+  providers: [B2bManagementService, B2bSeedService, BookingRemindersService, RemindersService],
   exports: [B2bManagementService],
 })
 export class B2bModule {}

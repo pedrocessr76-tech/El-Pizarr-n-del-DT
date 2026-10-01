@@ -1,3 +1,7 @@
-/** Token de inyección del proveedor de mensajería activo (#37). */
+/** Token de inyección del registro de proveedores de mensajería (#34/#37). */
 
-export const MESSAGE_PROVIDER = Symbol('MESSAGE_PROVIDER');
+/**
+ * Registro canal → proveedor activo. El mapa siempre contiene los canales
+ * soportados, con `log` como respaldo para no romper el arranque.
+ */
+export const MESSAGE_PROVIDERS = Symbol('MESSAGE_PROVIDERS');

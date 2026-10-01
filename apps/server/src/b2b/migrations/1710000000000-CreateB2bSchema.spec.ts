@@ -34,6 +34,12 @@ function createTableStatements(queries: string[]): Map<string, string> {
   return found;
 }
 
+/**
+ * Tablas que no crea la baseline, porque llegan con migraciones adicionales:
+ * recordatorios (#34) y tokens de verificación de email.
+ */
+const ADDED_BY_LATER_MIGRATION = new Set(['b2b_booking_reminders', 'b2b_email_verification_tokens']);
+
 describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   let dataSource: DataSource;
   let queries: string[] = [];
@@ -56,7 +62,12 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   });
 
   it('crea todas las tablas declaradas por las entidades B2B', () => {
-    const expected = dataSource.entityMetadatas.map((meta) => meta.tableName).sort();
+    // Las tablas que agrega una migración posterior a la baseline no las crea
+    // este script: se excluyen del contraste, no se esperan en su SQL.
+    const expected = dataSource.entityMetadatas
+      .map((meta) => meta.tableName)
+      .filter((table) => !ADDED_BY_LATER_MIGRATION.has(table))
+      .sort();
     expect(expected).toEqual([
       'b2b_availability_blocks',
       'b2b_booking_events',
@@ -77,16 +88,16 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   });
 
   it('declara todas las columnas de cada entidad', () => {
-    // Contacto de WhatsApp (#37): los 4 campos se agregan en la migración
-    // aditiva 1710000000002-CreateB2bWhatsappContacts (ver su spec), no en el
-    // baseline. El guard siguiente las registra para no exigirlas acá.
+    // Contacto de WhatsApp (#37), Recordatorios (#34), Perfiles Pivote y
+    // Verificación de email: campos que se agregan en migraciones aditivas.
     const provisionedLater: Record<string, string[]> = {
-      b2b_users: ['whatsappPhone', 'whatsappOptIn'],
-      b2b_organizations: ['whatsappPhone', 'whatsappOptIn'],
+      b2b_users: ['whatsappPhone', 'whatsappOptIn', 'pivotAvailable', 'pivotRole', 'pivotPositions', 'emailVerified'],
+      b2b_organizations: ['whatsappPhone', 'whatsappOptIn', 'whatsappReminderIntervalsMinutes', 'emailReminderIntervalsMinutes'],
     };
     const missing: string[] = [];
     let checked = 0;
     for (const meta of dataSource.entityMetadatas) {
+      if (ADDED_BY_LATER_MIGRATION.has(meta.tableName)) continue;
       const sql = tables.get(meta.tableName);
       expect(sql).toBeDefined();
       for (const column of meta.columns) {

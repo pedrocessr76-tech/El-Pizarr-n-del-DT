@@ -46,6 +46,13 @@ services:
           name: el-pizarron-web
           envVarKey: RENDER_EXTERNAL_URL
       # B2B: misma instancia Free de Render (el-pizarron-db), base lógica independiente.
+      # URL pública del cliente: arma el enlace del email de verificación.
+      # Si queda vacía, el link sale con el default http://localhost:5173.
+      - key: B2B_PUBLIC_URL
+        fromService:
+          type: web
+          name: el-pizarron-web
+          envVarKey: RENDER_EXTERNAL_URL
       - key: B2B_DB_HOST
         fromDatabase:
           name: el-pizarron-db
@@ -78,6 +85,31 @@ services:
         value: false
       - key: B2B_JWT_SECRET
         generateValue: true
+      # Recordatorios #34: email automático 24 h antes y aviso de WhatsApp
+      # manual 30 min antes. El aviso de WhatsApp no se envía desde acá: lo
+      # despacha el personal con un deep link wa.me, así que este canal queda en
+      # 'log' de forma permanente.
+      - key: MESSAGING_PROVIDER_EMAIL
+        sync: false
+      - key: MESSAGING_PROVIDER_WHATSAPP
+        value: log
+      # SMTP del mailbox del complejo. Si queda vacío, el canal de email cae a
+      # 'log': los recordatorios se registran como simulados y el dashboard lo
+      # advierte, sin romper el arranque.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: SMTP_FROM
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: Sistema Canchas
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
 
   - type: web
     name: el-pizarron-web

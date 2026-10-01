@@ -15,7 +15,6 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { B2bModule, B2B_ENTITIES } from './b2b/b2b.module';
 import { GAME_ENTITIES } from './game-entities';
 import { PersistenceModule } from './persistence/persistence.module';
-import { PivotModule } from './pivot/pivot.module';
 import { getResultCacheOptions } from './persistence/result-cache.config';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -93,7 +92,6 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
     SeedModule,
     B2bModule,
     PersistenceModule,
-    PivotModule,
   ],
   controllers: [AppController],
   providers: [
