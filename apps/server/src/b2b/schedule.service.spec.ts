@@ -3,7 +3,7 @@ import { B2bManagementService } from './b2b-management.service';
 import { B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 import { B2bShiftEntity } from './entities/shift.entity';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
-import { DEFAULT_TIMEZONE, orgTimeToDate } from './time';
+import { DEFAULT_TIMEZONE, orgDateString, orgTimeToDate } from './time';
 
 // Ejecuta el servicio real con repositorios simulados; no sustituye una prueba PostgreSQL.
 describe('Horarios y bloqueos', () => {
@@ -17,11 +17,23 @@ describe('Horarios y bloqueos', () => {
   function setup() {
     const generated: B2bShiftEntity[] = [];
     const savedBlocks: B2bAvailabilityBlockEntity[] = [];
-    const courts = { findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org' }) };
-    const rules = { find: jest.fn().mockResolvedValue([{ weekday: 1, startTime: '10:00', durationHours: 1, priceCentsArs: 10000 }]) };
+    const courts = {
+      findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org' }),
+      find: jest.fn().mockResolvedValue([{ id: 'court', name: 'Cancha', sportType: 'FUTBOL 5', facilityId: 'facility' }]),
+    };
+    const rules = {
+      find: jest.fn().mockResolvedValue([{ weekday: 1, startTime: '10:00', durationHours: 1, priceCentsArs: 10000 }]),
+      findOne: jest.fn().mockResolvedValue({ id: 'rule', courtId: 'court' }),
+      delete: jest.fn(),
+    };
     const shifts = {
       create: jest.fn((row) => ({ id: 'shift', ...row })),
       save: jest.fn(async (rows) => { generated.push(...rows); return rows; }),
+      update: jest.fn(async ({ id }: { id: string }, changes: Partial<B2bShiftEntity>) => {
+        const shift = generated.find((item) => item.id === id);
+        if (shift) Object.assign(shift, changes);
+        return { affected: shift ? 1 : 0 };
+      }),
       findOne: jest.fn(async () => generated[0] ?? null),
       find: jest.fn(async () => generated),
     };
@@ -30,7 +42,8 @@ describe('Horarios y bloqueos', () => {
       save: jest.fn(async (row) => { savedBlocks.push(row); return row; }),
       find: jest.fn(async () => savedBlocks),
     };
-    const bookings = { findOne: jest.fn().mockResolvedValue(null), save: jest.fn(), create: jest.fn() };
+    const bookings = { findOne: jest.fn().mockResolvedValue(null), find: jest.fn().mockResolvedValue([]), save: jest.fn(), create: jest.fn() };
+    const users = { find: jest.fn().mockResolvedValue([]) };
     const manager = {
         getRepository: jest.fn((entity: { name: string }) => {
           const map: Record<string, unknown> = {
@@ -52,12 +65,12 @@ describe('Horarios y bloqueos', () => {
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, rules as never,
       shifts as never, blocks as never, bookings as never, {} as never,
-      {} as never,
+      users as never,
       notifications as never,
       unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
     );
-    return { service, shifts, blocks, bookings, generated, notifications };
+    return { service, shifts, rules, blocks, bookings, generated, notifications };
   }
 
   it('excluye un turno generado después de bloquearlo y rechaza reservarlo', async () => {
@@ -73,6 +86,92 @@ describe('Horarios y bloqueos', () => {
     expect(await service.availability(user, 'court', from, to)).toEqual([]);
     await expect(service.createBooking(user, { courtId: 'court', shiftId: shift.id })).rejects.toThrow(ConflictException);
     expect(bookings.save).not.toHaveBeenCalled();
+  });
+
+  it('al regenerar bloquea turnos libres de reglas eliminadas pero conserva reservas', async () => {
+    const { service, generated } = setup();
+    generated.push(
+      {
+        id: 'old-free', organizationId: 'org', courtId: 'court',
+        startsAt: orgTimeToDate({ year: 2030, month: 1, day: 8, hour: 10, minute: 0 }, DEFAULT_TIMEZONE),
+        endsAt: orgTimeToDate({ year: 2030, month: 1, day: 8, hour: 11, minute: 0 }, DEFAULT_TIMEZONE),
+        status: ShiftStatus.AVAILABLE, priceCentsArs: 10000,
+      } as B2bShiftEntity,
+      {
+        id: 'booked', organizationId: 'org', courtId: 'court',
+        startsAt: orgTimeToDate({ year: 2030, month: 1, day: 8, hour: 11, minute: 0 }, DEFAULT_TIMEZONE),
+        endsAt: orgTimeToDate({ year: 2030, month: 1, day: 8, hour: 12, minute: 0 }, DEFAULT_TIMEZONE),
+        status: ShiftStatus.BOOKED, priceCentsArs: 10000,
+      } as B2bShiftEntity,
+    );
+
+    await service.generateShifts(user, 'court', {
+      from: mondayFrom,
+      to: orgTimeToDate({ year: 2030, month: 1, day: 9, hour: 0, minute: 0 }, DEFAULT_TIMEZONE).toISOString(),
+    });
+
+    expect(generated.find((shift) => shift.id === 'old-free')?.status).toBe(ShiftStatus.BLOCKED);
+    expect(generated.some((shift) => shift.id === 'booked')).toBe(true);
+  });
+
+  it('el calendario semanal muestra BLOCKED para los turnos que ya no siguen una regla', async () => {
+    const { service, generated } = setup();
+    generated.push({
+      id: 'stale', organizationId: 'org', courtId: 'court',
+      startsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 10, minute: 0 }, DEFAULT_TIMEZONE),
+      endsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 11, minute: 0 }, DEFAULT_TIMEZONE),
+      status: ShiftStatus.BLOCKED, priceCentsArs: 10000,
+    } as B2bShiftEntity);
+
+    const weekly = await service.weeklyAvailability(user, mondayFrom, mondayTo);
+
+    expect(weekly[0].lanes[0].state).toBe('BLOCKED');
+  });
+
+  it('actualiza precio y duración de los turnos libres que coinciden con reglas editadas', async () => {
+    const { service, rules, generated } = setup();
+    rules.find.mockResolvedValue([{ weekday: 1, startTime: '10:00', durationHours: 2, priceCentsArs: 18000 }] as never);
+    generated.push({
+      id: 'old-free', organizationId: 'org', courtId: 'court',
+      startsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 10, minute: 0 }, DEFAULT_TIMEZONE),
+      endsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 11, minute: 0 }, DEFAULT_TIMEZONE),
+      status: ShiftStatus.AVAILABLE, priceCentsArs: 10000,
+    } as B2bShiftEntity);
+
+    await service.generateShifts(user, 'court', { from: mondayFrom, to: mondayTo });
+
+    expect(generated[0].endsAt).toEqual(orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 12, minute: 0 }, DEFAULT_TIMEZONE));
+    expect(generated[0].priceCentsArs).toBe(18000);
+  });
+
+  it('vuelve a habilitar una hora bloqueada cuando se agrega la regla otra vez', async () => {
+    const { service, generated } = setup();
+    generated.push({
+      id: 'restored', organizationId: 'org', courtId: 'court',
+      startsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 10, minute: 0 }, DEFAULT_TIMEZONE),
+      endsAt: orgTimeToDate({ year: 2030, month: 1, day: 7, hour: 11, minute: 0 }, DEFAULT_TIMEZONE),
+      status: ShiftStatus.BLOCKED, priceCentsArs: 10000,
+    } as B2bShiftEntity);
+
+    await service.generateShifts(user, 'court', { from: mondayFrom, to: mondayTo });
+
+    expect(generated[0].status).toBe(ShiftStatus.AVAILABLE);
+  });
+
+  it('genera el mes calendario actual completo usando la zona del complejo', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2030-01-07T15:00:00.000Z'));
+    try {
+      const { service } = setup();
+
+      const generated = await service.generateMonthlyShifts(user, 'court');
+
+      expect(generated).toHaveLength(4);
+      expect(generated.map((shift) => orgDateString(shift.startsAt, DEFAULT_TIMEZONE))).toEqual([
+        '07/01/2030', '14/01/2030', '21/01/2030', '28/01/2030',
+      ]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('createBooking rechaza directamente un turno bloqueado antes de cualquier escritura', async () => {

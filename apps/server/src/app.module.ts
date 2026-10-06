@@ -16,23 +16,9 @@ import { B2bModule, B2B_ENTITIES } from './b2b/b2b.module';
 import { GAME_ENTITIES } from './game-entities';
 import { PersistenceModule } from './persistence/persistence.module';
 import { getResultCacheOptions } from './persistence/result-cache.config';
+import { resolveSynchronize } from './persistence/synchronize.config';
 
 const isProduction = process.env.NODE_ENV === 'production';
-
-/**
- * Decide si TypeORM debe auto-sincronizar el esquema.
- *
- * - `true`/`false` explícito siempre gana (útil para docker-compose y pruebas).
- * - Sin valor explícito, `synchronize` queda habilitado sólo en desarrollo.
- *   En producción el esquema se aplica con migraciones versionadas
- *   (`DB_MIGRATIONS=true` / `B2B_DB_MIGRATIONS=true`), porque synchronize puede
- *   borrar columnas con datos sin aviso.
- */
-function resolveSynchronize(explicitValue: string | undefined): boolean {
-  if (explicitValue === 'true') return true;
-  if (explicitValue === 'false') return false;
-  return !isProduction;
-}
 
 @Module({
   imports: [
@@ -56,7 +42,7 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
       // Entidades del juego declaradas de forma explícita: las de B2B viven en
       // su propia conexión ('b2b') y se registran aparte vía B2B_ENTITIES.
       entities: GAME_ENTITIES,
-      synchronize: resolveSynchronize(process.env.DB_SYNCHRONIZE),
+      synchronize: resolveSynchronize(process.env.DB_SYNCHRONIZE, isProduction),
       migrations: [__dirname + '/migrations/!(*.spec|*.d).{ts,js}'],
       migrationsRun: process.env.DB_MIGRATIONS === 'true',
       cache: getResultCacheOptions('game'),
@@ -76,7 +62,7 @@ function resolveSynchronize(explicitValue: string | undefined): boolean {
           ? { rejectUnauthorized: false }
           : false,
       entities: B2B_ENTITIES,
-      synchronize: resolveSynchronize(process.env.B2B_DB_SYNCHRONIZE),
+      synchronize: resolveSynchronize(process.env.B2B_DB_SYNCHRONIZE, isProduction),
       migrations: [__dirname + '/b2b/migrations/!(*.spec|*.d).{ts,js}'],
       migrationsRun: process.env.B2B_DB_MIGRATIONS === 'true',
       cache: getResultCacheOptions('b2b'),

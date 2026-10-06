@@ -27,11 +27,28 @@ class UpdatePivotProfileDto {
 }
 
 class ContactPivotDto {
+  @ApiProperty({ description: 'Reserva activa propia para la que se solicita el pivote' })
+  @IsUUID()
+  bookingId!: string;
+
   @ApiProperty({ required: false, maxLength: 300 })
   @IsOptional()
   @IsString()
   @MaxLength(300)
   message?: string;
+}
+
+class RespondPivotRequestDto {
+  @ApiProperty({ enum: ['ACCEPTED', 'DECLINED'] })
+  @IsIn(['ACCEPTED', 'DECLINED'])
+  decision!: 'ACCEPTED' | 'DECLINED';
+}
+
+class PivotChatMessageDto {
+  @ApiProperty({ maxLength: 1000 })
+  @IsString()
+  @MaxLength(1000)
+  body!: string;
 }
 
 @Controller('api/v1/pivots')
@@ -70,6 +87,30 @@ export class B2bPivotController {
     @Param('userId') targetUserId: string,
     @Body() body: ContactPivotDto,
   ) {
-    return this.pivots.contact(user, targetUserId, body.message);
+    return this.pivots.contact(user, targetUserId, body.bookingId, body.message);
+  }
+
+  @Get('requests')
+  @ApiOperation({ summary: 'Listar solicitudes de pivote recibidas y enviadas por el usuario actual' })
+  getMyRequests(@CurrentB2bUser() user: B2bJwtUser) {
+    return this.pivots.getMyRequests(user);
+  }
+
+  @Patch('requests/:requestId/response')
+  @ApiOperation({ summary: 'Aceptar o rechazar una solicitud recibida como pivote' })
+  respondToRequest(@CurrentB2bUser() user: B2bJwtUser, @Param('requestId') requestId: string, @Body() body: RespondPivotRequestDto) {
+    return this.pivots.respondToRequest(user, requestId, body.decision);
+  }
+
+  @Get('chats/:requestId')
+  @ApiOperation({ summary: 'Ver una conversación de solicitud pivote propia' })
+  getChat(@CurrentB2bUser() user: B2bJwtUser, @Param('requestId') requestId: string) {
+    return this.pivots.getChat(user, requestId);
+  }
+
+  @Post('chats/:requestId/messages')
+  @ApiOperation({ summary: 'Enviar un mensaje a una conversación pivote propia' })
+  sendChatMessage(@CurrentB2bUser() user: B2bJwtUser, @Param('requestId') requestId: string, @Body() body: PivotChatMessageDto) {
+    return this.pivots.sendChatMessage(user, requestId, body.body);
   }
 }

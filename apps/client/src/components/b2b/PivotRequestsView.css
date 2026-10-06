@@ -1,0 +1,19 @@
+.pivot-request-list { padding: 4px 18px; }
+.pivot-request-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #e2e8f0; }
+.pivot-request-row:last-child { border-bottom: 0; }
+.pivot-request-match { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pivot-request-match > div { min-width: 0; }
+.pivot-request-match strong, .pivot-request-match small { display: block; }
+.pivot-request-match strong { color: #1e293b; font-size: 13px; }
+.pivot-request-match small { margin-top: 4px; color: #64748b; font-size: 11px; }
+.pivot-request-status { padding: 6px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.pivot-request-status.pending { color: #92400e; background: #fef3c7; }
+.pivot-request-status.accepted { color: #166534; background: #dcfce7; }
+.pivot-request-status.declined { color: #991b1b; background: #fee2e2; }
+.pivot-request-actions { display: flex; align-items: center; gap: 6px; }
+.pivot-request-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; }
+@media (max-width: 680px) {
+  .pivot-request-row { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .pivot-request-status { grid-column: 1; justify-self: start; margin-left: 44px; }
+  .pivot-request-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}

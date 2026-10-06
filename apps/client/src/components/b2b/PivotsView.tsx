@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Check, LoaderCircle, Search, ShieldCheck, UserRound, Users } from 'lucide-react';
 import {
   b2bService,
-  buildWhatsAppDeepLink,
   type B2bPivotPlayer,
+  type B2bBooking,
   type B2bPivotProfile,
   type B2bPivotRole,
 } from '../../services/b2bService';
+import { formatDayLabel, formatHourLabel, resolveOrgTimeZone } from '../../utils/orgTime';
+import { useB2bStore } from '../../store/useB2bStore';
 
 const POSITIONS: Array<[string, string]> = [
   ['POR', 'Arquero'],
@@ -51,12 +53,19 @@ function messageOf(error: unknown, fallback: string): string {
 /**
  * Jugador pivote del Sistema Canchas: el jugador marca su disponibilidad y las
  * posiciones que cubre, y el resto del complejo lo busca por posición para
- * completar un partido. El contacto llega como notificación en la app y, si el
- * destinatario autorizó WhatsApp, como deep link al chat.
+ * completar un partido. El contacto se coordina por un chat privado.
  */
-export function PivotsView({ onBack }: { onBack?: () => void }) {
+export function PivotsView({ onBack, onOpenChat, onOpenBookings, bookingId: preferredBookingId }: {
+  onBack?: () => void;
+  onOpenChat?: (conversationId: string) => void;
+  onOpenBookings?: () => void;
+  bookingId?: string | null;
+}) {
+  const timezone = resolveOrgTimeZone(useB2bStore((state) => state.orgTimezone));
   const [profile, setProfile] = useState<B2bPivotProfile>(EMPTY_PROFILE);
   const [players, setPlayers] = useState<B2bPivotPlayer[]>([]);
+  const [bookings, setBookings] = useState<B2bBooking[]>([]);
+  const [selectedBookingId, setSelectedBookingId] = useState(preferredBookingId ?? '');
   const [filterPosition, setFilterPosition] = useState('');
   const [contactNote, setContactNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -69,18 +78,31 @@ export function PivotsView({ onBack }: { onBack?: () => void }) {
     setLoading(true);
     setError('');
     try {
-      const [mine, available] = await Promise.all([
+      const [mine, available, reservations] = await Promise.all([
         b2bService.getMyPivotProfile(),
         b2bService.getAvailablePivots(filterPosition || undefined),
+        b2bService.getBookings(),
       ]);
       setProfile(mine);
       setPlayers(available);
+      const upcoming = reservations.filter((booking) =>
+        ['PENDING', 'CONFIRMED'].includes(booking.status) &&
+        Boolean(booking.shiftStartsAt) && new Date(booking.shiftStartsAt!).getTime() > Date.now(),
+      );
+      setBookings(upcoming);
+      setSelectedBookingId((current) =>
+        upcoming.some((booking) => booking.id === current)
+          ? current
+          : upcoming.some((booking) => booking.id === preferredBookingId)
+            ? preferredBookingId!
+            : upcoming[0]?.id ?? '',
+      );
     } catch (cause) {
       setError(messageOf(cause, 'No se pudieron cargar los perfiles pivote.'));
     } finally {
       setLoading(false);
     }
-  }, [filterPosition]);
+  }, [filterPosition, preferredBookingId]);
 
   useEffect(() => {
     void load();
@@ -122,16 +144,17 @@ export function PivotsView({ onBack }: { onBack?: () => void }) {
   };
 
   const contact = async (player: B2bPivotPlayer) => {
+    if (!selectedBookingId) {
+      setError('Elegí una reserva futura antes de solicitar un pivote.');
+      return;
+    }
     setContacting(player.userId);
     setError('');
     setFeedback('');
     try {
-      const result = await b2bService.contactPivot(player.userId, contactNote.trim() || undefined);
-      setFeedback(
-        result.whatsappPhone
-          ? `Solicitud enviada a ${player.fullName}. También podés abrir WhatsApp para coordinar.`
-          : `Solicitud enviada a ${player.fullName}. Le llega como notificación en la app.`,
-      );
+      const result = await b2bService.contactPivot(player.userId, selectedBookingId, contactNote.trim() || undefined);
+      setFeedback(`Solicitud enviada a ${player.fullName}.`);
+      onOpenChat?.(result.conversationId);
     } catch (cause) {
       setError(messageOf(cause, 'No se pudo enviar la solicitud de contacto.'));
     } finally {
@@ -227,9 +250,28 @@ export function PivotsView({ onBack }: { onBack?: () => void }) {
           <div className="settings-panel-head">
             <div>
               <h2>Pivotes disponibles</h2>
-              <small>El filtro busca por posición; la solicitud llega como notificación.</small>
+              <small>Elegí un jugador para iniciar un chat privado.</small>
             </div>
             <span className="settings-icon"><Users size={18} /></span>
+          </div>
+
+          <div className="selector-block">
+            <label className="field-label">Reserva para la que necesitás un pivote</label>
+            {bookings.length > 0 ? (
+              <>
+                <select className="b2b-input" aria-label="Reserva para la solicitud pivote" value={selectedBookingId} onChange={(event) => setSelectedBookingId(event.target.value)}>
+                  {bookings.map((booking) => <option key={booking.id} value={booking.id}>
+                    {booking.courtName ?? 'Cancha'} · {booking.shiftStartsAt ? `${formatDayLabel(timezone, booking.shiftStartsAt)} ${formatHourLabel(timezone, booking.shiftStartsAt)}` : 'Horario pendiente'}
+                  </option>)}
+                </select>
+                <small className="muted">El pivote recibirá la cancha, el día y el horario de esta reserva.</small>
+              </>
+            ) : (
+              <div className="pivot-booking-required">
+                <p>Necesitás una reserva futura para invitar un pivote.</p>
+                {onOpenBookings && <button className="secondary-action" onClick={onOpenBookings}>Ir a Mis reservas</button>}
+              </div>
+            )}
           </div>
 
           <div className="selector-block">
@@ -281,24 +323,11 @@ export function PivotsView({ onBack }: { onBack?: () => void }) {
                 <div className="client-booking-action">
                   <button
                     className="primary-action"
-                    disabled={contacting === player.userId}
+                    disabled={!selectedBookingId || contacting === player.userId}
                     onClick={() => void contact(player)}
                   >
                     {contacting === player.userId ? 'Enviando…' : 'Contactar'}
                   </button>
-                  {player.whatsappPhone && (
-                    <a
-                      className="secondary-action"
-                      href={buildWhatsAppDeepLink(
-                        player.whatsappPhone,
-                        `Hola ${player.fullName}, te escribo del Sistema Canchas. ${contactNote.trim()}`.trim(),
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      WhatsApp
-                    </a>
-                  )}
                 </div>
               </div>
             ))}

@@ -4,7 +4,7 @@ import { useB2bNotificationStore } from '../../store/useB2bNotificationStore';
 import { b2bNotificationService } from '../../services/b2bNotificationService';
 import { formatDistanceToNow } from '../../utils/time';
 
-export function B2bNotificationBell() {
+export function B2bNotificationBell({ onOpenPivotChat }: { onOpenPivotChat?: (conversationId: string) => void }) {
   const [open, setOpen] = useState(false);
   const panelsRef = useRef<HTMLDivElement>(null);
   const items = useB2bNotificationStore((state) => state.items);
@@ -36,9 +36,16 @@ export function B2bNotificationBell() {
     setOpen(!open);
   };
 
-  const handleItemClick = (item: { id?: string; key: string }) => {
+  const handleItemClick = (item: { id?: string; key: string; type: string; metadata?: Record<string, unknown> }) => {
     markAsRead(item.key);
     if (item.id) void b2bNotificationService.markRead(item.id).catch(() => undefined);
+    if (item.type === 'pivot_contact_request' || item.type === 'pivot_chat_message') {
+      const conversationId = item.metadata?.conversationId;
+      if (typeof conversationId === 'string') {
+        setOpen(false);
+        onOpenPivotChat?.(conversationId);
+      }
+    }
   };
 
   return (

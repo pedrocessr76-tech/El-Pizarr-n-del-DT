@@ -249,3 +249,106 @@ describe('buildWhatsAppDeepLink', () => {
     expect(buildWhatsAppDeepLink('(011) 15-5555-1234', 'x')).toContain('https://wa.me/0111555551234?text=x');
   });
 });
+
+describe('b2bService: reglas y generación mensual de turnos', () => {
+  it('elimina una regla del día y la cancha seleccionados', async () => {
+    main.delete.mockResolvedValue({ data: { deleted: true } });
+
+    await b2bService.deleteShiftRule('court-1', 'rule-7');
+
+    expect(main.delete).toHaveBeenCalledWith('/v1/courts/court-1/shift-rules/rule-7');
+  });
+
+  it('genera el mes completo sin pedir rango de fechas', async () => {
+    main.post.mockResolvedValue({ data: [{ id: 'shift-1' }] });
+
+    const result = await b2bService.generateMonthlyShifts('court-1');
+
+    expect(main.post).toHaveBeenCalledWith('/v1/courts/court-1/shifts/generate-month');
+    expect(result).toEqual([{ id: 'shift-1' }]);
+  });
+});
+
+describe('b2bService: administración de canchas', () => {
+  it('actualiza nombre, tipo, capacidad y precio de una cancha', async () => {
+    const patch = { name: 'Cancha Norte', sportType: 'FUTBOL 7', capacity: 14, defaultPriceCentsArs: 2200000 };
+    main.patch.mockResolvedValue({ data: { id: 'court-1', ...patch } });
+
+    await b2bService.updateCourt('court-1', patch);
+
+    expect(main.patch).toHaveBeenCalledWith('/v1/courts/court-1', patch);
+  });
+
+  it('elimina una cancha mediante el endpoint protegido de archivo lógico', async () => {
+    main.delete.mockResolvedValue({ data: { id: 'court-1', status: 'INACTIVE' } });
+
+    const result = await b2bService.deleteCourt('court-1');
+
+    expect(main.delete).toHaveBeenCalledWith('/v1/courts/court-1');
+    expect(result.status).toBe('INACTIVE');
+  });
+});
+
+describe('b2bService: chat de jugador pivote', () => {
+  it('crea una solicitud que devuelve el id de conversación', async () => {
+    main.post.mockResolvedValue({ data: { sent: true, conversationId: 'request-1' } });
+
+    const result = await b2bService.contactPivot('pivot/1', 'booking-1', '¿Podés jugar?');
+
+    expect(main.post).toHaveBeenCalledWith('/v1/pivots/pivot%2F1/contact', { bookingId: 'booking-1', message: '¿Podés jugar?' });
+    expect(result.conversationId).toBe('request-1');
+  });
+
+  it('lee el historial y envía mensajes por endpoints de la conversación', async () => {
+    main.get.mockResolvedValue({ data: { id: 'request-1', isPivot: true, messages: [] } });
+    main.post.mockResolvedValue({ data: { id: 'message-1', conversationId: 'request-1', senderUserId: 'u1', body: 'Hola', createdAt: '2030-01-01T12:00:00Z' } });
+
+    const chat = await b2bService.getPivotChat('request-1');
+    const message = await b2bService.sendPivotChatMessage('request-1', 'Hola');
+
+    expect(main.get).toHaveBeenCalledWith('/v1/pivots/chats/request-1');
+    expect(main.post).toHaveBeenCalledWith('/v1/pivots/chats/request-1/messages', { body: 'Hola' });
+    expect(chat.isPivot).toBe(true);
+    expect(message.body).toBe('Hola');
+  });
+
+  it('lista solicitudes propias y responde voy/no voy', async () => {
+    main.get.mockResolvedValue({ data: [] });
+    main.patch.mockResolvedValue({ data: { id: 'request-1', status: 'ACCEPTED', respondedAt: '2030-01-01T12:00:00Z' } });
+
+    await b2bService.getPivotRequests();
+    await b2bService.respondToPivotRequest('request-1', 'ACCEPTED');
+
+    expect(main.get).toHaveBeenCalledWith('/v1/pivots/requests');
+    expect(main.patch).toHaveBeenCalledWith('/v1/pivots/requests/request-1/response', { decision: 'ACCEPTED' });
+  });
+});
+
+describe('b2bService: comprobante y recordatorio de pago', () => {
+  it('sube el comprobante con modalidad y medio de pago', async () => {
+    const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], 'recibo.png', { type: 'image/png' });
+    main.post.mockResolvedValue({ data: {
+      paymentType: 'DEPOSIT', paymentMethod: 'TRANSFER', fileName: 'recibo.png',
+      contentType: 'image/png', uploadedAt: '2030-01-01T12:00:00Z',
+    } });
+
+    await b2bService.uploadBookingPaymentProof('booking-1', { paymentType: 'DEPOSIT', paymentMethod: 'TRANSFER', file });
+
+    const [url, form] = main.post.mock.calls[0];
+    expect(url).toBe('/v1/bookings/booking-1/payment-proof');
+    expect(form.get('paymentType')).toBe('DEPOSIT');
+    expect(form.get('paymentMethod')).toBe('TRANSFER');
+    expect(form.get('file')).toBeInstanceOf(File);
+  });
+
+  it('lee el comprobante propio y permite al admin enviar recordatorio', async () => {
+    main.get.mockResolvedValue({ data: null });
+    main.post.mockResolvedValue({ data: { delivered: true, provider: 'smtp' } });
+
+    await b2bService.getBookingPaymentProof('booking-1');
+    await b2bService.sendBookingPaymentReminder('booking-1');
+
+    expect(main.get).toHaveBeenCalledWith('/v1/bookings/booking-1/payment-proof');
+    expect(main.post).toHaveBeenCalledWith('/v1/bookings/booking-1/payment-reminder');
+  });
+});

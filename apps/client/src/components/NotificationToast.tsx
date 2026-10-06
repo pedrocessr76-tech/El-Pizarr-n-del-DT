@@ -25,8 +25,10 @@ const ICON_BY_TYPE: Record<NonNullable<NotificationItem['type']>, string> = {
   b2b_booking_cancelled: 'event_busy',
   b2b_booking_completed: 'task_alt',
   b2b_booking_rescheduled: 'update',
+  b2b_booking_payment_proof: 'receipt_long',
   b2b_org_announcement: 'campaign',
   pivot_contact_request: 'sports',
+  pivot_chat_message: 'chat',
 };
 
 export const NotificationToast: React.FC<{ item: NotificationItem }> = ({ item }) => {

@@ -42,6 +42,20 @@ export interface B2bBooking {
   courtName?: string | null;
   courtSportType?: string | null;
   clientName?: string | null;
+  paymentProof?: B2bPaymentProofSummary | null;
+}
+
+export interface B2bPaymentProofSummary {
+  paymentType: 'DEPOSIT' | 'FULL';
+  paymentMethod: 'MERCADO_PAGO' | 'TRANSFER';
+  fileName: string;
+  contentType: string;
+  uploadedAt: string;
+}
+
+export interface B2bPaymentProof extends B2bPaymentProofSummary {
+  bookingId: string;
+  dataBase64: string;
 }
 
 export interface B2bWeeklyAvailability {
@@ -84,7 +98,26 @@ export interface B2bPendingWhatsAppAlert {
 
 export type B2bPivotRole = 'GOALKEEPER' | 'FIELD' | 'BOTH';
 export interface B2bPivotProfile { userId: string; fullName: string; email: string; available: boolean; role: B2bPivotRole; positions: string[]; whatsappPhone?: string | null; whatsappOptIn?: boolean; }
-export interface B2bPivotPlayer { userId: string; fullName: string; email: string; role: B2bPivotRole; positions: string[]; whatsappPhone: string | null; whatsappOptIn: boolean; organizationId: string; }
+export interface B2bPivotPlayer { userId: string; fullName: string; role: B2bPivotRole; positions: string[]; organizationId: string; }
+export interface B2bPivotChatMessage { id: string; conversationId: string; senderUserId: string; body: string; createdAt: string; }
+export interface B2bPivotChat { id: string; isPivot: boolean; messages: B2bPivotChatMessage[]; }
+export interface B2bPivotRequest {
+  id: string;
+  conversationId: string;
+  bookingId: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  respondedAt: string | null;
+  isRequester: boolean;
+  canRespond: boolean;
+  requesterName: string;
+  pivotName: string;
+  courtName: string;
+  courtSportType: string;
+  shiftStartsAt: string;
+  shiftEndsAt: string;
+  bookingStatus: string;
+  createdAt: string;
+}
 
 // El access token B2B vive sólo EN MEMORIA (issue #17): la sesión larga la
 // renueva el refresh token que la API guarda en cookie HttpOnly.
@@ -112,7 +145,6 @@ export const b2bApi = axios.create({
   // withCredentials permite que la cookie HttpOnly del refresh viaje en
   // POST /v1/auth/refresh y /v1/auth/logout.
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 b2bApi.interceptors.request.use((config) => {
@@ -287,8 +319,12 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bCourt>(`/v1/facilities/${facilityId}/courts`, input);
     return data;
   },
-  async updateCourt(id: string, patch: { defaultPriceCentsArs?: number; name?: string; sportType?: string }) {
+  async updateCourt(id: string, patch: { defaultPriceCentsArs?: number; name?: string; sportType?: string; capacity?: number }) {
     const { data } = await b2bApi.patch<B2bCourt>(`/v1/courts/${id}`, patch);
+    return data;
+  },
+  async deleteCourt(id: string) {
+    const { data } = await b2bApi.delete<B2bCourt>(`/v1/courts/${id}`);
     return data;
   },
   async getBookings() {
@@ -309,6 +345,26 @@ export const b2bService = {
   },
   async confirmBooking(id: string) {
     const { data } = await b2bApi.post<B2bBooking>(`/v1/bookings/${id}/confirm`);
+    return data;
+  },
+  async uploadBookingPaymentProof(id: string, input: {
+    paymentType: 'DEPOSIT' | 'FULL';
+    paymentMethod: 'MERCADO_PAGO' | 'TRANSFER';
+    file: File;
+  }) {
+    const form = new FormData();
+    form.append('paymentType', input.paymentType);
+    form.append('paymentMethod', input.paymentMethod);
+    form.append('file', input.file, input.file.name);
+    const { data } = await b2bApi.post<B2bPaymentProofSummary>(`/v1/bookings/${id}/payment-proof`, form);
+    return data;
+  },
+  async getBookingPaymentProof(id: string) {
+    const { data } = await b2bApi.get<B2bPaymentProof | null>(`/v1/bookings/${id}/payment-proof`);
+    return data;
+  },
+  async sendBookingPaymentReminder(id: string) {
+    const { data } = await b2bApi.post<{ delivered: boolean; provider: string }>(`/v1/bookings/${id}/payment-reminder`);
     return data;
   },
   async cancelBooking(id: string) {
@@ -335,12 +391,20 @@ export const b2bService = {
     const { data } = await b2bApi.post<B2bShiftRule>(`/v1/courts/${courtId}/shift-rules`, input);
     return data;
   },
+  async deleteShiftRule(courtId: string, ruleId: string) {
+    const { data } = await b2bApi.delete<{ deleted: boolean }>(`/v1/courts/${courtId}/shift-rules/${ruleId}`);
+    return data;
+  },
   async createAvailabilityBlock(courtId: string, input: { startsAt: string; endsAt: string; reason: string }) {
     const { data } = await b2bApi.post(`/v1/courts/${courtId}/availability-blocks`, input);
     return data;
   },
   async generateShifts(courtId: string, from: string, to: string) {
     const { data } = await b2bApi.post(`/v1/courts/${courtId}/shifts/generate`, { from, to });
+    return data;
+  },
+  async generateMonthlyShifts(courtId: string) {
+    const { data } = await b2bApi.post<B2bShift[]>(`/v1/courts/${courtId}/shifts/generate-month`);
     return data;
   },
   // Jugador pivote: el perfil y el directorio de reemplazos son del Sistema
@@ -359,10 +423,32 @@ export const b2bService = {
     });
     return data;
   },
-  async contactPivot(userId: string, message?: string) {
-    const { data } = await b2bApi.post<{ sent: boolean; whatsappPhone: string | null }>(
+  async contactPivot(userId: string, bookingId: string, message?: string) {
+    const { data } = await b2bApi.post<{ sent: boolean; conversationId: string }>(
       `/v1/pivots/${encodeURIComponent(userId)}/contact`,
-      { message },
+      { bookingId, message },
+    );
+    return data;
+  },
+  async getPivotRequests() {
+    const { data } = await b2bApi.get<B2bPivotRequest[]>('/v1/pivots/requests');
+    return data;
+  },
+  async respondToPivotRequest(requestId: string, decision: 'ACCEPTED' | 'DECLINED') {
+    const { data } = await b2bApi.patch<{ id: string; status: 'ACCEPTED' | 'DECLINED'; respondedAt: string }>(
+      `/v1/pivots/requests/${encodeURIComponent(requestId)}/response`,
+      { decision },
+    );
+    return data;
+  },
+  async getPivotChat(conversationId: string) {
+    const { data } = await b2bApi.get<B2bPivotChat>(`/v1/pivots/chats/${encodeURIComponent(conversationId)}`);
+    return data;
+  },
+  async sendPivotChatMessage(conversationId: string, body: string) {
+    const { data } = await b2bApi.post<B2bPivotChatMessage>(
+      `/v1/pivots/chats/${encodeURIComponent(conversationId)}/messages`,
+      { body },
     );
     return data;
   },

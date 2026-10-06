@@ -20,6 +20,6 @@ import { B2bNotificationsService } from './b2b-notifications.service';
   ],
   controllers: [B2bNotificationsController],
   providers: [B2bNotificationsGateway, B2bNotificationsService],
-  exports: [B2bNotificationsService],
+  exports: [B2bNotificationsService, B2bNotificationsGateway],
 })
 export class B2bNotificationsModule {}

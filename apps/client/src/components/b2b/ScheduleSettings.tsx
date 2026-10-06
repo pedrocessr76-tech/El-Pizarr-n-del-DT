@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { CalendarDays, Trash2 } from 'lucide-react';
 import './ScheduleSettings.css';
 import { b2bService, type B2bShiftRule } from '../../services/b2bService';
 import { useB2bStore } from '../../store/useB2bStore';
@@ -11,6 +12,7 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
   const orgTimezone = useB2bStore((state) => state.orgTimezone);
   const timezone = resolveOrgTimeZone(orgTimezone);
   const [courtId, setCourtId] = useState('');
+  const [selectedWeekday, setSelectedWeekday] = useState(1);
   const [rules, setRules] = useState<B2bShiftRule[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
     return () => { active = false; };
   }, [selectedCourt, refresh]);
 
-  const submit = async (event: FormEvent<HTMLFormElement>, kind: 'rule' | 'block' | 'generate') => {
+  const submit = async (event: FormEvent<HTMLFormElement>, kind: 'rule' | 'block') => {
     event.preventDefault();
     if (busy || !selectedCourt) return;
     const form = event.currentTarget;
@@ -51,29 +53,54 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
         }
         const priceCentsArs = Math.round(Number(text('price')) * 100);
         if (!Number.isSafeInteger(priceCentsArs) || priceCentsArs <= 0) throw new Error('Ingresá un precio válido.');
-        await b2bService.createShiftRule(selectedCourt, { weekday: Number(text('weekday')), startTime, endTime, durationHours, priceCentsArs });
-        setMessage('Regla creada. Generá los turnos para publicarla en disponibilidad.');
+        await b2bService.createShiftRule(selectedCourt, { weekday: selectedWeekday, startTime, endTime, durationHours, priceCentsArs });
+        setMessage('Turno agregado. Generá el mes completo para aplicar los cambios.');
         setRefresh((value) => value + 1);
       } else {
         // datetime-local es el reloj de pared del complejo (#24).
         const from = orgLocalDateTimeToDate(timezone, text('from'));
         const to = orgLocalDateTimeToDate(timezone, text('to'));
         if (!Number.isFinite(from.valueOf()) || !Number.isFinite(to.valueOf()) || from >= to) throw new Error('Ingresá un rango de fechas válido.');
-        if (kind === 'block') {
-          const reason = text('reason').trim();
-          if (!reason) throw new Error('Ingresá el motivo del bloqueo.');
-          await b2bService.createAvailabilityBlock(selectedCourt, { startsAt: from.toISOString(), endsAt: to.toISOString(), reason });
-          setMessage('Bloqueo registrado.');
-        } else {
-          if (to.valueOf() - from.valueOf() > 31 * 86400000) throw new Error('Generá como máximo 31 días por operación.');
-          const shifts = await b2bService.generateShifts(selectedCourt, from.toISOString(), to.toISOString());
-          setMessage(`${shifts.length} turnos generados.`);
-        }
+        const reason = text('reason').trim();
+        if (!reason) throw new Error('Ingresá el motivo del bloqueo.');
+        await b2bService.createAvailabilityBlock(selectedCourt, { startsAt: from.toISOString(), endsAt: to.toISOString(), reason });
+        setMessage('Bloqueo registrado.');
       }
       form.reset();
     } catch (cause) {
       setError(cause instanceof Error && !('isAxiosError' in cause) ? cause.message : 'No se pudo guardar. Revisá permisos, datos y posibles duplicados.');
     } finally { setBusy(false); }
+  };
+
+  const generateMonth = async () => {
+    if (busy || !selectedCourt) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const shifts = await b2bService.generateMonthlyShifts(selectedCourt);
+      setMessage(`${shifts.length} turnos nuevos generados. La disponibilidad del mes quedó sincronizada con las reglas.`);
+    } catch {
+      setError('No se pudieron generar los turnos del mes. Revisá las reglas y volvé a intentar.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeRule = async (rule: B2bShiftRule) => {
+    if (busy || !selectedCourt) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await b2bService.deleteShiftRule(selectedCourt, rule.id);
+      setMessage('Turno eliminado de la regla. Generá el mes completo para actualizar la disponibilidad.');
+      setRefresh((value) => value + 1);
+    } catch {
+      setError('No se pudo eliminar el turno. Volvé a cargar las reglas e intentá otra vez.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <section className="panel settings-panel">
@@ -85,24 +112,18 @@ export function ScheduleSettings({ courts }: { courts: Array<{ id: string; name:
     </select></label>
     {message && <p role="status" className="settings-feedback">{message}</p>}
     {error && <p role="alert">{error} <button className="secondary-action" disabled={busy} onClick={() => setRefresh((value) => value + 1)}>Recargar reglas</button></p>}
-    {loading ? <p role="status">Cargando reglas…</p> : <div className="settings-list">{rules.length === 0 ? <p>Sin reglas cargadas.</p> : rules.map((rule) => <div className="settings-row" key={rule.id}><span>{weekdays[rule.weekday]} {rule.startTime.slice(0, 5)}–{rule.endTime.slice(0, 5)} · {rule.durationHours} h · ${(rule.priceCentsArs / 100).toLocaleString('es-AR')} ARS · {rule.active ? 'Activa' : 'Inactiva'}</span></div>)}</div>}
+    <label>Día a modificar<select className="b2b-input" value={selectedWeekday} disabled={busy} onChange={(event) => setSelectedWeekday(Number(event.target.value))}>{weekdays.map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label>
+    {loading ? <p role="status">Cargando reglas…</p> : <div className="settings-list">{rules.filter((rule) => rule.weekday === selectedWeekday).length === 0 ? <p>Sin turnos para {weekdays[selectedWeekday].toLowerCase()}.</p> : rules.filter((rule) => rule.weekday === selectedWeekday).map((rule) => <div className="settings-rule-row" key={rule.id}><span>{rule.startTime.slice(0, 5)}–{rule.endTime.slice(0, 5)} · {rule.durationHours} h · ${(rule.priceCentsArs / 100).toLocaleString('es-AR')} ARS</span><button type="button" className="icon-action" aria-label={`Eliminar turno ${rule.startTime.slice(0, 5)} del ${weekdays[selectedWeekday]}`} title="Eliminar turno" disabled={busy} onClick={() => void removeRule(rule)}><Trash2 size={16} /></button></div>)}</div>}
     <fieldset disabled={busy || !selectedCourt} className="b2b-schedule-forms">
       <form onSubmit={(event) => void submit(event, 'rule')}>
-        <h3>Nueva regla</h3>
-        <label>Día<select name="weekday" className="b2b-input">{weekdays.map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label>
+        <h3>Agregar turno</h3>
         <label>Desde<input name="startTime" type="time" className="b2b-input" required /></label>
         <label>Hasta<input name="endTime" type="time" className="b2b-input" required /></label>
         <label>Duración<select name="duration" className="b2b-input"><option value="1">1 hora</option><option value="2">2 horas</option></select></label>
         <label>Precio ARS<input name="price" type="number" min="0.01" step="0.01" className="b2b-input" required /></label>
         <button className="primary-action" type="submit">Guardar regla</button>
       </form>
-      <form onSubmit={(event) => void submit(event, 'generate')}>
-        <h3>Generar turnos</h3>
-        <p>Publica las reglas en el período elegido (máximo 31 días).</p>
-        <label>Desde<input name="from" type="datetime-local" className="b2b-input" required /></label>
-        <label>Hasta<input name="to" type="datetime-local" className="b2b-input" required /></label>
-        <button className="primary-action" type="submit">Generar turnos</button>
-      </form>
+      <div className="schedule-month-action"><h3>Disponibilidad del mes</h3><p>Genera todos los turnos del mes actual, incluido hoy, según las reglas de esta cancha.</p><button className="primary-action" type="button" onClick={() => void generateMonth()}><CalendarDays size={16} />{busy ? 'Generando…' : 'Generar turnos del mes completo'}</button></div>
       <form onSubmit={(event) => void submit(event, 'block')}>
         <h3>Bloquear disponibilidad</h3>
         <p>Impide nuevas reservas en el intervalo. No cancela reservas existentes.</p>

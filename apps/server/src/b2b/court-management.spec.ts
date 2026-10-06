@@ -40,6 +40,8 @@ describe('Gestión de canchas', () => {
         savedShifts.push(...rows);
         return rows;
       }),
+      find: jest.fn(async () => savedShifts),
+      update: jest.fn(),
       findOne: jest.fn(async () => null),
     };
     const notifications = {
@@ -181,5 +183,16 @@ describe('Gestión de canchas', () => {
     const { service } = setup();
     await service.createCourt(user, 'facility', { name: 'Cancha H', sportType: 'FUTBOL 5', defaultPriceCentsArs: 9000 });
     await expect(service.updateCourt(user, 'court-1', { sportType: 'FUTBOL 3' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('archiveCourt la retira de actividad y conserva la cancha para el historial', async () => {
+    const { service, savedCourts } = setup();
+    await service.createCourt(user, 'facility', { name: 'Cancha I', sportType: 'FUTBOL 5', defaultPriceCentsArs: 9000 });
+
+    const archived = await service.archiveCourt(user, 'court-1');
+
+    expect(archived.status).toBe('INACTIVE');
+    expect(savedCourts).toHaveLength(1);
+    await expect(service.generateMonthlyShifts(user, 'court-1')).rejects.toThrow(NotFoundException);
   });
 });

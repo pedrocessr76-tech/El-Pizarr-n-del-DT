@@ -36,9 +36,15 @@ function createTableStatements(queries: string[]): Map<string, string> {
 
 /**
  * Tablas que no crea la baseline, porque llegan con migraciones adicionales:
- * recordatorios (#34) y tokens de verificación de email.
+ * recordatorios, verificación de email y chat de pivotes.
  */
-const ADDED_BY_LATER_MIGRATION = new Set(['b2b_booking_reminders', 'b2b_email_verification_tokens']);
+const ADDED_BY_LATER_MIGRATION = new Set([
+  'b2b_booking_reminders',
+  'b2b_email_verification_tokens',
+  'b2b_pivot_requests',
+  'b2b_pivot_messages',
+  'b2b_booking_payment_proofs',
+]);
 
 describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   let dataSource: DataSource;

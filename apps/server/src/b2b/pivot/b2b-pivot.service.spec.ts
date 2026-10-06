@@ -50,6 +50,8 @@ describe('B2bPivotService', () => {
 
   function setup(accounts: StoredUser[]) {
     const rows = new Map(accounts.map((account) => [account.id, account]));
+    const requestRows: Array<Record<string, any>> = [];
+    const messageRows: Array<Record<string, any>> = [];
     const users = {
       findOne: jest.fn(async ({ where }: { where: { id: string; pivotAvailable?: boolean } }) => {
         const row = rows.get(where.id);
@@ -70,8 +72,49 @@ describe('B2bPivotService', () => {
       }),
     };
     const notifications = { notifyUser: jest.fn().mockResolvedValue({ payloads: [], saved: [] }) };
-    const service = new B2bPivotService(users as never, notifications as never);
-    return { service, users, notifications };
+    const requests = {
+      create: jest.fn((input) => ({ id: `request-${requestRows.length + 1}`, createdAt: new Date(), lastMessageAt: new Date(), ...input })),
+      save: jest.fn(async (request) => {
+        const index = requestRows.findIndex((item) => item.id === request.id);
+        if (index === -1) requestRows.push(request);
+        else requestRows[index] = request;
+        return request;
+      }),
+      find: jest.fn(async ({ where }: any) => requestRows.filter((item) => {
+        const matches = (criteria: Record<string, unknown>) => Object.entries(criteria).every(([key, value]) => item[key] === value);
+        return Array.isArray(where) ? where.some(matches) : matches(where);
+      })),
+      findOne: jest.fn(async ({ where }: any) => requestRows.find((item) => where.some((criteria: any) =>
+        Object.entries(criteria).every(([key, value]) => item[key] === value),
+      )) ?? null),
+    };
+    const messages = {
+      create: jest.fn((input) => ({ id: `message-${messageRows.length + 1}`, createdAt: new Date(), ...input })),
+      save: jest.fn(async (message) => { messageRows.push(message); return message; }),
+      find: jest.fn(async () => messageRows),
+    };
+    const bookingRow = {
+      id: 'booking-1', organizationId: 'org-1', clientUserId: 'me', courtId: 'court-1', shiftId: 'shift-1',
+      status: 'CONFIRMED', priceCentsArs: 15000,
+    };
+    const shiftRow = { id: 'shift-1', courtId: 'court-1', organizationId: 'org-1', startsAt: new Date(Date.now() + 86400000), endsAt: new Date(Date.now() + 90000000) };
+    const courtRow = { id: 'court-1', organizationId: 'org-1', name: 'Cancha Norte', sportType: 'FUTBOL 5' };
+    const bookings = {
+      findOne: jest.fn(async ({ where }: any) =>
+        where.id === bookingRow.id &&
+        (where.organizationId === undefined || where.organizationId === bookingRow.organizationId) &&
+        (where.clientUserId === undefined || where.clientUserId === bookingRow.clientUserId)
+          ? bookingRow
+          : null),
+      find: jest.fn(async () => [bookingRow]),
+    };
+    const shifts = { findOne: jest.fn(async () => shiftRow), find: jest.fn(async () => [shiftRow]) };
+    const courts = { findOne: jest.fn(async () => courtRow), find: jest.fn(async () => [courtRow]) };
+    const organizations = { findOneByOrFail: jest.fn().mockResolvedValue({ id: 'org-1', timezone: 'America/Argentina/Buenos_Aires' }) };
+    const gateway = { emitPivotChatMessage: jest.fn(), emitPivotRequestUpdated: jest.fn() };
+    const messaging = { sendEmail: jest.fn().mockResolvedValue({ delivered: true, provider: 'smtp', messageId: 'mail-1' }) };
+    const service = new B2bPivotService(users as never, requests as never, messages as never, bookings as never, shifts as never, courts as never, organizations as never, notifications as never, gateway as never, messaging as never);
+    return { service, users, notifications, requests, messages, messageRows, bookings, shifts, courts, organizations, gateway, messaging };
   }
 
   describe('getMyProfile', () => {
@@ -190,7 +233,7 @@ describe('B2bPivotService', () => {
       await expect(service.listAvailable(actor, 'ZZZ')).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('expone el teléfono solo cuando el jugador autorizó WhatsApp', async () => {
+    it('no expone email ni teléfono de los jugadores en el directorio', async () => {
       const { service } = setup([
         { ...ME },
         stored({ id: 'optin', whatsappPhone: '+5491100000009', whatsappOptIn: true }),
@@ -199,50 +242,138 @@ describe('B2bPivotService', () => {
 
       const players = await service.listAvailable(actor);
 
-      expect(players.find((player) => player.userId === 'optin')).toEqual(
-        expect.objectContaining({ whatsappPhone: '+5491100000009', whatsappOptIn: true }),
-      );
-      expect(players.find((player) => player.userId === 'nooptin')).toEqual(
-        expect.objectContaining({ whatsappPhone: null, whatsappOptIn: false }),
-      );
+      expect(players.find((player) => player.userId === 'optin')).not.toHaveProperty('email');
+      expect(players.find((player) => player.userId === 'optin')).not.toHaveProperty('whatsappPhone');
+      expect(players.find((player) => player.userId === 'nooptin')).not.toHaveProperty('whatsappPhone');
     });
   });
 
   describe('contact', () => {
-    it('notifica al pivote y devuelve su WhatsApp si autorizó', async () => {
-      const { service, notifications } = setup([
+    it('guarda una solicitud anónima, notifica a ambas cuentas y envía email al pivote', async () => {
+      const { service, notifications, messaging, messageRows } = setup([
         { ...ME },
         stored({ id: 'keeper', fullName: 'Bruno', whatsappPhone: '+5491100000009', whatsappOptIn: true }),
       ]);
 
-      const result = await service.contact(actor, 'keeper', '  Necesitamos arquero  ');
+      const result = await service.contact(actor, 'keeper', 'booking-1', '  Necesitamos arquero  ');
 
-      expect(result).toEqual({ sent: true, whatsappPhone: '+5491100000009' });
+      expect(result).toEqual({ sent: true, conversationId: 'request-1' });
+      expect(messageRows[0].body).toBe('Necesitamos arquero');
       expect(notifications.notifyUser).toHaveBeenCalledWith(
         'keeper',
         'org-1',
-        expect.objectContaining({ type: 'pivot_contact_request', severity: 'info' }),
+        expect.objectContaining({
+          type: 'pivot_contact_request',
+          severity: 'info',
+          metadata: { conversationId: 'request-1' },
+        }),
         'me',
       );
       expect(notifications.notifyUser.mock.calls[0][2].body).toContain('Necesitamos arquero');
-      expect(notifications.notifyUser.mock.calls[0][2].metadata).toEqual({
-        fromUserId: 'me',
-        fromName: 'Ana Cliente',
-        fromEmail: ME.email,
-      });
+      expect(notifications.notifyUser.mock.calls[0][2].body).toContain('Cancha Norte');
+      expect(JSON.stringify(notifications.notifyUser.mock.calls[0][2].metadata)).not.toContain(ME.email);
+      expect(notifications.notifyUser).toHaveBeenCalledWith('me', 'org-1', expect.objectContaining({ title: 'Solicitud enviada' }), 'keeper');
+      expect(messaging.sendEmail).toHaveBeenCalledWith(
+        'keeper@test.invalid',
+        expect.objectContaining({ text: expect.stringContaining('Cancha Norte') }),
+        'Nueva solicitud de jugador pivote',
+        'generic',
+        { conversationId: 'request-1' },
+      );
     });
 
-    it('omite el teléfono cuando el destinatario no autorizó WhatsApp', async () => {
-      const { service } = setup([{ ...ME }, stored({ id: 'keeper', whatsappPhone: '+5491100000009' })]);
+    it('crea la conversación aunque no se envíe una nota inicial', async () => {
+      const { service, messageRows } = setup([{ ...ME }, stored({ id: 'keeper' })]);
 
-      await expect(service.contact(actor, 'keeper')).resolves.toEqual({ sent: true, whatsappPhone: null });
+      await expect(service.contact(actor, 'keeper', 'booking-1')).resolves.toEqual({ sent: true, conversationId: 'request-1' });
+      expect(messageRows).toHaveLength(0);
+    });
+
+    it('rechaza solicitudes sin reserva propia activa o con turno pasado', async () => {
+      const missingBooking = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      missingBooking.bookings.findOne.mockResolvedValue(null);
+      await expect(missingBooking.service.contact(actor, 'keeper', 'booking-ajena')).rejects.toThrow(/reserva activa propia/);
+
+      const pastShift = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      pastShift.shifts.findOne.mockResolvedValue({ id: 'shift-1', startsAt: new Date(Date.now() - 1000) } as never);
+      await expect(pastShift.service.contact(actor, 'keeper', 'booking-1')).rejects.toThrow(/turno futuro/);
+    });
+
+    it('evita solicitar dos veces al mismo pivote para la misma reserva', async () => {
+      const { service, requests } = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      requests.findOne.mockResolvedValueOnce({ id: 'previous-request', bookingId: 'booking-1' } as never);
+
+      await expect(service.contact(actor, 'keeper', 'booking-1')).rejects.toThrow(/Ya solicitaste/);
     });
 
     it('rechaza contactarse a uno mismo o a un pivote que ya no está disponible', async () => {
       const { service } = setup([{ ...ME }, stored({ id: 'off', pivotAvailable: false })]);
 
-      await expect(service.contact(actor, 'me')).rejects.toBeInstanceOf(BadRequestException);
-      await expect(service.contact(actor, 'off')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.contact(actor, 'me', 'booking-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.contact(actor, 'off', 'booking-1')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('chat pivote', () => {
+    it('persiste los mensajes y los emite en vivo solo a las dos cuentas participantes', async () => {
+      const { service, gateway, messageRows, notifications } = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      const { conversationId } = await service.contact(actor, 'keeper', 'booking-1', '¿Podés jugar el jueves?');
+
+      const sent = await service.sendChatMessage({ ...actor, userId: 'keeper' }, conversationId, 'Sí, puedo.');
+
+      expect(messageRows).toHaveLength(2);
+      expect(sent.body).toBe('Sí, puedo.');
+      expect(gateway.emitPivotChatMessage).toHaveBeenCalledTimes(2);
+      expect(gateway.emitPivotChatMessage).toHaveBeenCalledWith('me', expect.objectContaining({ body: 'Sí, puedo.' }));
+      expect(gateway.emitPivotChatMessage).toHaveBeenCalledWith('keeper', expect.objectContaining({ senderUserId: 'keeper' }));
+      expect(notifications.notifyUser).toHaveBeenCalledWith('me', 'org-1', expect.objectContaining({ type: 'pivot_chat_message' }), 'keeper');
+    });
+
+    it('solo permite leer conversaciones de las que la cuenta es participante', async () => {
+      const { service } = setup([{ ...ME }, stored({ id: 'keeper' }), stored({ id: 'intruder' })]);
+      const { conversationId } = await service.contact(actor, 'keeper', 'booking-1');
+
+      await expect(service.getChat({ ...actor, userId: 'intruder' }, conversationId)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rechaza mensajes vacíos o demasiado largos', async () => {
+      const { service } = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      const { conversationId } = await service.contact(actor, 'keeper', 'booking-1');
+
+      await expect(service.sendChatMessage(actor, conversationId, '  ')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.sendChatMessage(actor, conversationId, 'x'.repeat(1001))).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('solicitudes temporales', () => {
+    it('muestra cancha, horario y nombre de quien solicitó a los participantes', async () => {
+      const { service } = setup([{ ...ME }, stored({ id: 'keeper', fullName: 'Bruno' })]);
+      await service.contact(actor, 'keeper', 'booking-1');
+
+      const requesterList = await service.getMyRequests(actor);
+      const pivotList = await service.getMyRequests({ ...actor, userId: 'keeper' });
+
+      expect(requesterList[0]).toEqual(expect.objectContaining({
+        requesterName: 'Ana Cliente', pivotName: 'Bruno', courtName: 'Cancha Norte',
+        bookingId: 'booking-1', isRequester: true, canRespond: false,
+      }));
+      expect(pivotList[0]).toEqual(expect.objectContaining({
+        requesterName: 'Ana Cliente', pivotName: 'Bruno', courtName: 'Cancha Norte',
+        isRequester: false, canRespond: true,
+      }));
+    });
+
+    it('permite al pivote aceptar o rechazar y notifica al solicitante', async () => {
+      const { service, notifications } = setup([{ ...ME }, stored({ id: 'keeper' })]);
+      const { conversationId } = await service.contact(actor, 'keeper', 'booking-1');
+
+      await expect(service.respondToRequest({ ...actor, userId: 'keeper' }, conversationId, 'ACCEPTED'))
+        .resolves.toEqual(expect.objectContaining({ id: conversationId, status: 'ACCEPTED' }));
+      expect(notifications.notifyUser).toHaveBeenCalledWith(
+        'me', 'org-1', expect.objectContaining({ title: 'El pivote confirmó' }), 'keeper',
+      );
+      await expect(service.respondToRequest(actor, conversationId, 'DECLINED')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.respondToRequest({ ...actor, userId: 'keeper' }, conversationId, 'DECLINED')).rejects.toThrow(/ya tiene una respuesta/);
     });
   });
 });

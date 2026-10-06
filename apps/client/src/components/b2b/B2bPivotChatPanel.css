@@ -1,0 +1,88 @@
+.b2b-pivot-chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(15 23 42 / 32%);
+}
+.b2b-pivot-chat {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+  box-shadow: -12px 0 40px rgb(15 23 42 / 18%);
+}
+.b2b-pivot-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.b2b-pivot-chat-header h2 { margin: 5px 0 2px; font-size: 18px; }
+.b2b-pivot-chat-header small { color: #64748b; font-size: 12px; }
+.b2b-pivot-chat-messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  background: #f8fafc;
+}
+.b2b-pivot-chat-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 80px;
+  color: #64748b;
+  font-size: 12px;
+}
+.b2b-pivot-message {
+  align-self: flex-start;
+  max-width: min(88%, 340px);
+  padding: 10px 12px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px 8px 8px 2px;
+  background: #fff;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+.b2b-pivot-message.is-own {
+  align-self: flex-end;
+  border-color: #bbf7d0;
+  border-radius: 8px 8px 2px 8px;
+  background: #f0fdf4;
+}
+.b2b-pivot-message small, .b2b-pivot-message time { display: block; color: #64748b; font-size: 10px; }
+.b2b-pivot-message p { margin: 5px 0; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+.b2b-pivot-message time { text-align: right; }
+.b2b-pivot-chat-error { margin: 0; padding: 8px 14px; color: #b42318; font-size: 12px; }
+.b2b-pivot-chat-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+.b2b-pivot-chat-compose textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  max-height: 120px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+}
+.b2b-pivot-chat-compose .primary-action { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; padding: 0; }
+@media (max-width: 560px) {
+  .b2b-pivot-chat { height: min(86vh, 780px); margin-top: auto; border-radius: 10px 10px 0 0; }
+}

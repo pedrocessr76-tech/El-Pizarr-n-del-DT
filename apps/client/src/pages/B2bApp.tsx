@@ -5,8 +5,11 @@ import { DashboardCourts } from '../components/b2b/DashboardCourts';
 
 import { ProfileView } from '../components/b2b/ProfileView';
 import { PivotsView } from '../components/b2b/PivotsView';
+import { B2bPivotChatPanel } from '../components/b2b/B2bPivotChatPanel';
+import { PivotRequestsView } from '../components/b2b/PivotRequestsView';
 import { ReminderSettings } from '../components/b2b/ReminderSettings';
 import { PendingAlertsPanel } from '../components/b2b/PendingAlertsPanel';
+import { BookingPaymentProofUploader } from '../components/b2b/BookingPaymentProofUploader';
 
 import { useEffect, useState } from 'react';
 import {
@@ -20,8 +23,10 @@ import {
   LogOut,
   Menu,
   MessageCircle,
+  Pencil,
   SlidersHorizontal,
   ShieldCheck,
+  Trash2,
   Trophy,
   UserRound,
   UsersRound,
@@ -37,7 +42,7 @@ import { B2bNotificationToasts } from '../components/b2b/B2bNotificationToasts';
 import { addOrgDays, dayKeyToOrgMidnight, formatDayLabel, formatHourLabel, formatWeekdayLabel, orgTzLabel, resolveOrgTimeZone, startOfOrgDay, startOfWeekKey, toDayKey } from '../utils/orgTime';
 
 type B2bRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'CLIENT';
-type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'settings' | 'schedule' | 'portal' | 'payment' | 'profile' | 'pivots';
+type B2bView = 'login' | 'dashboard' | 'availability' | 'bookings' | 'pivot-requests' | 'settings' | 'schedule' | 'portal' | 'payment' | 'profile' | 'pivots';
 
 const roleLabels: Record<B2bRole, string> = {
   OWNER: 'Propietario',
@@ -59,6 +64,8 @@ type BookingRow = {
   client: string;
   status: string;
   price: string;
+  priceCentsArs?: number;
+  paymentProof?: B2bBooking['paymentProof'];
 };
 
 const statusLabels: Record<string, string> = {
@@ -97,6 +104,8 @@ export function B2bApp() {
   const isStaff = role !== 'CLIENT';
   const [mobileMenu, setMobileMenu] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
+  const [selectedPivotChatId, setSelectedPivotChatId] = useState<string | null>(null);
+  const [selectedPivotBookingId, setSelectedPivotBookingId] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const login = useB2bStore((state) => state.login);
   const registerClient = useB2bStore((state) => state.registerClient);
@@ -215,13 +224,14 @@ export function B2bApp() {
         { id: 'availability', label: 'Canchas', icon: 'calendar_month' },
         { id: 'bookings', label: 'Reservas', icon: 'groups' },
         { id: 'pivots', label: 'Pivotes', icon: 'sports_soccer' },
+        { id: 'pivot-requests', label: 'Solicitudes', icon: 'event_note' },
         { id: 'profile', label: 'Perfil', icon: 'person' },
       ]
     : [
         { id: 'portal', label: 'Reservar', icon: 'sports_soccer' },
         { id: 'pivots', label: 'Pivotes', icon: 'groups' },
-        { id: 'payment', label: 'Pago', icon: 'credit_card' },
-        { id: 'bookings', label: 'Mis turnos', icon: 'event_available' },
+        { id: 'pivot-requests', label: 'Solicitudes', icon: 'event_note' },
+        { id: 'bookings', label: 'Mis reservas', icon: 'event_available' },
         { id: 'profile', label: 'Perfil', icon: 'person' },
       ];
 
@@ -247,19 +257,23 @@ export function B2bApp() {
             <B2bNavButton icon={<CalendarDays size={17} />} label="Disponibilidad" active={view === 'availability'} onClick={() => navigate('availability')} />
             <B2bNavButton icon={<UsersRound size={17} />} label="Reservas" active={view === 'bookings'} onClick={() => navigate('bookings')} />
             <B2bNavButton icon={<ShieldCheck size={17} />} label="Jugador pivote" active={view === 'pivots'} onClick={() => navigate('pivots')} />
+            <B2bNavButton icon={<CalendarDays size={17} />} label="Solicitudes pivote" active={view === 'pivot-requests'} onClick={() => navigate('pivot-requests')} />
             <B2bNavButton icon={<SlidersHorizontal size={17} />} label="Horarios y Configuración" active={view === 'schedule'} onClick={() => navigate('schedule')} />
           </> : <>
             <B2bNavButton icon={<CalendarDays size={17} />} label="Reservar cancha" active={view === 'portal'} onClick={() => navigate('portal')} />
             <B2bNavButton icon={<ShieldCheck size={17} />} label="Jugador pivote" active={view === 'pivots'} onClick={() => navigate('pivots')} />
+            <B2bNavButton icon={<CalendarDays size={17} />} label="Mis reservas" active={view === 'bookings'} onClick={() => navigate('bookings')} />
+            <B2bNavButton icon={<UsersRound size={17} />} label="Solicitudes pivote" active={view === 'pivot-requests'} onClick={() => navigate('pivot-requests')} />
           </>}
         </nav>
         <div className="b2b-sidebar-bottom"><button className="product-link" onClick={() => { window.location.href = '/dt'; }}><Trophy size={18} /><span><strong>El Pizarrón del DT</strong><small>Estrategias & Táctica</small></span><ArrowRight size={15} /></button><div className="b2b-user"><div className="avatar"><UserRound size={17} /></div><span><strong>{formatRole(role)}</strong><small>{user?.email ?? 'Sin email'}</small></span></div><button type="button" onClick={() => { void logoutB2b(); }} disabled={loggingOut} aria-label="Cerrar sesión del Sistema Canchas" title="Cerrar sesión" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10, padding: '10px 12px', border: '1px solid #fecaca', borderRadius: 9, color: '#b91c1c', background: '#fff', fontSize: 13, fontWeight: 600, cursor: loggingOut ? 'wait' : 'pointer', opacity: loggingOut ? 0.65 : 1 }}><LogOut size={16} />{loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</button></div>
       </aside>
       <main className="b2b-main">
-        <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell /><button className="profile-button" onClick={() => navigate('profile')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
-        {isStaff ? <StaffView view={view} onNavigate={navigate} onSelectBooking={setSelectedBooking} timezone={timezone} /> : <RealClientView view={view} onNavigate={navigate} timezone={timezone} />}
+          <header className="b2b-topbar"><button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Abrir menú"><Menu size={22} /></button><div className="b2b-breadcrumb"><span>Complejo</span><strong>{orgName || '—'}</strong><span>/</span><strong>{isStaff ? 'Jornada Diaria' : 'Reservar cancha'}</strong></div><div className="b2b-top-actions"><span className="live-status">● {isStaff ? 'Abierto' : 'Listo para reservar'}</span><B2bNotificationBell onOpenPivotChat={setSelectedPivotChatId} /><button className="profile-button" onClick={() => navigate('profile')}><UserRound size={16} /> {formatRole(role)}</button></div></header>
+        {isStaff ? <StaffView view={view} onNavigate={navigate} onSelectBooking={setSelectedBooking} onOpenPivotChat={setSelectedPivotChatId} onOpenBookings={() => navigate('bookings')} timezone={timezone} /> : <RealClientView view={view} onNavigate={navigate} onOpenPivotChat={setSelectedPivotChatId} onOpenBookings={() => navigate('bookings')} onFindPivot={(bookingId) => { setSelectedPivotBookingId(bookingId); navigate('pivots'); }} selectedPivotBookingId={selectedPivotBookingId} timezone={timezone} />}
       </main>
       <MobileTabBar variant="canchas" tabs={mobileTabs} activeTab={view} onSelect={(next) => navigate(next)} />
+      <B2bPivotChatPanel conversationId={selectedPivotChatId} onClose={() => setSelectedPivotChatId(null)} />
       {selectedBooking && <BookingDrawer booking={selectedBooking} timezone={timezone} onClose={() => setSelectedBooking(null)} onAction={async (action) => { if (selectedBooking.id) { if (action === 'confirm') await b2bService.confirmBooking(selectedBooking.id); if (action === 'cancel') await b2bService.cancelBooking(selectedBooking.id); } setSelectedBooking(null); }} />}
       <B2bNotificationToasts />
     </div>
@@ -443,7 +457,7 @@ function B2bNavButton({ icon, label, active, onClick }: { icon: React.ReactNode;
   return <button className={`b2b-nav-item ${active ? 'active' : ''}`} onClick={onClick}>{icon}<span>{label}</span>{active && <small>Hoy</small>}</button>;
 }
 
-function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bView; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: typeof bookings[number]) => void; timezone: string }) {
+function StaffView({ view, onNavigate, onSelectBooking, onOpenPivotChat, onOpenBookings, timezone }: { view: B2bView; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: typeof bookings[number]) => void; onOpenPivotChat: (conversationId: string) => void; onOpenBookings: () => void; timezone: string }) {
   const [bookingRows, setBookingRows] = useState<BookingRow[]>(bookings);
   useEffect(() => {
     let active = true;
@@ -461,6 +475,8 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
         client: item.clientName ?? item.clientUserId,
         status: item.status,
         price: `$ ${(item.priceCentsArs / 100).toLocaleString('es-AR')}`,
+        priceCentsArs: item.priceCentsArs,
+        paymentProof: item.paymentProof,
       })) as BookingRow[]);
     }).catch(() => undefined);
     return () => { active = false; };
@@ -469,7 +485,8 @@ function StaffView({ view, onNavigate, onSelectBooking, timezone }: { view: B2bV
   if (view === 'bookings') return <BookingsView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} />;
   if (view === 'settings') return <SettingsView />;
   if (view === 'schedule') return <ScheduleView />;
-  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('dashboard')} />;
+  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('dashboard')} onOpenChat={onOpenPivotChat} onOpenBookings={onOpenBookings} />;
+  if (view === 'pivot-requests') return <PivotRequestsView onOpenChat={onOpenPivotChat} timezone={timezone} />;
   if (view === 'profile') return <ProfileView role="staff" onBack={() => onNavigate('dashboard')} />;
   return <DashboardView bookingRows={bookingRows} onNavigate={onNavigate} onSelectBooking={onSelectBooking} timezone={timezone} />;
 }
@@ -608,7 +625,7 @@ function AvailabilityView({ onNavigate, timezone }: { onNavigate: (view: B2bView
 
 function BookingsView({ bookingRows, onNavigate, onSelectBooking }: { bookingRows: BookingRow[]; onNavigate: (view: B2bView) => void; onSelectBooking: (booking: BookingRow) => void }) { return <div className="b2b-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> GESTIÓN OPERATIVA</span><h1>Bandeja de reservas</h1><p>Revisá y gestioná las solicitudes del complejo.</p></div><button className="primary-action" onClick={() => onNavigate('portal')}>＋ Nueva reserva</button></div><div className="booking-summary"><strong>{bookingRows.length} reservas visibles</strong><span>Estados sincronizados</span><div className="search-bookings">Buscar cliente o reserva...</div></div><section className="panel booking-list"><div className="booking-list-head"><span>Turno</span><span>Cliente</span><span>Cancha</span><span>Estado</span><span>Importe</span><span /></div>{bookingRows.slice(0, 10).map((booking) => <button className="booking-list-row" key={`${booking.client}-${booking.time}`} onClick={() => onSelectBooking(booking)}><span><strong>{booking.time}</strong></span><span><strong>{booking.client}</strong><small>Reserva online</small></span><span>{booking.court}<small>{booking.type}</small></span><StatusBadge status={booking.status} /><span><strong>{booking.price}</strong><small>ARS</small></span><ArrowRight size={17} /></button>)}</section></div>; }
 
-function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavigate: (view: B2bView) => void; timezone: string }) {
+function RealClientView({ view, onNavigate, onOpenPivotChat, onOpenBookings, onFindPivot, selectedPivotBookingId, timezone }: { view: B2bView; onNavigate: (view: B2bView) => void; onOpenPivotChat: (conversationId: string) => void; onOpenBookings: () => void; onFindPivot: (bookingId: string) => void; selectedPivotBookingId: string | null; timezone: string }) {
   const user = useB2bStore((state) => state.user);
   const [facilities, setFacilities] = useState<B2bPublicFacility[]>([]);
   const [facilityId, setFacilityId] = useState('');
@@ -656,9 +673,10 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
     onNavigate('portal');
   };
   if (view === 'payment') return <PaymentView onNavigate={onNavigate} onComplete={finishPayment} timezone={timezone} lastBooking={lastBooking} selectedShift={selectedShift} duration={duration} organizationName={selectedOrgName} />;
-  if (view === 'bookings') return <ClientBookingsView timezone={timezone} onBack={() => onNavigate('portal')} />;
+  if (view === 'bookings') return <ClientBookingsView timezone={timezone} onBack={() => onNavigate('portal')} onFindPivot={onFindPivot} />;
+  if (view === 'pivot-requests') return <PivotRequestsView onOpenChat={onOpenPivotChat} timezone={timezone} />;
   if (view === 'profile') return <ProfileView role="client" onBack={() => onNavigate('portal')} />;
-  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('portal')} />;
+  if (view === 'pivots') return <PivotsView onBack={() => onNavigate('portal')} onOpenChat={onOpenPivotChat} onOpenBookings={onOpenBookings} bookingId={selectedPivotBookingId} />;
   const reserve = async (courtId: string, shiftId?: string) => {
     if (!shiftId) { setMessage('Seleccioná un turno disponible.'); return; }
     try {
@@ -886,7 +904,7 @@ function RealClientView({ view, onNavigate, timezone }: { view: B2bView; onNavig
 
 }
 
-function ClientBookingsView({ timezone, onBack }: { timezone: string; onBack: () => void }) {
+function ClientBookingsView({ timezone, onBack, onFindPivot }: { timezone: string; onBack: () => void; onFindPivot: (bookingId: string) => void }) {
   const [items, setItems] = useState<B2bBooking[]>([]);
   const [now, setNow] = useState(Date.now());
   const [feedback, setFeedback] = useState<Record<string, string>>({});
@@ -926,11 +944,13 @@ function ClientBookingsView({ timezone, onBack }: { timezone: string; onBack: ()
             <span className="client-booking-when">{booking.shiftStartsAt ? `${formatDayLabel(timezone, booking.shiftStartsAt)} · ${formatHourLabel(timezone, booking.shiftStartsAt)}` : '—'}</span>
             <span className="client-booking-price">$ {(booking.priceCentsArs / 100).toLocaleString('es-AR')} ARS</span>
             <div className="client-booking-action">
+              {booking.id && ['PENDING', 'CONFIRMED'].includes(booking.status) && <BookingPaymentProofUploader bookingId={booking.id} paymentProof={booking.paymentProof} />}
               {canConfirm ? (
                 <button className="primary-action" disabled={busyId === booking.id} onClick={() => confirm(booking.id)}>{busyId === booking.id ? 'Enviando…' : 'Confirmo asistencia'}</button>
               ) : isActive ? (
                 <small className="text-slate-400">{minutesLeft < 0 ? 'El turno ya comenzó.' : `El botón se habilita a 30 min del turno (faltan ${minutesLeft} min).`}</small>
               ) : null}
+              {isActive && minutesLeft > 0 && <button className="secondary-action" onClick={() => onFindPivot(booking.id)}>Buscar jugador pivote</button>}
               {feedback[booking.id] && <small className="settings-feedback">{feedback[booking.id]}</small>}
             </div>
           </div>
@@ -944,7 +964,7 @@ function ScheduleView() {
   const [courts, setCourts] = useState<Array<{ id: string; name: string }>>([]);
   const [feedback, setFeedback] = useState('');
   useEffect(() => {
-    b2bService.getCourts().then((items) => setCourts(items)).catch(() => setFeedback('No se pudieron cargar las canchas.'));
+    b2bService.getCourts().then((items) => setCourts(items.filter((court) => court.status === 'ACTIVE'))).catch(() => setFeedback('No se pudieron cargar las canchas.'));
   }, []);
   return <div className="b2b-content"><div className="b2b-page-heading compact"><div><span className="eyebrow"><i /> HORARIOS</span><h1>Horarios y configuración</h1><p>Reglas de disponibilidad por cancha, generación de turnos y bloqueos.</p></div></div>{feedback && <p className="settings-feedback caveat">{feedback}</p>}<ReminderSettings /><ScheduleSettings courts={courts} /></div>;
 }
@@ -952,7 +972,7 @@ function ScheduleView() {
 function SettingsView() {
   const [tab, setTab] = useState<'facilities' | 'courts' | 'rules'>('facilities');
   const [facilities, setFacilities] = useState<Array<{ id: string; name: string; address?: string | null; status: string }>>([]);
-  const [courts, setCourts] = useState<Array<{ id: string; facilityId: string; name: string; sportType: string; capacity: number; defaultPriceCentsArs: number }>>([]);
+  const [courts, setCourts] = useState<B2bCourt[]>([]);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
@@ -962,12 +982,15 @@ function SettingsView() {
   const [courtPrice, setCourtPrice] = useState('');
   const [courtSportType, setCourtSportType] = useState('FUTBOL 7');
   const [courtFacilityId, setCourtFacilityId] = useState('');
+  const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
+  const [courtEditDraft, setCourtEditDraft] = useState({ name: '', sportType: 'FUTBOL 7', capacity: '14', price: '' });
+  const [busyCourtId, setBusyCourtId] = useState<string | null>(null);
   const [showCourtForm, setShowCourtForm] = useState(false);
   const [feedback, setFeedback] = useState('');
   useEffect(() => {
     Promise.all([b2bService.getFacilities(), b2bService.getCourts()]).then(([loadedFacilities, loadedCourts]) => {
       setFacilities(loadedFacilities);
-      setCourts(loadedCourts);
+      setCourts(loadedCourts.filter((court) => court.status === 'ACTIVE'));
       if (!courtFacilityId && loadedFacilities.length) setCourtFacilityId(loadedFacilities[0].id);
     })    .catch(() => setFeedback('No se pudieron cargar los datos. Intentalo de nuevo.'));
   }, []);
@@ -1008,17 +1031,50 @@ function SettingsView() {
       setFeedback(`Cancha "${created.name}" agregada a ${facility?.name ?? 'tu complejo'}.`);
     } catch { setFeedback('No se pudo crear la cancha. Verificá que el complejo exista.'); }
   };
-  const updateCourtPrice = async (court: { id: string; name: string; defaultPriceCentsArs: number }) => {
-    const newPrice = prompt(`Precio actual: $${Math.round(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS\nNuevo precio por hora (ARS):`, String(Math.round(court.defaultPriceCentsArs / 100)));
-    if (newPrice === null) return;
-    const priceCents = Math.round(parseFloat(newPrice) * 100);
-    if (!priceCents || priceCents <= 0) { setFeedback('Ingresá un precio válido.'); return; }
-    try {
-      await b2bService.updateCourt(court.id, { defaultPriceCentsArs: priceCents });
-      setCourts((current) => current.map((item) => item.id === court.id ? { ...item, defaultPriceCentsArs: priceCents } : item));
-      setFeedback(`Precio de \"${court.name}\" actualizado.`);
-    } catch { setFeedback('No se pudo actualizar el precio.'); }
+  const beginCourtEdit = (court: B2bCourt) => {
+    setEditingCourtId(court.id);
+    setCourtEditDraft({
+      name: court.name,
+      sportType: court.sportType,
+      capacity: String(court.capacity),
+      price: (court.defaultPriceCentsArs / 100).toFixed(2),
+    });
+    setFeedback('');
   };
+  const saveCourtEdits = async () => {
+    if (!editingCourtId) return;
+    const priceCents = Math.round(Number(courtEditDraft.price) * 100);
+    const capacity = Number(courtEditDraft.capacity);
+    if (!courtEditDraft.name.trim() || !Number.isSafeInteger(capacity) || capacity < 1 || !Number.isSafeInteger(priceCents) || priceCents <= 0) {
+      setFeedback('Revisá el nombre, la capacidad y el precio de la cancha.');
+      return;
+    }
+    setBusyCourtId(editingCourtId);
+    try {
+      const updated = await b2bService.updateCourt(editingCourtId, {
+        name: courtEditDraft.name.trim(),
+        sportType: courtEditDraft.sportType,
+        capacity,
+        defaultPriceCentsArs: priceCents,
+      });
+      setCourts((current) => current.map((court) => court.id === updated.id ? updated : court));
+      setEditingCourtId(null);
+      setFeedback(`Cancha "${updated.name}" actualizada.`);
+    } catch { setFeedback('No se pudo actualizar la cancha.'); }
+    finally { setBusyCourtId(null); }
+  };
+  const deleteCourt = async (court: B2bCourt) => {
+    if (!window.confirm(`¿Eliminar ${court.name}? Dejará de ofrecer turnos nuevos; se conservarán las reservas y su historial.`)) return;
+    setBusyCourtId(court.id);
+    try {
+      await b2bService.deleteCourt(court.id);
+      setCourts((current) => current.filter((item) => item.id !== court.id));
+      if (editingCourtId === court.id) setEditingCourtId(null);
+      setFeedback(`Cancha "${court.name}" eliminada de las canchas activas.`);
+    } catch { setFeedback('No se pudo eliminar la cancha.'); }
+    finally { setBusyCourtId(null); }
+  };
+  const editingCourt = courts.find((court) => court.id === editingCourtId);
   return (
     <div className="b2b-content">
       <div className="b2b-page-heading compact">
@@ -1107,11 +1163,30 @@ function SettingsView() {
                 <span className="settings-icon"><Trophy size={16} /></span>
                 <span><strong>{court.name}</strong><small>{facilities.find((item) => item.id === court.facilityId)?.name ?? '—'} · {court.sportType} · Capacidad {court.capacity}</small></span>
                 <strong className="settings-price">$ {(court.defaultPriceCentsArs / 100).toLocaleString('es-AR')} ARS</strong>
-                <button className="secondary-action" onClick={() => updateCourtPrice(court)}>Editar</button>
+                <button className="secondary-action" disabled={busyCourtId === court.id} aria-label={`Editar cancha ${court.name}`} onClick={() => beginCourtEdit(court)}><Pencil size={15} /> Editar</button>
+                <button className="icon-button" title="Eliminar cancha" aria-label={`Eliminar cancha ${court.name}`} disabled={busyCourtId === court.id} onClick={() => void deleteCourt(court)}><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
+          {!courts.length && <p className="settings-feedback caveat">Todavía no hay canchas activas en este complejo.</p>}
         </section>
+      )}
+      {tab === 'courts' && editingCourt && (
+        <>
+          <section className="panel settings-panel">
+            <div className="settings-panel-head"><div><h2>Editar {editingCourt.name}</h2><small>Datos de cancha</small></div></div>
+            <div className="settings-court-edit-fields">
+              <label>Nombre<input className="b2b-input" value={courtEditDraft.name} onChange={(event) => setCourtEditDraft((draft) => ({ ...draft, name: event.target.value }))} /></label>
+              <label>Tipo de cancha<select className="b2b-input" value={courtEditDraft.sportType} onChange={(event) => setCourtEditDraft((draft) => ({ ...draft, sportType: event.target.value }))}>
+                <option value="FUTBOL 5">Fútbol 5</option><option value="FUTBOL 7">Fútbol 7</option><option value="FUTBOL 8">Fútbol 8</option><option value="FUTBOL 11">Fútbol 11</option>
+              </select></label>
+              <label>Capacidad<input className="b2b-input" type="number" min="1" step="1" value={courtEditDraft.capacity} onChange={(event) => setCourtEditDraft((draft) => ({ ...draft, capacity: event.target.value }))} /></label>
+              <label>Precio por hora (ARS)<input className="b2b-input" type="number" min="0.01" step="0.01" value={courtEditDraft.price} onChange={(event) => setCourtEditDraft((draft) => ({ ...draft, price: event.target.value }))} /></label>
+            </div>
+            <div className="settings-court-edit-actions"><button className="secondary-action" disabled={busyCourtId === editingCourt.id} onClick={() => setEditingCourtId(null)}>Cancelar</button><button className="primary-action" disabled={busyCourtId === editingCourt.id} onClick={() => void saveCourtEdits()}>{busyCourtId === editingCourt.id ? 'Guardando…' : 'Guardar cambios'}</button></div>
+          </section>
+          <ScheduleSettings courts={[editingCourt]} />
+        </>
       )}
       {tab === 'rules' && <ScheduleSettings courts={courts} />}
     </div>
@@ -1179,4 +1254,52 @@ function PaymentView({ onNavigate, onComplete, timezone, lastBooking, selectedSh
     </div>
   );
 }
-function BookingDrawer({ booking, timezone, onClose, onAction }: { booking: BookingRow; timezone: string; onClose: () => void; onAction: (action: 'confirm' | 'cancel') => Promise<void> }) { return <div className="drawer-backdrop" onClick={onClose}><aside className="booking-drawer" onClick={(event) => event.stopPropagation()}><button className="close-drawer" onClick={onClose}><X size={18} /></button><span className="eyebrow">DETALLE DE RESERVA</span><h2>{booking.client}</h2><StatusBadge status={booking.status} /><div className="drawer-details"><span><Clock3 size={16} />{booking.time}</span><span><CalendarDays size={16} /> {formatDayLabel(timezone, booking.dateKey)}</span><span><Trophy size={16} />{booking.court} · {booking.type}</span><span><CircleDollarSign size={16} />{booking.price} ARS</span></div><div className="drawer-actions"><button className="secondary-action" onClick={() => onAction('cancel')}>Cancelar</button><button className="primary-action" onClick={() => onAction('confirm')}>Confirmar reserva</button></div></aside></div>; }
+function BookingDrawer({ booking, timezone, onClose, onAction }: { booking: BookingRow; timezone: string; onClose: () => void; onAction: (action: 'confirm' | 'cancel') => Promise<void> }) {
+  const [proof, setProof] = useState<Awaited<ReturnType<typeof b2bService.getBookingPaymentProof>>>(null);
+  const [proofLoading, setProofLoading] = useState(Boolean(booking.id));
+  const [reminding, setReminding] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  useEffect(() => {
+    if (!booking.id) { setProofLoading(false); return; }
+    let active = true;
+    setProofLoading(true);
+    b2bService.getBookingPaymentProof(booking.id)
+      .then((result) => { if (active) setProof(result); })
+      .catch(() => { if (active) setFeedback('No se pudo cargar el comprobante.'); })
+      .finally(() => { if (active) setProofLoading(false); });
+    return () => { active = false; };
+  }, [booking.id]);
+  const sendReminder = async () => {
+    if (!booking.id || reminding) return;
+    setReminding(true);
+    setFeedback('');
+    try {
+      const result = await b2bService.sendBookingPaymentReminder(booking.id);
+      setFeedback(result.delivered ? 'Recordatorio enviado por email.' : 'Recordatorio registrado; el envío de email está simulado.');
+    } catch { setFeedback('No se pudo enviar el recordatorio.'); }
+    finally { setReminding(false); }
+  };
+  const proofUrl = proof ? `data:${proof.contentType};base64,${proof.dataBase64}` : '';
+  const paymentLabel = proof?.paymentType === 'DEPOSIT' ? 'Seña (30%)' : 'Pago completo';
+  const methodLabel = proof?.paymentMethod === 'TRANSFER' ? 'Transferencia' : 'Mercado Pago';
+  const paymentAmountCents = proof?.paymentType === 'DEPOSIT'
+    ? Math.round((booking.priceCentsArs ?? 0) * 0.3)
+    : booking.priceCentsArs ?? 0;
+  return <div className="drawer-backdrop" onClick={onClose}>
+    <aside className="booking-drawer" onClick={(event) => event.stopPropagation()}>
+      <button className="close-drawer" onClick={onClose}><X size={18} /></button>
+      <span className="eyebrow">DETALLE DE RESERVA</span><h2>{booking.client}</h2><StatusBadge status={booking.status} />
+      <div className="drawer-details"><span><Clock3 size={16} />{booking.time}</span><span><CalendarDays size={16} /> {formatDayLabel(timezone, booking.dateKey)}</span><span><Trophy size={16} />{booking.court} · {booking.type}</span><span><CircleDollarSign size={16} />{booking.price}</span></div>
+      <section className="booking-payment-proof">
+        <h3>Pago del cliente</h3>
+        {proofLoading ? <small>Cargando comprobante…</small> : !proof ? <p>No adjuntó comprobante todavía.</p> : <>
+          <strong>{paymentLabel} · $ {(paymentAmountCents / 100).toLocaleString('es-AR')} ARS</strong><small>{methodLabel} · {proof.fileName}</small>
+          {proof.contentType.startsWith('image/') ? <img src={proofUrl} alt={`Comprobante de ${paymentLabel}`} /> : <a className="secondary-action" href={proofUrl} target="_blank" rel="noreferrer">Abrir comprobante PDF</a>}
+          <a className="booking-proof-download" href={proofUrl} download={proof.fileName}>Descargar comprobante</a>
+        </>}
+      </section>
+      {feedback && <p className="settings-feedback" role="status">{feedback}</p>}
+      <div className="drawer-actions"><button className="secondary-action" onClick={() => onAction('cancel')}>Cancelar reserva</button><button className="secondary-action" disabled={reminding} onClick={() => void sendReminder()}>{reminding ? 'Enviando…' : 'Enviar recordatorio'}</button><button className="primary-action" onClick={() => onAction('confirm')}>Confirmar reserva</button></div>
+    </aside>
+  </div>;
+}

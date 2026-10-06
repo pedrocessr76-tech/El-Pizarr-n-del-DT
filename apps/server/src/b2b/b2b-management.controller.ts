@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { B2bRoles, CurrentB2bUser } from './auth/b2b-auth.decorators';
 import { B2bJwtGuard } from './auth/b2b-jwt.guard';
@@ -56,6 +57,7 @@ class BookingDto {
   @ApiProperty() @IsString() @IsNotEmpty() shiftId!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(500) notes?: string;
 }
+type UploadedPaymentProofFile = { originalname: string; mimetype: string; buffer: Buffer };
 class ShiftGenerationDto {
   @ApiProperty({ example: '2026-01-05' }) @IsString() @IsNotEmpty() from!: string;
   @ApiProperty({ example: '2026-01-11' }) @IsString() @IsNotEmpty() to!: string;
@@ -84,9 +86,12 @@ export class B2bManagementController {
   @Delete('courts/:id') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN) archiveCourt(@CurrentB2bUser() user: B2bJwtUser, @Param('id') id: string) { return this.service.archiveCourt(user, id); }
   @Post('courts/:courtId/shift-rules') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) createRule(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string, @Body() body: ShiftRuleDto) { return this.service.createShiftRule(user, courtId, body); }
   @Get('courts/:courtId/shift-rules') listRules(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string) { return this.service.listShiftRules(user, courtId); }
+  @Delete('courts/:courtId/shift-rules/:ruleId') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) deleteRule(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string, @Param('ruleId', ParseUUIDPipe) ruleId: string) { return this.service.deleteShiftRule(user, courtId, ruleId); }
   @Post('courts/:courtId/availability-blocks') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) createBlock(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string, @Body() body: BlockDto) { return this.service.createBlock(user, courtId, body); }
   @Throttle({ default: { limit: 2, ttl: 60_000 } })
   @Post('courts/:courtId/shifts/generate') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) generateShifts(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string, @Body() body: ShiftGenerationDto) { return this.service.generateShifts(user, courtId, body); }
+  @Throttle({ default: { limit: 2, ttl: 60_000 } })
+  @Post('courts/:courtId/shifts/generate-month') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) generateMonthlyShifts(@CurrentB2bUser() user: B2bJwtUser, @Param('courtId') courtId: string) { return this.service.generateMonthlyShifts(user, courtId); }
   @Get('availability') availability(@CurrentB2bUser() user: B2bJwtUser, @Query('courtId') courtId: string, @Query('from') from: string, @Query('to') to: string) { return this.service.availability(user, courtId, from, to); }
   @Get('availability/week') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) weeklyAvailability(@CurrentB2bUser() user: B2bJwtUser, @Query('from') from: string, @Query('to') to: string) { return this.service.weeklyAvailability(user, from, to); }
   @Get('bookings') listBookings(@CurrentB2bUser() user: B2bJwtUser) { return this.service.listBookings(user); }
@@ -96,6 +101,29 @@ export class B2bManagementController {
   @Post('bookings/:id/confirm') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) confirm(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CONFIRMED); }
   @Post('bookings/:id/cancel') cancel(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.CANCELLED); }
   @Post('bookings/:id/confirm-attendance') confirmAttendance(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.confirmAttendance(user, id); }
+  @Post('bookings/:id/payment-proof')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadPaymentProof(
+    @CurrentB2bUser() user: B2bJwtUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('paymentType') paymentType: 'DEPOSIT' | 'FULL',
+    @Body('paymentMethod') paymentMethod: 'MERCADO_PAGO' | 'TRANSFER',
+    @UploadedFile() file?: UploadedPaymentProofFile,
+  ) {
+    if (!file) throw new BadRequestException('Adjuntá una imagen o un PDF de comprobante.');
+    if (!['DEPOSIT', 'FULL'].includes(paymentType)) throw new BadRequestException('Tipo de pago inválido.');
+    if (!['MERCADO_PAGO', 'TRANSFER'].includes(paymentMethod)) throw new BadRequestException('Método de pago inválido.');
+    return this.service.uploadBookingPaymentProof(user, id, {
+      paymentType,
+      paymentMethod,
+      fileName: file.originalname,
+      contentType: file.mimetype,
+      fileData: file.buffer,
+    });
+  }
+  @Get('bookings/:id/payment-proof') getPaymentProof(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.getBookingPaymentProof(user, id); }
+  @Post('bookings/:id/payment-reminder') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) sendPaymentReminder(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.sendBookingPaymentReminder(user, id); }
   @Post('bookings/:id/reschedule') reschedule(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string, @Body() body: RescheduleDto) { return this.service.rescheduleBooking(user, id, body.shiftId); }
   @Post('bookings/:id/complete') @B2bRoles(B2bRoleCode.OWNER, B2bRoleCode.ADMIN, B2bRoleCode.OPERATOR) complete(@CurrentB2bUser() user: B2bJwtUser, @Param('id', ParseUUIDPipe) id: string) { return this.service.transitionBooking(user, id, BookingStatus.COMPLETED); }
 }

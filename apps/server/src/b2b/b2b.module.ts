@@ -5,6 +5,7 @@ import { B2bBookingEventEntity } from './entities/booking-event.entity';
 import { B2bEmailVerificationTokenEntity } from './entities/email-verification-token.entity';
 import { B2bNotificationEntity } from './notifications/b2b-notification.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
+import { B2bBookingPaymentProofEntity } from './entities/booking-payment-proof.entity';
 import { B2bBookingReminderEntity } from './entities/booking-reminder.entity';
 import { BookingRemindersService } from './booking-reminders.service';
 import { RemindersController } from './reminders.controller';
@@ -23,6 +24,8 @@ import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
 import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
 import { B2bPivotModule } from './pivot/b2b-pivot.module';
+import { B2bPivotRequestEntity } from './pivot/b2b-pivot-request.entity';
+import { B2bPivotMessageEntity } from './pivot/b2b-pivot-message.entity';
 import { MessagingModule } from './messaging/messaging.module';
 
 export const B2B_ENTITIES = [
@@ -36,10 +39,13 @@ export const B2B_ENTITIES = [
   B2bShiftEntity,
   B2bAvailabilityBlockEntity,
   B2bBookingEntity,
+  B2bBookingPaymentProofEntity,
   B2bBookingReminderEntity,
   B2bBookingEventEntity,
   B2bNotificationEntity,
   B2bEmailVerificationTokenEntity,
+  B2bPivotRequestEntity,
+  B2bPivotMessageEntity,
 ];
 
 @Module({

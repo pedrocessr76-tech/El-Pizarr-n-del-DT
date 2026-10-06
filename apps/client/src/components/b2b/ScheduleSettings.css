@@ -21,3 +21,37 @@
 .b2b-schedule-forms .b2b-input { width: 100%; min-width: 0; box-sizing: border-box; }
 .b2b-schedule-forms button { margin-top: auto; }
 .b2b-schedule-forms:disabled { opacity: 0.65; }
+.settings-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+}
+.settings-rule-row > span { min-width: 0; }
+.icon-action {
+  display: inline-grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+}
+.icon-action:hover:not(:disabled) { color: #b42318; border-color: currentColor; }
+.icon-action:disabled { opacity: 0.55; cursor: not-allowed; }
+.schedule-month-action { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.schedule-month-action .primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; }
+.settings-court-edit-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; padding: 18px 0; }
+.settings-court-edit-fields label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; color: #475569; }
+.settings-court-edit-fields .b2b-input { width: 100%; min-width: 0; box-sizing: border-box; }
+.settings-court-edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 560px) {
+  .schedule-month-action .primary-action { width: 100%; }
+  .settings-court-edit-actions { flex-direction: column-reverse; }
+  .settings-court-edit-actions button { width: 100%; }
+}

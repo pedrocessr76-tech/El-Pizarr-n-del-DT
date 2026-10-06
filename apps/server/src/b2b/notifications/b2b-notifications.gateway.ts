@@ -110,4 +110,12 @@ export class B2bNotificationsGateway implements OnGatewayConnection, OnGatewayDi
   emitToUser(userId: string, payload: NotificationPayload): void {
     this.server?.to(b2bUserChannel(userId)).emit('notification', payload);
   }
+
+  emitPivotChatMessage(userId: string, payload: Record<string, unknown>): void {
+    this.server?.to(b2bUserChannel(userId)).emit('pivot_chat_message', payload);
+  }
+
+  emitPivotRequestUpdated(userId: string, payload: Record<string, unknown>): void {
+    this.server?.to(b2bUserChannel(userId)).emit('pivot_request_updated', payload);
+  }
 }

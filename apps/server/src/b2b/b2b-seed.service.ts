@@ -14,6 +14,9 @@ import { B2bUserEntity } from './entities/user.entity';
 import { addOrgDays, addOrgHours, orgParts, orgTimeToDate, resolveTimeZone, startOfOrgDay } from './time';
 import { RepositoryPort, getRepositoryPortToken } from '../persistence/repository.port';
 
+const DEFAULT_START_HOUR = 15;
+const DEFAULT_SLOT_COUNT = 8;
+
 @Injectable()
 export class B2bSeedService implements OnModuleInit {
   private readonly logger = new Logger(B2bSeedService.name);
@@ -66,12 +69,22 @@ export class B2bSeedService implements OnModuleInit {
       let court = await this.courts.findOne({ where: { facilityId: facility.id, name } });
       if (!court) court = await this.courts.save(this.courts.create({ organizationId: organization.id, facilityId: facility.id, name, sportType, capacity: 10, defaultPriceCentsArs: price }));
       const count = await this.rules.count({ where: { courtId: court.id } });
-      if (!count) await this.rules.save(this.rules.create({ courtId: court.id, weekday: 3, startTime: '18:00', endTime: '23:00', durationHours: 1, priceCentsArs: price }));
+      if (!count) {
+        const slots = Array.from({ length: DEFAULT_SLOT_COUNT }, (_, index) => DEFAULT_START_HOUR + index);
+        await this.rules.save(slots.flatMap((hour) => Array.from({ length: 7 }, (_, weekday) => this.rules.create({
+          courtId: court.id,
+          weekday,
+          startTime: `${String(hour).padStart(2, '0')}:00`,
+          endTime: `${String(hour + 1).padStart(2, '0')}:00`,
+          durationHours: 1,
+          priceCentsArs: price,
+        }))));
+      }
       const timezone = resolveTimeZone(organization.timezone);
       const today = startOfOrgDay(new Date(), timezone);
       for (let day = 0; day < 7; day += 1) {
         const dayStart = orgParts(addOrgDays(today, day, timezone), timezone);
-        for (let hour = 18; hour < 23; hour += 1) {
+        for (let hour = DEFAULT_START_HOUR; hour < DEFAULT_START_HOUR + DEFAULT_SLOT_COUNT; hour += 1) {
           const startsAt = orgTimeToDate({ year: dayStart.year, month: dayStart.month, day: dayStart.day, hour, minute: 0 }, timezone);
           const endsAt = addOrgHours(startsAt, 1, timezone);
           const existingShift = await this.shifts.findOne({ where: { courtId: court.id, startsAt } });

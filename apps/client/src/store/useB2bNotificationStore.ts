@@ -28,8 +28,12 @@ export const contentKeyOf = (type: string, severity: string, title: string, body
   `${type}|${severity}|${title}|${body}`;
 
 export function notificationToItem(payload: B2bNotificationPayload): B2bNotificationItem {
+  const conversationId = payload.metadata?.conversationId;
+  const chatKey = payload.type === 'pivot_contact_request' || payload.type === 'pivot_chat_message'
+    ? `|${String(conversationId ?? '')}|${payload.timestamp}`
+    : '';
   return {
-    key: contentKeyOf(payload.type, payload.severity, payload.title, payload.body),
+    key: `${contentKeyOf(payload.type, payload.severity, payload.title, payload.body)}${chatKey}`,
     id: payload.id,
     type: payload.type,
     severity: payload.severity,

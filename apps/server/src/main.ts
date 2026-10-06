@@ -15,7 +15,7 @@ async function ensureB2bDatabase(): Promise<void> {
   const port = parseInt(process.env.B2B_DB_PORT || process.env.DB_PORT || '5432', 10);
   const user = process.env.B2B_DB_USER || process.env.DB_USER || 'canchas';
   const password = process.env.B2B_DB_PASSWORD || process.env.DB_PASSWORD || 'canchas';
-  const maintenance = process.env.DB_NAME || 'postgres';
+  const maintenance = process.env.DB_MAINTENANCE_DB || 'postgres';
   let client: Client | null = null;
   try {
     client = new Client({

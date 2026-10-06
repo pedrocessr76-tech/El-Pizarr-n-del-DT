@@ -73,6 +73,14 @@ export function useB2bNotificationSocket() {
             upsertFromSocket(payload);
         });
 
+        s.on('pivot_chat_message', (payload: unknown) => {
+            window.dispatchEvent(new CustomEvent('b2b-pivot-chat-message', { detail: payload }));
+        });
+
+        s.on('pivot_request_updated', (payload: unknown) => {
+            window.dispatchEvent(new CustomEvent('b2b-pivot-request-updated', { detail: payload }));
+        });
+
         s.on('connect_error', (err: any) => {
             console.warn('[b2b/socket] Error de conexión de notificaciones:', err?.message);
         });

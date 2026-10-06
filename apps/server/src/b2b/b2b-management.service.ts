@@ -6,13 +6,15 @@ import {
   Inject,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { betweenValues, inValues, RepositoryCriteria, RepositoryPort, UnitOfWork, getRepositoryPortToken } from '../persistence/repository.port';
 import { B2B_UNIT_OF_WORK } from '../persistence/persistence.module';
 import { B2bAvailabilityBlockEntity } from './entities/availability-block.entity';
-import { BookingStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
+import { BookingStatus, B2bRecordStatus, B2bRoleCode, ShiftStatus } from './entities/b2b.enums';
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
+import { B2bBookingPaymentProofEntity, BookingPaymentMethod, BookingPaymentType } from './entities/booking-payment-proof.entity';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
 import { B2bOrganizationEntity } from './entities/organization.entity';
@@ -66,6 +68,7 @@ export class B2bManagementService {
     private readonly notifications: B2bNotificationsService,
     @Inject(B2B_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     private readonly messaging: MessagingService,
+    @Optional() @Inject(getRepositoryPortToken(B2bBookingPaymentProofEntity, 'b2b')) private readonly paymentProofs?: RepositoryPort<B2bBookingPaymentProofEntity>,
   ) {}
 
   async getOrganization(user: B2bJwtUser) {
@@ -191,6 +194,14 @@ export class B2bManagementService {
     return this.assertCourt(user, courtId).then(() => this.shiftRules.find({ where: { courtId }, order: { weekday: 'ASC', startTime: 'ASC' } }));
   }
 
+  async deleteShiftRule(user: B2bJwtUser, courtId: string, ruleId: string) {
+    await this.getCourt(user, courtId);
+    const rule = await this.shiftRules.findOne({ where: { id: ruleId, courtId } });
+    if (!rule) throw new NotFoundException('Regla de turno no encontrada');
+    await this.shiftRules.delete({ id: ruleId, courtId });
+    return { deleted: true };
+  }
+
   async createBlock(user: B2bJwtUser, courtId: string, input: { startsAt: string; endsAt: string; reason: string }) {
     await this.getCourt(user, courtId);
     const startsAt = new Date(input.startsAt);
@@ -210,13 +221,25 @@ export class B2bManagementService {
     return this.generateShiftsForRange(user.organizationId, courtId, from, to, await this.orgTimezone(user.organizationId));
   }
 
+  async generateMonthlyShifts(user: B2bJwtUser, courtId: string) {
+    await this.getCourt(user, courtId);
+    const timeZone = await this.orgTimezone(user.organizationId);
+    const today = orgParts(new Date(), timeZone);
+    const from = orgTimeToDate({ year: today.year, month: today.month, day: 1, hour: 0, minute: 0 }, timeZone);
+    const to = orgTimeToDate({ year: today.year, month: today.month + 1, day: 1, hour: 0, minute: 0 }, timeZone);
+    return this.generateShiftsForRange(user.organizationId, courtId, from, to, timeZone);
+  }
+
   private async generateShiftsForRange(organizationId: string, courtId: string, from: Date, to: Date, timeZone: string) {
     const rules = await this.shiftRules.find({ where: { courtId, active: true } });
-    const generated: B2bShiftEntity[] = [];
+    const existingShifts = await this.shifts.find({ where: { courtId, startsAt: betweenValues(from, to) } });
+    const inRange = existingShifts.filter((shift) => {
+      const startsAt = new Date(shift.startsAt).getTime();
+      return startsAt >= from.getTime() && startsAt < to.getTime();
+    });
+    const expectedStarts = new Map<number, { startsAt: Date; endsAt: Date; priceCentsArs: number }>();
+
     for (const rule of rules) {
-      // Los días se recorren con el reloj de pared de la organización: el
-      // weekday de la regla y la hora de inicio son del complejo, no del
-      // servidor (issue #24).
       let cursor = startOfOrgDay(from, timeZone);
       while (cursor < to) {
         const parts = orgParts(cursor, timeZone);
@@ -224,22 +247,45 @@ export class B2bManagementService {
           const [startHour, startMinute] = rule.startTime.split(':').map(Number);
           const startsAt = orgTimeToDate({ year: parts.year, month: parts.month, day: parts.day, hour: startHour, minute: startMinute }, timeZone);
           const endsAt = addOrgHours(startsAt, rule.durationHours, timeZone);
-          if (startsAt >= from && endsAt <= to) {
-            const existing = await this.shifts.findOne({ where: { courtId, startsAt } });
-            if (!existing) {
-              generated.push(this.shifts.create({
-                organizationId,
-                courtId,
-                startsAt,
-                endsAt,
-                priceCentsArs: rule.priceCentsArs,
-                status: ShiftStatus.AVAILABLE,
-              }));
-            }
+          if (startsAt >= from && startsAt < to && endsAt <= to) {
+            expectedStarts.set(startsAt.getTime(), { startsAt, endsAt, priceCentsArs: rule.priceCentsArs });
           }
         }
         cursor = addOrgDays(cursor, 1, timeZone);
       }
+    }
+
+    const staleShifts = inRange.filter((shift) =>
+      shift.status === ShiftStatus.AVAILABLE && !expectedStarts.has(new Date(shift.startsAt).getTime()),
+    );
+    await Promise.all(staleShifts.map((shift) => this.shifts.update({ id: shift.id }, { status: ShiftStatus.BLOCKED })));
+
+    const existingStarts = new Set(inRange.map((shift) => new Date(shift.startsAt).getTime()));
+    const changedShifts = inRange.filter((shift) => {
+      if (shift.status !== ShiftStatus.AVAILABLE && shift.status !== ShiftStatus.BLOCKED) return false;
+      const expected = expectedStarts.get(new Date(shift.startsAt).getTime());
+      return expected !== undefined && (
+        shift.status !== ShiftStatus.AVAILABLE ||
+        new Date(shift.endsAt).getTime() !== expected.endsAt.getTime() ||
+        shift.priceCentsArs !== expected.priceCentsArs
+      );
+    });
+    await Promise.all(changedShifts.map((shift) => {
+      const expected = expectedStarts.get(new Date(shift.startsAt).getTime())!;
+      return this.shifts.update({ id: shift.id }, { status: ShiftStatus.AVAILABLE, endsAt: expected.endsAt, priceCentsArs: expected.priceCentsArs });
+    }));
+
+    const generated: B2bShiftEntity[] = [];
+    for (const [startsAtValue, slot] of expectedStarts) {
+      if (existingStarts.has(startsAtValue)) continue;
+      generated.push(this.shifts.create({
+        organizationId,
+        courtId,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+        priceCentsArs: slot.priceCentsArs,
+        status: ShiftStatus.AVAILABLE,
+      }));
     }
     return this.shifts.save(generated);
   }
@@ -284,7 +330,7 @@ export class B2bManagementService {
       const blocked = blocks.some((block) => block.startsAt < shift.endsAt && block.endsAt > shift.startsAt);
       const booking = bookingByShift.get(shift.id);
       let state: string;
-      if (blocked) state = 'BLOCKED';
+      if (blocked || shift.status === ShiftStatus.BLOCKED) state = 'BLOCKED';
       else if (booking) state = booking.status === BookingStatus.PENDING ? 'PENDING' : 'CONFIRMED';
       else state = ShiftStatus.AVAILABLE;
       const lane = board.get(shift.courtId) ?? [];
@@ -312,18 +358,23 @@ export class B2bManagementService {
     const shiftIds = [...new Set(rows.map((row) => row.shiftId))];
     const courtIds = [...new Set(rows.map((row) => row.courtId).filter((id): id is string => Boolean(id)))];
     const clientUserIds = [...new Set(rows.map((row) => row.clientUserId).filter((id): id is string => Boolean(id)))];
-    const [shifts, courts, users] = await Promise.all([
+    const [shifts, courts, users, proofs] = await Promise.all([
       this.shifts.find({ where: { id: inValues(shiftIds) } }),
       courtIds.length ? this.courts.find({ where: { id: inValues(courtIds) } }) : Promise.resolve([] as B2bCourtEntity[]),
       clientUserIds.length ? this.users.find({ where: { id: inValues(clientUserIds) } }) : Promise.resolve([] as B2bUserEntity[]),
+      this.paymentProofs
+        ? this.paymentProofs.find({ where: { bookingId: inValues(rows.map((row) => row.id)) } })
+        : Promise.resolve([] as B2bBookingPaymentProofEntity[]),
     ]);
     const shiftById = new Map(shifts.map((shift) => [shift.id, shift]));
     const courtById = new Map(courts.map((court) => [court.id, court]));
     const userById = new Map(users.map((user) => [user.id, user]));
+    const proofByBookingId = new Map(proofs.map((proof) => [proof.bookingId, proof]));
     return rows.map((row) => {
       const shift = shiftById.get(row.shiftId);
       const court = courtById.get(row.courtId);
       const client = userById.get(row.clientUserId);
+      const proof = proofByBookingId.get(row.id);
       return {
         ...row,
         shiftStartsAt: shift?.startsAt ?? null,
@@ -331,8 +382,120 @@ export class B2bManagementService {
         courtName: court?.name ?? null,
         courtSportType: court?.sportType ?? null,
         clientName: client?.fullName ?? client?.email ?? null,
+        paymentProof: proof ? {
+          paymentType: proof.paymentType,
+          paymentMethod: proof.paymentMethod,
+          fileName: proof.fileName,
+          contentType: proof.contentType,
+          uploadedAt: proof.uploadedAt,
+        } : null,
       };
     });
+  }
+
+  async uploadBookingPaymentProof(user: B2bJwtUser, bookingId: string, input: {
+    paymentType: BookingPaymentType;
+    paymentMethod: BookingPaymentMethod;
+    fileName: string;
+    contentType: string;
+    fileData: Buffer;
+  }) {
+    const booking = await this.bookings.findOne({ where: { id: bookingId, organizationId: user.organizationId } });
+    if (!booking || booking.clientUserId !== user.userId) throw new NotFoundException('Reserva no encontrada.');
+    if (![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status)) {
+      throw new BadRequestException('Solo podés adjuntar comprobantes a reservas activas.');
+    }
+
+    const bytes = input.fileData;
+    if (!bytes?.length || bytes.length > 5 * 1024 * 1024) {
+      throw new BadRequestException('El comprobante debe pesar hasta 5 MB.');
+    }
+    const signatures: Record<string, (data: Buffer) => boolean> = {
+      'image/jpeg': (data) => data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff,
+      'image/png': (data) => data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+      'image/webp': (data) => data.length >= 12 && data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WEBP',
+      'application/pdf': (data) => data.subarray(0, 5).toString('ascii') === '%PDF-',
+    };
+    if (!signatures[input.contentType]?.(bytes)) throw new BadRequestException('El formato no coincide con el contenido del comprobante.');
+
+    const fileName = input.fileName.replace(/[\\/\u0000-\u001f]/g, '_').slice(0, 255) || 'comprobante';
+    const paymentProofs = this.paymentProofRepository();
+    const existing = await paymentProofs.findOne({ where: { bookingId } });
+    const proof = paymentProofs.create({
+      ...(existing ?? {}),
+      bookingId,
+      uploadedBy: user.userId,
+      paymentType: input.paymentType,
+      paymentMethod: input.paymentMethod,
+      fileName,
+      contentType: input.contentType,
+      fileData: bytes,
+    });
+    const saved = await paymentProofs.save(proof);
+    await this.notifications.notifyStaff(booking.organizationId, {
+      type: 'b2b_booking_payment_proof',
+      severity: 'info',
+      title: 'Nuevo comprobante de pago',
+      body: 'Un cliente adjuntó un comprobante a una reserva.',
+      metadata: { bookingId, paymentType: saved.paymentType },
+    }, user.userId);
+    return {
+      bookingId: saved.bookingId,
+      paymentType: saved.paymentType,
+      paymentMethod: saved.paymentMethod,
+      fileName: saved.fileName,
+      contentType: saved.contentType,
+      uploadedAt: saved.uploadedAt,
+    };
+  }
+
+  async getBookingPaymentProof(user: B2bJwtUser, bookingId: string) {
+    const booking = await this.bookings.findOne({ where: { id: bookingId, organizationId: user.organizationId } });
+    if (!booking || (!user.roles.some(isStaffRole) && booking.clientUserId !== user.userId)) {
+      throw new NotFoundException('Comprobante no encontrado.');
+    }
+    const proof = await this.paymentProofRepository().findOne({ where: { bookingId } });
+    if (!proof) return null;
+    return {
+      bookingId: proof.bookingId,
+      paymentType: proof.paymentType,
+      paymentMethod: proof.paymentMethod,
+      fileName: proof.fileName,
+      contentType: proof.contentType,
+      uploadedAt: proof.uploadedAt,
+      dataBase64: proof.fileData.toString('base64'),
+    };
+  }
+
+  async sendBookingPaymentReminder(user: B2bJwtUser, bookingId: string) {
+    if (!user.roles.some(isStaffRole)) throw new ForbiddenException('Solo el personal puede enviar recordatorios de pago.');
+    const booking = await this.bookings.findOne({ where: { id: bookingId, organizationId: user.organizationId } });
+    if (!booking || ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status)) {
+      throw new NotFoundException('Reserva activa no encontrada.');
+    }
+    const [client, court, shift] = await Promise.all([
+      this.users.findOne({ where: { id: booking.clientUserId } }),
+      this.courts.findOne({ where: { id: booking.courtId } }),
+      this.shifts.findOne({ where: { id: booking.shiftId } }),
+    ]);
+    if (!client?.email || !court || !shift) throw new BadRequestException('Faltan datos de contacto o del turno para enviar el recordatorio.');
+    const organization = await this.getOrganization(user);
+    const timeZone = resolveTimeZone(organization.timezone);
+    const result = await this.messaging.sendEmail(
+      client.email,
+      `Hola ${client.fullName || ''}, te recordamos que tu reserva en ${court.name} es el ${orgDateString(shift.startsAt, timeZone)} a las ${orgTimeString(shift.startsAt, timeZone)}. Si ya realizaste el pago, podés adjuntar el comprobante desde Mis reservas.`,
+      'Recordatorio de pago de reserva',
+      'payment',
+      { bookingId },
+    );
+    await this.notifications.notifyUser(client.id, booking.organizationId, {
+      type: 'b2b_booking_payment_proof',
+      severity: 'info',
+      title: 'Recordatorio de pago',
+      body: `Revisá el pago de tu reserva en ${court.name}.`,
+      metadata: { bookingId },
+    }, user.userId);
+    return { delivered: result.delivered, provider: result.provider };
   }
 
   async metricsSummary(user: B2bJwtUser, date?: string, courtId?: string) {
@@ -688,8 +851,13 @@ export class B2bManagementService {
 
   private async assertCourt(user: B2bJwtUser, courtId: string) {
     const court = await this.courts.findOneBy({ id: courtId, organizationId: user.organizationId });
-    if (!court) throw new NotFoundException('Cancha no encontrada');
+    if (!court || court.status === B2bRecordStatus.INACTIVE) throw new NotFoundException('Cancha no encontrada');
     return court;
+  }
+
+  private paymentProofRepository(): RepositoryPort<B2bBookingPaymentProofEntity> {
+    if (!this.paymentProofs) throw new Error('El repositorio de comprobantes no está configurado.');
+    return this.paymentProofs;
   }
 
   private getCourt(user: B2bJwtUser, courtId: string) {

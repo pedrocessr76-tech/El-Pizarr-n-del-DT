@@ -82,8 +82,10 @@ export type NotificationType =
   | 'b2b_booking_cancelled'
   | 'b2b_booking_completed'
   | 'b2b_booking_rescheduled'
+  | 'b2b_booking_payment_proof'
   | 'b2b_org_announcement'
-  | 'pivot_contact_request';
+  | 'pivot_contact_request'
+  | 'pivot_chat_message';
 
 export type Severity = 'info' | 'success' | 'warning' | 'error';
 
