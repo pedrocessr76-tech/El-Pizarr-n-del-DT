@@ -85,6 +85,8 @@ services:
         value: false
       - key: B2B_JWT_SECRET
         generateValue: true
+      - key: B2B_EMAIL_VERIFICATION_ENABLED
+        value: false
       # Recordatorios #34: email automático 24 h antes y aviso de WhatsApp
       # manual 30 min antes. El aviso de WhatsApp no se envía desde acá: lo
       # despacha el personal con un deep link wa.me, así que este canal queda en

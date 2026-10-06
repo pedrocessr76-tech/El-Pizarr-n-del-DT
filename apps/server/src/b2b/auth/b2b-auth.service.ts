@@ -55,7 +55,7 @@ export class B2bAuthService {
   ) {}
 
   /**
-   * Login con verificación obligatoria de email (#verificacion-de-email).
+   * Login con verificación obligatoria cuando B2B_EMAIL_VERIFICATION_ENABLED está activo.
    *
    * El orden importa: primero se valida la contraseña, después se mira si la
    * cuenta está verificada. Al revés, el mensaje "verificá tu email" revelaría
@@ -66,7 +66,7 @@ export class B2bAuthService {
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    if (!user.emailVerified) {
+    if (this.isEmailVerificationEnabled() && !user.emailVerified) {
       throw new EmailNotVerifiedException();
     }
     const assignments = await this.userRoles.find({ where: { userId: user.id, organizationId: user.organizationId } });
@@ -130,14 +130,16 @@ export class B2bAuthService {
     const email = input.email.toLowerCase();
     const existing = await this.users.findOne({ where: { organizationId: organization.id, email } });
     if (existing) throw new ConflictException('Ya existe una cuenta con ese email en este complejo.');
+    const verificationEnabled = this.isEmailVerificationEnabled();
     const user = await this.users.save(this.users.create({
       organizationId: organization.id,
       email,
       fullName: input.fullName,
       passwordHash: await bcrypt.hash(input.password, 12),
-      emailVerified: false,
+      emailVerified: !verificationEnabled,
     }));
     await this.userRoles.save({ userId: user.id, organizationId: organization.id, roleId: B2bRoleCode.CLIENT });
+    if (!verificationEnabled) return this.issueToken(user, [B2bRoleCode.CLIENT]);
     // Sin sesión: el spec exige verificar antes de dar acceso, y devolver un
     // access token acá equivaldría a saltar el paso.
     await this.startVerification(user);
@@ -225,15 +227,15 @@ export class B2bAuthService {
    * rol o sede), se revierte la organización y no queda un complejo huérfano sin
    * dueño.
    *
-   * Como el resto de los registros, el owner nace sin verificar y SIN sesión
-   * (#verificacion-de-email): el email de verificación se manda recién después
-   * del commit. Mandarlo dentro de la transacción abriría la posibilidad de que
-   * un rollback dejara un enlace válido para un complejo que no existe.
+  * Cuando la verificación está activa, el owner nace sin verificar y sin sesión:
+  * el correo se manda recién después del commit para no emitir enlaces de una
+  * organización que luego pudiera revertirse.
    */
   async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
     await this.ensureRoles();
     this.assertEmailIsUsable(input.email);
 
+    const verificationEnabled = this.isEmailVerificationEnabled();
     const owner = await this.unitOfWork.execute(async (repositories) => {
       const organizations = repositories.get(B2bOrganizationEntity);
       const users = repositories.get(B2bUserEntity);
@@ -250,7 +252,7 @@ export class B2bAuthService {
           email,
           fullName: input.ownerFullName.trim(),
           passwordHash: await bcrypt.hash(input.password, 12),
-          emailVerified: false,
+          emailVerified: !verificationEnabled,
         }),
       );
       await userRoles.save({ userId: created.id, organizationId: organization.id, roleId: B2bRoleCode.OWNER });
@@ -260,6 +262,7 @@ export class B2bAuthService {
       return created;
     });
 
+    if (!verificationEnabled) return this.issueToken(owner, [B2bRoleCode.OWNER]);
     await this.startVerification(owner);
     return {
       organizationName: input.organizationName.trim(),
@@ -279,6 +282,10 @@ export class B2bAuthService {
   private async startVerification(user: B2bUserEntity): Promise<void> {
     const token = await this.verification.issueToken(user.id);
     await this.verificationMailer.send(user.email, user.fullName, token);
+  }
+
+  private isEmailVerificationEnabled(): boolean {
+    return process.env.B2B_EMAIL_VERIFICATION_ENABLED?.trim().toLowerCase() !== 'false';
   }
 
   /**
@@ -359,7 +366,7 @@ export class B2bAuthService {
    * al JWT):
    *  - el usuario debe existir, pertenecer a la org del token y estar ACTIVE;
    *  - el complejo debe existir y estar ACTIVE;
-   *  - el email debe estar verificado (#verificacion-de-email);
+  *  - el email debe estar verificado si la verificación está habilitada;
    *  - los roles se recalculan desde b2b_user_roles (nunca desde el token).
    *
    * Lanza UnauthorizedException si algo no cuadra. Lo usan la estrategia
@@ -378,7 +385,7 @@ export class B2bAuthService {
     // El login ya frena las cuentas sin verificar, pero un refresh cookie de
     // antes del deploy, o un token emitido por otra vía, no debe seguir
     // sirviendo: la verificación es una condición de la sesión, no del login.
-    if (!user.emailVerified) throw new EmailNotVerifiedException();
+    if (this.isEmailVerificationEnabled() && !user.emailVerified) throw new EmailNotVerifiedException();
 
     const organization = await this.organizations.findOne({
       where: { id: payload.organizationId, status: B2bRecordStatus.ACTIVE },

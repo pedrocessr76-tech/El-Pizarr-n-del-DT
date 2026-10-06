@@ -27,6 +27,8 @@ export interface B2bPendingVerification {
   message: string;
 }
 
+export type B2bRegistrationResponse = B2bPendingVerification | B2bAuthResponse;
+
 export interface B2bBooking {
   id: string;
   courtId: string;
@@ -191,11 +193,11 @@ export const b2bService = {
     return data;
   },
   async registerClient(input: { email: string; fullName: string; password: string }) {
-    const { data } = await b2bApi.post<B2bPendingVerification>('/v1/auth/register-client', input);
+    const { data } = await b2bApi.post<B2bRegistrationResponse>('/v1/auth/register-client', input);
     return data;
   },
   async onboardOwner(input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) {
-    const { data } = await b2bApi.post<B2bPendingVerification>('/v1/auth/onboarding', input);
+    const { data } = await b2bApi.post<B2bRegistrationResponse>('/v1/auth/onboarding', input);
     return data;
   },
   async getPublicOrganizations() {

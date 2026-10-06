@@ -164,7 +164,7 @@ describe('B2bAuthService - onboardOwner', () => {
     const result = await service.onboardOwner(input);
 
     // Sin sesión: el owner tiene que verificar su email antes de entrar.
-    expect(result.emailVerified).toBe(false);
+    expect('emailVerified' in result && result.emailVerified).toBe(false);
     expect(result).not.toHaveProperty('accessToken');
     expect(organizations.save).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Complejo Los Amigos', slug: 'complejo-los-amigos' }),
@@ -189,6 +189,24 @@ describe('B2bAuthService - onboardOwner', () => {
     // El email sale recién después del commit, no dentro de la transacción.
     expect(verification.issueToken).toHaveBeenCalledWith('user-nuevo');
     expect(verificationMailer.send).toHaveBeenCalledWith('dueno@amigos.com', 'Carlos Bianchi', 'token-verificacion');
+  });
+
+  it('crea la cuenta OWNER verificada y entrega sesión cuando la verificación está desactivada', async () => {
+    const previousSetting = process.env.B2B_EMAIL_VERIFICATION_ENABLED;
+    process.env.B2B_EMAIL_VERIFICATION_ENABLED = 'false';
+
+    try {
+      const { service, users, verification, verificationMailer } = setup();
+      const result = await service.onboardOwner(input);
+
+      expect(users.save).toHaveBeenCalledWith(expect.objectContaining({ emailVerified: true }));
+      expect(result).toHaveProperty('accessToken', 'jwt-firmado');
+      expect(verification.issueToken).not.toHaveBeenCalled();
+      expect(verificationMailer.send).not.toHaveBeenCalled();
+    } finally {
+      if (previousSetting === undefined) delete process.env.B2B_EMAIL_VERIFICATION_ENABLED;
+      else process.env.B2B_EMAIL_VERIFICATION_ENABLED = previousSetting;
+    }
   });
 
   it('bloquea el onboarding con un dominio de correo desechable sin crear nada', async () => {
@@ -317,9 +335,9 @@ describe('B2bAuthService - verificación de email', () => {
 
   function setup({ user = null, disposable = false }: { user?: any; disposable?: boolean }) {
     const users = { findOne: jest.fn(async () => user) };
-    const organizations = {};
+    const organizations = { findOne: jest.fn(async () => ({ id: org, status: B2bRecordStatus.ACTIVE })) };
     const roles = { upsert: jest.fn() };
-    const userRoles = { find: jest.fn().mockResolvedValue([]) };
+    const userRoles = { find: jest.fn().mockResolvedValue([{ roleId: B2bRoleCode.CLIENT }]) };
     const courts = {};
     const facilities = {};
     const jwt = { sign: jest.fn(() => 'jwt-firmado') };
@@ -352,6 +370,25 @@ describe('B2bAuthService - verificación de email', () => {
     const { service } = setup({ user: unverified });
 
     await expect(service.login('x@correo.com', '123456')).rejects.toThrow(/Verific/);
+  });
+
+  it('permite login y renovación de sesión de cuentas sin verificar cuando la verificación está desactivada', async () => {
+    const previousSetting = process.env.B2B_EMAIL_VERIFICATION_ENABLED;
+    process.env.B2B_EMAIL_VERIFICATION_ENABLED = 'false';
+
+    try {
+      const { service } = setup({ user: unverified });
+      const session = await service.login('x@correo.com', '123456');
+
+      expect(session.accessToken).toBe('jwt-firmado');
+      await expect(service.resolveUserFromToken({ userId: 'user-1', organizationId: org, email: unverified.email, roles: [] })).resolves.toMatchObject({
+        userId: 'user-1',
+        organizationId: org,
+      });
+    } finally {
+      if (previousSetting === undefined) delete process.env.B2B_EMAIL_VERIFICATION_ENABLED;
+      else process.env.B2B_EMAIL_VERIFICATION_ENABLED = previousSetting;
+    }
   });
 
   it('no emite ninguna sesión para una cuenta sin verificar', async () => {

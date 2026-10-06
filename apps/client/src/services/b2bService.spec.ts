@@ -222,7 +222,7 @@ describe('b2bService: verificación de email (#verificacion-de-email)', () => {
     expect(main.post).toHaveBeenCalledWith('/v1/auth/register-client', { email: 'ana@club.com', fullName: 'Ana', password: '123456' });
     // Sin accessToken: una cuenta sin verificar no debe podersesionarse.
     expect((result as unknown as Record<string, unknown>).accessToken).toBeUndefined();
-    expect(result.emailVerified).toBe(false);
+    expect('emailVerified' in result && result.emailVerified).toBe(false);
   });
 
   it('onboardOwner también queda pendiente de verificación', async () => {

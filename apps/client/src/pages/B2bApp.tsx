@@ -182,13 +182,13 @@ export function B2bApp() {
   };
 
   const registerClientAccount = async (input: { email: string; fullName: string; password: string }) => {
-    // El registro ya no crea sesión: si salió bien, queda pendiente la
-    // verificación y la pantalla de "revisá tu email" la levanta el store.
-    await registerClient(input);
+    const registered = await registerClient(input);
+    if (registered && useB2bStore.getState().user) navigate('portal');
   };
 
   const registerOwnerAccount = async (input: { organizationName: string; facilityName?: string; ownerFullName: string; email: string; password: string }) => {
-    await onboardOwner(input);
+    const registered = await onboardOwner(input);
+    if (registered && useB2bStore.getState().user) navigate('dashboard');
   };
 
   if (!hydrated) {

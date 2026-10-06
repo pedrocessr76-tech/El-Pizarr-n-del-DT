@@ -66,7 +66,11 @@ export const useB2bStore = create<B2bState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await b2bService.registerClient(input);
-      set({ isLoading: false, pendingVerificationEmail: response.email, loginBlockedByVerification: false });
+      if ('accessToken' in response) {
+        set({ ...applyAuth(response), isLoading: false, pendingVerificationEmail: null, loginBlockedByVerification: false });
+      } else {
+        set({ isLoading: false, pendingVerificationEmail: response.email, loginBlockedByVerification: false });
+      }
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear la cuenta de cliente.' });
@@ -78,7 +82,11 @@ export const useB2bStore = create<B2bState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await b2bService.onboardOwner(input);
-      set({ isLoading: false, pendingVerificationEmail: response.email, loginBlockedByVerification: false });
+      if ('accessToken' in response) {
+        set({ ...applyAuth(response), isLoading: false, pendingVerificationEmail: null, loginBlockedByVerification: false });
+      } else {
+        set({ isLoading: false, pendingVerificationEmail: response.email, loginBlockedByVerification: false });
+      }
       return true;
     } catch (error: any) {
       set({ isLoading: false, error: error.response?.data?.message || 'No se pudo crear el complejo.' });

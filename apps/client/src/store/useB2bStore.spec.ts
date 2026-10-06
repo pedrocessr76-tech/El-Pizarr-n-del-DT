@@ -61,6 +61,28 @@ describe('useB2bStore: registro sin sesión', () => {
     expect(useB2bStore.getState().pendingVerificationEmail).toBe('owner@club.com');
     expect(useB2bStore.getState().user).toBeNull();
   });
+
+  it('el registro de cliente aplica la sesión cuando la verificación está desactivada', async () => {
+    registerMock.mockResolvedValue(SESSION);
+
+    await useB2bStore.getState().registerClient({ email: 'ana@club.com', fullName: 'Ana', password: '123456' });
+
+    expect(useB2bStore.getState().pendingVerificationEmail).toBeNull();
+    expect(useB2bStore.getState().token).toBe('tok');
+    expect(useB2bStore.getState().user?.email).toBe('ana@club.com');
+  });
+
+  it('el onboarding del propietario aplica la sesión cuando la verificación está desactivada', async () => {
+    onboardMock.mockResolvedValue(SESSION);
+
+    await useB2bStore.getState().onboardOwner({
+      organizationName: 'Los Amigos', ownerFullName: 'Ana', email: 'owner@club.com', password: '123456',
+    });
+
+    expect(useB2bStore.getState().pendingVerificationEmail).toBeNull();
+    expect(useB2bStore.getState().token).toBe('tok');
+    expect(useB2bStore.getState().user?.email).toBe('ana@club.com');
+  });
 });
 
 describe('useB2bStore: login bloqueado por verificación', () => {

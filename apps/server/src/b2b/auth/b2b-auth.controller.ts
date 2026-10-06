@@ -130,18 +130,28 @@ export class B2bAuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('onboarding')
-  @ApiOperation({ summary: 'Onboarding de propietario: crea el complejo, su cuenta OWNER (sin sesión, hay que verificar el email) y una sede inicial opcional' })
-  async onboarding(@Body() body: OnboardingDto) {
-    // Sin cookie de refresh: la cuenta nace sin verificar y no hay sesión hasta
-    // confirmar el email (#verificacion-de-email).
-    return this.auth.onboardOwner(body);
+  @ApiOperation({ summary: 'Onboarding de propietario: crea el complejo, su cuenta OWNER y una sede inicial opcional' })
+  async onboarding(@Body() body: OnboardingDto, @Res({ passthrough: true }) res: ExpressResponse) {
+    const result = await this.auth.onboardOwner(body);
+    if ('refreshToken' in result) {
+      const { refreshToken, ...session } = result;
+      setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+      return session;
+    }
+    return result;
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register-client')
-  @ApiOperation({ summary: 'Registrar un cliente en un complejo existente (sin sesión, hay que verificar el email)' })
-  async registerClient(@Body() body: RegisterClientDto) {
-    return this.auth.registerClient(body);
+  @ApiOperation({ summary: 'Registrar un cliente en un complejo existente' })
+  async registerClient(@Body() body: RegisterClientDto, @Res({ passthrough: true }) res: ExpressResponse) {
+    const result = await this.auth.registerClient(body);
+    if ('refreshToken' in result) {
+      const { refreshToken, ...session } = result;
+      setRefreshCookie(res, B2B_REFRESH_COOKIE, refreshToken);
+      return session;
+    }
+    return result;
   }
 
   @Get('organizations')
