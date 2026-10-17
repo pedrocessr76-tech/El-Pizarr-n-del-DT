@@ -32,7 +32,7 @@ describe('Migración AddB2bReminderChannels (recordatorios bicanal)', () => {
   });
 
   it('agrega emailReminderIntervalsMinutes con default [1440]', () => {
-    const add = up.find((sql) => sql.includes('ADD COLUMN IF NOT EXISTS "emailReminderIntervalsMinutes"'));
+    const add = up.find((sql) => sql.includes('ADD COLUMN "emailReminderIntervalsMinutes"'));
     expect(add).toBeDefined();
     expect(add).toContain("'[1440]'::jsonb");
   });
@@ -53,7 +53,7 @@ describe('Migración AddB2bReminderChannels (recordatorios bicanal)', () => {
   });
 
   it('agrega channel a las entregas y completa el backfill antes de cambiar la clave', () => {
-    const addColumn = up.findIndex((sql) => sql.includes('ADD COLUMN IF NOT EXISTS "channel"'));
+    const addColumn = up.findIndex((sql) => sql.includes('ADD COLUMN "channel"'));
     const backfill = up.findIndex((sql) => sql.includes(`SET "channel" = 'whatsapp'`));
     const newIndex = up.findIndex((sql) => sql.includes('CREATE UNIQUE INDEX'));
     expect(addColumn).toBeGreaterThanOrEqual(0);
@@ -98,7 +98,7 @@ describe('Migración AddB2bReminderChannels (recordatorios bicanal)', () => {
     expect(joined).toContain('DROP INDEX IF EXISTS "IDX_b2b_booking_reminders_channel"');
     expect(joined).toContain('DELETE FROM b2b_booking_reminders');
     expect(joined).toContain('ADD CONSTRAINT uq_b2b_booking_reminder_interval UNIQUE ("bookingId", "minutesBefore")');
-    expect(joined).toContain('DROP COLUMN IF EXISTS "channel"');
-    expect(joined).toContain('DROP COLUMN IF EXISTS "emailReminderIntervalsMinutes"');
+    expect(joined).toContain('DROP COLUMN "channel"');
+    expect(joined).toContain('DROP COLUMN "emailReminderIntervalsMinutes"');
   });
 });

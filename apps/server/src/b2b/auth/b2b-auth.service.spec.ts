@@ -28,6 +28,7 @@ describe('B2bAuthService - resolveUserFromToken', () => {
         if (where.organizationId && where.organizationId !== user.organizationId) return null;
         return user;
       }),
+      save: jest.fn(async (u) => u),
     };
     const organizations = {
       findOne: jest.fn(async ({ where }: any) => {
@@ -273,6 +274,7 @@ describe('B2bAuthService - refresh', () => {
         if (where.organizationId && where.organizationId !== org) return null;
         return { id: userId, organizationId: org, email: 'fresco@correo.com', status: B2bRecordStatus.ACTIVE, emailVerified: true };
       }),
+      save: jest.fn(async (u) => u),
     };
     const organizations = {
       findOne: jest.fn(async () =>
@@ -334,7 +336,7 @@ describe('B2bAuthService - verificación de email', () => {
   const org = 'org-1';
 
   function setup({ user = null, disposable = false }: { user?: any; disposable?: boolean }) {
-    const users = { findOne: jest.fn(async () => user) };
+    const users = { findOne: jest.fn(async () => user), save: jest.fn(async (u) => u) };
     const organizations = { findOne: jest.fn(async () => ({ id: org, status: B2bRecordStatus.ACTIVE })) };
     const roles = { upsert: jest.fn() };
     const userRoles = { find: jest.fn().mockResolvedValue([{ roleId: B2bRoleCode.CLIENT }]) };

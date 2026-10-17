@@ -69,6 +69,8 @@ export class B2bAuthService {
     if (this.isEmailVerificationEnabled() && !user.emailVerified) {
       throw new EmailNotVerifiedException();
     }
+    user.lastLoginAt = new Date();
+    await this.users.save(user);
     const assignments = await this.userRoles.find({ where: { userId: user.id, organizationId: user.organizationId } });
     return this.issueToken(user, assignments.map((assignment) => assignment.roleId));
   }
@@ -358,6 +360,11 @@ export class B2bAuthService {
       throw new UnauthorizedException('Token de refresco inválido.');
     }
     const fresh = await this.resolveUserFromToken(claims);
+    const user = await this.users.findOne({ where: { id: fresh.userId, organizationId: fresh.organizationId } });
+    if (user) {
+      user.lastLoginAt = new Date();
+      await this.users.save(user);
+    }
     return this.issueTokenFrom(fresh);
   }
 

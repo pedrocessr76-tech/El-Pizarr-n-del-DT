@@ -94,10 +94,10 @@ describe('Migración CreateB2bSchema (baseline del esquema B2B)', () => {
   });
 
   it('declara todas las columnas de cada entidad', () => {
-    // Contacto de WhatsApp (#37), Recordatorios (#34), Perfiles Pivote y
-    // Verificación de email: campos que se agregan en migraciones aditivas.
+// Contacto de WhatsApp (#37), Recordatorios (#34), Perfiles Pivote y
+// Verificación de email: campos que se agregan en migraciones aditivas.
     const provisionedLater: Record<string, string[]> = {
-      b2b_users: ['whatsappPhone', 'whatsappOptIn', 'pivotAvailable', 'pivotRole', 'pivotPositions', 'emailVerified'],
+      b2b_users: ['whatsappPhone', 'whatsappOptIn', 'pivotAvailable', 'pivotRole', 'pivotPositions', 'emailVerified', 'lastLoginAt', 'updatedAt'],
       b2b_organizations: ['whatsappPhone', 'whatsappOptIn', 'whatsappReminderIntervalsMinutes', 'emailReminderIntervalsMinutes'],
     };
     const missing: string[] = [];

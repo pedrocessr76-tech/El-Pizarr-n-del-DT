@@ -55,4 +55,10 @@ export class B2bUserEntity {
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastLoginAt!: Date | null;
+
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
 }
