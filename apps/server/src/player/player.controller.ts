@@ -5,7 +5,6 @@ import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-va
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlayerService } from './player.service';
 import { PlayerFilters } from './player.repository';
-import type { Player } from '../../../../packages/shared/types/models';
 
 class PlayerFilterDto implements PlayerFilters {
   @ApiPropertyOptional({ description: 'Buscar por nombre (parcial, sin distinguir mayúsculas)' })
@@ -39,6 +38,21 @@ class PlayerFilterDto implements PlayerFilters {
   @Min(1)
   @Max(99)
   maxRating?: number;
+
+  @ApiPropertyOptional({ description: 'Página (1-based). Default: 1', type: Number })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ description: 'Jugadores por página (max 100). Default: 48', type: Number })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
 }
 
 @ApiTags('Players')
@@ -49,9 +63,9 @@ export class PlayerController {
   constructor(private readonly playerService: PlayerService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Obtener jugadores con filtros server-side (nombre, posición, rareza y rating)' })
-  @ApiResponse({ status: 200, description: 'Lista de jugadores filtrada.' })
-  findAll(@Query() filters: PlayerFilterDto): Promise<Player[]> {
+  @ApiOperation({ summary: 'Obtener jugadores paginados con filtros server-side (nombre, posición, rareza, rating, página)' })
+  @ApiResponse({ status: 200, description: 'Página de jugadores filtrada con metadata de paginación.' })
+  findAll(@Query() filters: PlayerFilterDto) {
     return this.playerService.findAll(filters);
   }
 }

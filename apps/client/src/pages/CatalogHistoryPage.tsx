@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PlayerCard } from '../components/PlayerCard';
 import { playerService } from '../services/playerService';
 import { matchService } from '../services/matchService';
 import type { Player, Position, PlayerMatchStats } from '../../../../packages/shared/types/models';
 import type { HistoryTournamentItem } from '../services/matchService';
 
-// Posiciones del catálogo para el filtro server-side (posiciones genéricas FIFA compatibles).
 const POSITIONS: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
+const PAGE_SIZE = 48;
 
 interface CatalogHistoryPageProps {
   initialView?: 'history' | 'catalog';
@@ -15,17 +15,27 @@ interface CatalogHistoryPageProps {
 
 export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialView = 'catalog', onBack }) => {
   const [activeView, setActiveView] = useState<'history' | 'catalog'>(initialView);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // --- Filtros del catálogo ---
+  // --- Catálogo con Infinite Scroll ---
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [total, setTotal] = useState<number | null>(null);
+
+  // Ref del centinela (elemento invisible al final del grid)
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  // Ref para evitar llamadas dobles al cargar más
+  const isFetchingRef = useRef(false);
+
+  // --- Filtros ---
   const [search, setSearch] = useState('');
   const [positionFilter, setPositionFilter] = useState<Position | ''>('');
-  const [rarityFilter, setRarityFilter] = useState<'' | 'gold' | 'silver' | 'bronze'>(''); // '' | 'gold' | 'silver' | 'bronze'
+  const [rarityFilter, setRarityFilter] = useState<'' | 'gold' | 'silver' | 'bronze'>('');
   const [minRating, setMinRating] = useState<number | ''>('');
 
-  // Opciones de rareza (Calidad) — los rangos coinciden con el filtro server-side.
   const RARITIES: { key: '' | 'gold' | 'silver' | 'bronze'; label: string; dot: string }[] = [
     { key: '', label: 'Todas', dot: 'bg-outline-variant' },
     { key: 'gold', label: 'Oro', dot: 'bg-[#FFDF00]' },
@@ -40,36 +50,69 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
     setMinRating('');
   };
 
-  // Estado de historial real
+  // Función central de fetch: carga UNA página
+  const fetchPage = useCallback(async (page: number, resetList: boolean) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    if (resetList) setIsLoading(true);
+    else setIsLoadingMore(true);
+    setLoadError(null);
+
+    try {
+      const result = await playerService.getPlayers({
+        name: search || undefined,
+        position: positionFilter || undefined,
+        rarity: rarityFilter || undefined,
+        minRating: minRating === '' ? undefined : Number(minRating),
+        page,
+        limit: PAGE_SIZE,
+      });
+
+      setPlayers((prev) => resetList ? result.data : [...prev, ...result.data]);
+      setTotal(result.total);
+      setHasMore(result.hasMore);
+      setCurrentPage(result.page);
+    } catch (err: any) {
+      setLoadError(err.response?.data?.message || 'Error al cargar el catálogo de jugadores.');
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      isFetchingRef.current = false;
+    }
+  }, [search, positionFilter, rarityFilter, minRating]);
+
+  // Cuando cambian los filtros: debounce 300ms y resetear a página 1
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPlayers([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchPage(1, true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, positionFilter, rarityFilter, minRating]);
+
+  // IntersectionObserver: cuando el centinela se hace visible, pide la página siguiente
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isFetchingRef.current) {
+          fetchPage(currentPage + 1, false);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, currentPage, fetchPage]);
+
+  // --- Historial ---
   const [history, setHistory] = useState<HistoryTournamentItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  // Partido cuyo detalle (calificaciones por jugador) está expandido en el historial.
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    // Debounce corto para la búsqueda por nombre; el resto de filtros dispara al instante.
-    const timer = setTimeout(async () => {
-      try {
-        const data = await playerService.getAllPlayers({
-          name: search || undefined,
-          position: positionFilter || undefined,
-          rarity: rarityFilter || undefined,
-          minRating: minRating === '' ? undefined : Number(minRating),
-        });
-        setPlayers(data);
-        setIsLoading(false);
-      } catch (err: any) {
-        setLoadError(err.response?.data?.message || 'Error al cargar el catálogo de jugadores.');
-        setIsLoading(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search, positionFilter, rarityFilter, minRating]);
 
   useEffect(() => {
     if (activeView !== 'history') return;
@@ -77,7 +120,6 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
       setHistoryLoading(true);
       setHistoryError(null);
       try {
-        // La identidad (usuario O invitado) viaja en el token: el backend decide de quién es el historial.
         const data = await matchService.getHistory();
         setHistory(data.tournaments);
       } catch (err: any) {
@@ -88,6 +130,8 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
     };
     loadHistory();
   }, [activeView]);
+
+
 
   return (
     <div className="bg-background text-on-background min-h-screen pb-xl flex flex-col relative selection:bg-primary/30 selection:text-primary-fixed">
@@ -250,9 +294,11 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
                 className="w-full pl-10 pr-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-on-background placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
               />
             </div>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
               <span className="font-label-md text-label-md text-on-surface-variant">
-                {players.length} jugadores
+                {total !== null
+                  ? `${players.length} de ${total} jugadores`
+                  : `${players.length} jugadores`}
               </span>
               <button
                 onClick={clearFilters}
@@ -263,7 +309,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
             </div>
           </div>
 
-          {/* Loading State */}
+          {/* Loading State — primera carga */}
           {isLoading && (
             <div className="flex items-center justify-center py-16">
               <div className="flex flex-col items-center gap-4 text-on-surface-variant">
@@ -364,7 +410,7 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
             </>
           )}
 
-          {/* Card Grid — fluye con el scroll de página (sin recorte) */}
+          {/* Card Grid */}
           {!isLoading && !loadError && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 pb-8">
               {players.length === 0 ? (
@@ -378,11 +424,33 @@ export const CatalogHistoryPage: React.FC<CatalogHistoryPageProps> = ({ initialV
               )}
             </div>
           )}
+
+          {/* Centinela de Infinite Scroll — siempre presente al final */}
+          <div ref={sentinelRef} className="h-4" />
+
+          {/* Spinner de "cargando más" */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-8">
+              <div className="flex flex-col items-center gap-2 text-on-surface-variant">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="font-label-md text-label-md text-sm">Cargando más jugadores...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Fin de resultados */}
+          {!hasMore && players.length > 0 && !isLoadingMore && (
+            <div className="text-center py-6 text-on-surface-variant font-label-md text-label-md text-sm opacity-60">
+              ✓ Todos los jugadores cargados ({players.length})
+            </div>
+          )}
         </main>
       )}
     </div>
   );
 };
+
+
 
 // Detalle del partido: calificaciones por jugador (local y visitante) y su aporte.
 const MatchSummaryDetail: React.FC<{ match: HistoryTournamentItem['matches'][number] }> = ({ match }) => {

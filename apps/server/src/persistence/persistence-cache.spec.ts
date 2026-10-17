@@ -120,8 +120,11 @@ describe('cache opt-in on repository reads', () => {
     const query = {
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       cache: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
     };
     const typeormRepository = { createQueryBuilder: jest.fn(() => query) } as unknown as Repository<PlayerEntity>;
     const cacheIds: string[] = [];

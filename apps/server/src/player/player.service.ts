@@ -3,6 +3,14 @@ import type { Player } from '../../../../packages/shared/types/models';
 import { PlayerCatalogRepository, PlayerFilters, PLAYER_CATALOG_REPOSITORY } from './player.repository';
 import { PlayerEntity } from './player.entity';
 
+export interface PaginatedPlayerResponse {
+  data: Player[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 @Injectable()
 export class PlayerService {
   constructor(
@@ -28,9 +36,15 @@ export class PlayerService {
     };
   }
 
-  async findAll(filters: PlayerFilters = {}): Promise<Player[]> {
-    const players = await this.playerRepo.findCatalog(filters);
-    return players.map((p) => this.toPlayer(p));
+  async findAll(filters: PlayerFilters = {}): Promise<PaginatedPlayerResponse> {
+    const result = await this.playerRepo.findCatalog(filters);
+    return {
+      data: result.data.map((p) => this.toPlayer(p)),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      hasMore: result.hasMore,
+    };
   }
 
   async positionCounts(): Promise<Array<{ position: string; count: number }>> {
