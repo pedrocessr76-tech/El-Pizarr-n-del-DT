@@ -18,3 +18,12 @@ build/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Temporales locales (no versionar)
+fix_*.ps1
+playwright-*.test.js
+test-results/
+
+# Datasets crudos y assets de diseño (no versionar)
+info_kagle/
+stitch_elite_football_squad_builder/
