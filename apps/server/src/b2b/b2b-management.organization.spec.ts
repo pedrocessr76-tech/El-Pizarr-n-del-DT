@@ -19,7 +19,7 @@ function setup(overrides: Record<string, any> = {}) {
   };
   const service = new B2bManagementService(
     organizations as never, {} as never, {} as never, {} as never, {} as never,
-    {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never,
+    {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never,
   );
   return { service, organizations, organization };
 }

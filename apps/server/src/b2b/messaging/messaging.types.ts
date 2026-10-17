@@ -3,7 +3,7 @@
 /** Canales de salida soportados. Cada uno resuelve su propio proveedor. */
 export type MessageChannel = 'email' | 'whatsapp';
 
-export type MessageKind = 'generic' | 'confirmation' | 'reminder' | 'summary' | 'payment' | 'email-verification';
+export type MessageKind = 'generic' | 'confirmation' | 'reminder' | 'summary' | 'payment' | 'email-verification' | 'pivot_request' | 'pivot_message';
 
 export interface ChannelMessage {
   channel: MessageChannel;

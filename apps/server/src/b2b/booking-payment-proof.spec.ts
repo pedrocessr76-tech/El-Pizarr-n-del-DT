@@ -31,7 +31,8 @@ describe('Comprobantes de pago de reservas', () => {
     const messaging = { sendEmail: jest.fn().mockResolvedValue({ delivered: true, provider: 'smtp', messageId: 'mail-1' }) };
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, {} as never, shifts as never, {} as never,
-      bookings as never, {} as never, users as never, notifications as never,
+      bookings as never, {} as never, users as never, {} as never,
+      notifications as never,
       {} as never, messaging as never, paymentProofs as never,
     );
     return { service, bookings, paymentProofs, notifications, messaging, getStored: () => stored };

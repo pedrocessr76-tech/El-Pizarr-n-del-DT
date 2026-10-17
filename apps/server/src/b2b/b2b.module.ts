@@ -24,6 +24,8 @@ import { B2bManagementService } from './b2b-management.service';
 import { B2bSeedService } from './b2b-seed.service';
 import { B2bNotificationsModule } from './notifications/b2b-notifications.module';
 import { B2bPivotModule } from './pivot/b2b-pivot.module';
+import { PivotExpirationService } from './pivot/pivot-expiration.service';
+import { PivotAvailabilityService } from './pivot/pivot-availability.service';
 import { B2bPivotRequestEntity } from './pivot/b2b-pivot-request.entity';
 import { B2bPivotMessageEntity } from './pivot/b2b-pivot-message.entity';
 import { MessagingModule } from './messaging/messaging.module';
@@ -51,7 +53,7 @@ export const B2B_ENTITIES = [
 @Module({
   imports: [RepositoryPortModule.forFeature(B2B_ENTITIES, 'b2b'), B2bAuthModule, B2bNotificationsModule, B2bPivotModule, MessagingModule],
   controllers: [B2bManagementController, RemindersController],
-  providers: [B2bManagementService, B2bSeedService, BookingRemindersService, RemindersService],
+  providers: [B2bManagementService, B2bSeedService, BookingRemindersService, RemindersService, PivotExpirationService, PivotAvailabilityService],
   exports: [B2bManagementService],
 })
 export class B2bModule {}

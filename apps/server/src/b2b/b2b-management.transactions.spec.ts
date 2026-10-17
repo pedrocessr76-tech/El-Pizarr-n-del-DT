@@ -62,6 +62,10 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
         return booking;
       }),
     };
+    const pivotRequests = {
+      find: jest.fn().mockResolvedValue([]),
+      save: jest.fn(async (request) => request),
+    };
     const bookingEvents = { create: jest.fn((event) => event), save: jest.fn(async (event) => event) };
     const manager = {
       getRepository: jest.fn((entity: { name: string }) => {
@@ -69,6 +73,7 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
           B2bShiftEntity: shifts,
           B2bAvailabilityBlockEntity: blocks,
           B2bBookingEntity: bookings,
+          B2bPivotRequestEntity: pivotRequests,
         };
         return repos[entity.name] ?? {};
       }),
@@ -81,7 +86,7 @@ describe('Transaccionalidad de reservas (issue #18)', () => {
       organizations as never, {} as never,
       { findOneBy: jest.fn().mockResolvedValue({ id: 'court', organizationId: 'org', name: 'Cancha 1' }) } as never,
       {} as never, shifts as never, blocks as never, bookings as never, bookingEvents as never,
-      {} as never,
+      {} as never, pivotRequests as never,
       notifications as never,
       unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,

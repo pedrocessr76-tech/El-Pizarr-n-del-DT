@@ -15,6 +15,7 @@ import { BookingStatus, B2bRecordStatus, B2bRoleCode, ShiftStatus } from './enti
 import { B2bBookingEventEntity } from './entities/booking-event.entity';
 import { B2bBookingEntity } from './entities/booking.entity';
 import { B2bBookingPaymentProofEntity, BookingPaymentMethod, BookingPaymentType } from './entities/booking-payment-proof.entity';
+import { B2bPivotRequestEntity } from './pivot/b2b-pivot-request.entity';
 import { B2bCourtEntity } from './entities/court.entity';
 import { B2bFacilityEntity } from './entities/facility.entity';
 import { B2bOrganizationEntity } from './entities/organization.entity';
@@ -65,6 +66,7 @@ export class B2bManagementService {
     @Inject(getRepositoryPortToken(B2bBookingEntity, 'b2b')) private readonly bookings: RepositoryPort<B2bBookingEntity>,
     @Inject(getRepositoryPortToken(B2bBookingEventEntity, 'b2b')) private readonly bookingEvents: RepositoryPort<B2bBookingEventEntity>,
     @Inject(getRepositoryPortToken(B2bUserEntity, 'b2b')) private readonly users: RepositoryPort<B2bUserEntity>,
+    @Inject(getRepositoryPortToken(B2bPivotRequestEntity, 'b2b')) private readonly pivotRequests: RepositoryPort<B2bPivotRequestEntity>,
     private readonly notifications: B2bNotificationsService,
     @Inject(B2B_UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     private readonly messaging: MessagingService,
@@ -609,10 +611,9 @@ export class B2bManagementService {
     let saved!: B2bBookingEntity;
     let previous!: BookingStatus;
     await this.unitOfWork.execute(async (repositories) => {
-      // Bloqueo de fila sobre la reserva: una cancelación concurrente con una
-      // reprogramación no puede dejar el turno liberado o tomado dos veces.
       const bookings = repositories.get(B2bBookingEntity);
       const shifts = repositories.get(B2bShiftEntity);
+      const pivotRequests = repositories.get(B2bPivotRequestEntity);
       const booking = await bookings.findOne({
         where: { id, organizationId: user.organizationId },
         lock: { mode: 'pessimistic_write' },
@@ -624,9 +625,14 @@ export class B2bManagementService {
       booking.status = status;
       saved = await bookings.save(booking);
       if (status === BookingStatus.CANCELLED) {
-        // Liberar el turno es parte de la misma transacción que el estado de
-        // la reserva: ante un error, se revierte todo (issue #18).
         await shifts.update({ id: booking.shiftId }, { status: ShiftStatus.AVAILABLE });
+        // Cancelar solicitudes pivote vinculadas a esta reserva
+        const linkedRequests = await pivotRequests.find({ where: { bookingId: booking.id, status: 'PENDING' } });
+        for (const request of linkedRequests) {
+          request.status = 'DECLINED';
+          request.respondedAt = new Date();
+          await pivotRequests.save(request);
+        }
       }
     });
     await this.recordEvent(saved.id, user.userId, previous, status);
@@ -646,12 +652,37 @@ export class B2bManagementService {
         await this.bookingNotification(saved, 'b2b_booking_completed', 'success'),
         user.userId,
       );
+      // Marcar solicitudes pivote vinculadas como completadas
+      const completedRequests = await this.pivotRequests.find({ where: { bookingId: saved.id, status: 'ACCEPTED' } });
+      for (const request of completedRequests) {
+        request.status = 'DECLINED';
+        request.respondedAt = new Date();
+        await this.pivotRequests.save(request);
+      }
     } else if (status === BookingStatus.CANCELLED) {
       const notification = await this.bookingNotification(saved, 'b2b_booking_cancelled', 'warning');
       if (isStaff) {
         await this.notifications.notifyUser(saved.clientUserId, saved.organizationId, notification, user.userId);
       } else {
         await this.notifications.notifyStaff(saved.organizationId, notification, user.userId);
+      }
+      // Notificar al pivote que la reserva fue cancelada
+      const pivotRequests = await this.pivotRequests.find({ where: { bookingId: saved.id } });
+      for (const request of pivotRequests) {
+        if (request.pivotUserId !== user.userId) {
+          await this.notifications.notifyUser(
+            request.pivotUserId,
+            request.pivotOrganizationId,
+            {
+              type: 'pivot_contact_request',
+              severity: 'warning',
+              title: 'Reserva cancelada',
+              body: 'La reserva asociada a tu solicitud de pivote fue cancelada.',
+              metadata: { conversationId: request.id, bookingId: saved.id },
+            },
+            user.userId,
+          );
+        }
       }
     }
 

@@ -58,7 +58,10 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
       save: jest.fn(async (booking: any) => booking),
     };
     const bookingEvents = { create: jest.fn((event: any) => event), save: jest.fn(async (event: any) => event) };
-    const users = { findOneBy: jest.fn().mockResolvedValue(clientUser) };
+    const users = {
+      findOneBy: jest.fn().mockResolvedValue(clientUser),
+      find: jest.fn().mockResolvedValue([clientUser]),
+    };
     const messaging = { sendWhatsApp: jest.fn().mockImplementation(sendRejects ? jest.fn().mockRejectedValue(new Error('provider down')) : jest.fn().mockResolvedValue({ delivered: true, provider: 'log', messageId: 'm1' })) };
     const unitOfWork = {
       execute: jest.fn(async (work: (session: any) => unknown) => work({
@@ -69,7 +72,7 @@ describe('Confirmaciones por WhatsApp (R2 confirmación · R3 asistencia)', () =
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, {} as never,
       shifts as never, {} as never, bookings as never, bookingEvents as never,
-      users as never,
+      users as never, {} as never,
       notifications as never,
       unitOfWork as never,
       messaging as never,

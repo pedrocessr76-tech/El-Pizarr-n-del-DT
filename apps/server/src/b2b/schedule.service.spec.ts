@@ -65,7 +65,7 @@ describe('Horarios y bloqueos', () => {
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, rules as never,
       shifts as never, blocks as never, bookings as never, {} as never,
-      users as never,
+      users as never, {} as never,
       notifications as never,
       unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,

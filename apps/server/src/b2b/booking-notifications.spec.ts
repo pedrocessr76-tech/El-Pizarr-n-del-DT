@@ -67,6 +67,10 @@ describe('Notificaciones del ciclo de reservas', () => {
       create: jest.fn((row) => ({ id: 'booking', clientUserId: 'client', ...row, createdAt: new Date() })),
       save: jest.fn(async (booking) => booking),
     };
+    const pivotRequests = {
+      find: jest.fn().mockResolvedValue([]),
+      save: jest.fn(async (request) => request),
+    };
     const bookingEvents = { create: jest.fn((event) => event), save: jest.fn(async (event) => event) };
     const manager = {
         getRepository: jest.fn((entity: { name: string }) => {
@@ -74,6 +78,7 @@ describe('Notificaciones del ciclo de reservas', () => {
             B2bShiftEntity: shifts,
             B2bAvailabilityBlockEntity: blocks,
             B2bBookingEntity: bookings,
+            B2bPivotRequestEntity: pivotRequests,
           };
           return (map[entity.name] ?? {}) as never;
         }),
@@ -84,7 +89,7 @@ describe('Notificaciones del ciclo de reservas', () => {
     const service = new B2bManagementService(
       organizations as never, {} as never, courts as never, {} as never,
       shifts as never, blocks as never, bookings as never, bookingEvents as never,
-      {} as never,
+      {} as never, pivotRequests as never,
       notifications as never,
       unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
@@ -218,7 +223,7 @@ describe('Notificaciones del ciclo de reservas', () => {
       {} as never, shifts as never, busyBlocks as never,
       bookings as never,
       { save: jest.fn() } as never,
-      {} as never,
+      {} as never, {} as never,
       notifications as never,
       unitOfWork as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,

@@ -52,7 +52,7 @@ describe('Gestión de canchas', () => {
     const service = new B2bManagementService(
       organizations as never, facilities as never, courts as never,
       rules as never, shifts as never, {} as never, {} as never, {} as never,
-      {} as never,
+      {} as never, {} as never,
       notifications as never,
       { transaction: jest.fn() } as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,
@@ -147,7 +147,7 @@ describe('Gestión de canchas', () => {
     const other = new B2bManagementService(
       organizations as never, otherFacilities as never, courts as never,
       {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never,
+      {} as never, {} as never,
       { notifyStaff: jest.fn(), notifyUser: jest.fn(), getUserDisplayName: jest.fn().mockResolvedValue('Cliente Test') } as never,
       { transaction: jest.fn() } as never,
       { send: jest.fn().mockResolvedValue({ delivered: true, provider: 'log' }) } as never,

@@ -9,6 +9,7 @@ import { BookingStatus } from '../entities/b2b.enums';
 import { B2bJwtUser } from '../auth/b2b-auth.types';
 import { B2bPivotRequestEntity } from './b2b-pivot-request.entity';
 import { B2bPivotMessageEntity } from './b2b-pivot-message.entity';
+import { canChangeBookingStatus, canSendWhatsApp, deriveCourtCapacity, isStaffRole, isValidCourtSize, isValidShiftDuration } from '../domain-policy';
 import { B2bNotificationsGateway } from '../notifications/b2b-notifications.gateway';
 import { MessagingService } from '../messaging/messaging.service';
 import { escapeHtml } from '../messaging/html';
@@ -191,6 +192,19 @@ export class B2bPivotService {
       this.logger.warn(`No se pudo enviar el email de una solicitud pivote (${request.id}).`);
     }
 
+    if (target.whatsappPhone && target.whatsappOptIn) {
+      try {
+        await this.messaging.sendWhatsApp(
+          target.whatsappPhone,
+          `${sender.fullName} te solicita para jugar en ${court.name} el ${matchDate} a las ${matchTime}. Respondé desde la app.`,
+          'pivot_request',
+          { conversationId: request.id },
+        );
+      } catch (error) {
+        this.logger.warn(`No se pudo enviar el WhatsApp de una solicitud pivote (${request.id}).`);
+      }
+    }
+
     return {
       sent: true,
       conversationId: request.id,
@@ -322,6 +336,21 @@ export class B2bPivotService {
       },
       sender.id,
     );
+
+    const recipient = await this.users.findOne({ where: { id: recipientUserId } });
+    if (recipient?.whatsappPhone && recipient?.whatsappOptIn) {
+      try {
+        await this.messaging.sendWhatsApp(
+          recipient.whatsappPhone,
+          `${sender.fullName}: ${text}`,
+          'pivot_message',
+          { conversationId: request.id },
+        );
+      } catch (error) {
+        this.logger.warn(`No se pudo enviar el WhatsApp de un mensaje pivote (${request.id}).`);
+      }
+    }
+
     return payload;
   }
 
