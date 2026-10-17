@@ -14,6 +14,7 @@
     "test:b2b": "npm run test:b2b --workspace=server"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
@@ -24,9 +25,11 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/typeorm": "^11.0.3",
     "bcryptjs": "^3.0.3",
+    "csv-parser": "^3.2.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
+    "string-similarity": "^4.0.4",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^1.1.0"
   }
